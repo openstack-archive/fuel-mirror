@@ -1,0 +1,11 @@
+#!/bin/bash
+
+BINROOT=$(dirname `readlink -f "$0"`)
+
+. $BINROOT/config/common.cfg
+
+mkdir -p ${MIRROR_ROOT}
+mkdir -p ${LOG_ROOT}
+
+$BINROOT/deb-mirror $BINROOT/config/mos-ubuntu-updatesonly.cfg
+$BINROOT/deb-mirror $BINROOT/config/ubuntu.cfg
