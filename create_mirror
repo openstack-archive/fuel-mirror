@@ -2,7 +2,7 @@
 
 # This shell script was written in order to help you to create and maintain your
 # local mirrors of MOS and/or Ubuntu. You could use this script as a cron job.
-# Dependencies: rsync, wget, gpg, apt-get (only for partial Ubuntu mirror)
+# Dependencies: rsync, wget, gpg, apt + dpkg-dev (only for partial Ubuntu mirror)
 
 usage(){
 cat <<EOF
