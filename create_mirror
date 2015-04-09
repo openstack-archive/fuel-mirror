@@ -1,0 +1,33 @@
+#!/bin/bash
+
+usage(){
+cat <<EOF
+Usage: create_mirror [-h|--help] | [mos|ubuntu]
+Create and update local mirrors of MOS and/or Ubuntu.
+
+   -h| --help      This help screen.
+
+Actions could be one of:
+
+   mos             Create/Update MOS local mirror only
+   ubuntu          Create/Update Ubuntu local mirror only
+
+If no parameters specified, script will Create/Update both MOS and Ubuntu mirrors.
+
+EOF
+}
+
+if [[ ( "$1" == "--help" ) ||  ( "$1" == "-h" ) ]]; then 
+	usage
+	exit 0
+fi 
+
+BINROOT=$(dirname `readlink -f "$0"`)
+
+. $BINROOT/config/common.cfg
+
+mkdir -p ${MIRROR_ROOT}
+mkdir -p ${LOG_ROOT}
+
+[ "$1" != "ubuntu" ] && $BINROOT/deb-mirror $BINROOT/config/mos-ubuntu-updatesonly.cfg
+[ "$1" != "mos" ] && $BINROOT/deb-mirror $BINROOT/config/ubuntu.cfg
