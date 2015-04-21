@@ -609,7 +609,7 @@ EOF
 
 # Build partial mirror
 info "Generating metadata for partial mirror"
-info "Apply fix for upstream dpkg-scanpackages"
+info "Applying fix for upstream dpkg-scanpackages"
 patch -N /usr/bin/dpkg-scanpackages < $BINROOT/util/dpkg.patch
 export BINROOT
 $BINROOT/util/regenerate_ubuntu_repo ${PARTIAL_UPSTREAM_PATH} ${UBUNTU_RELEASE} || fatal "Failed to generate partial mirror"

@@ -24,8 +24,8 @@ EOF
 die() { echo "$@" 1>&2 ; exit 1; }
 
 if [[ ( "$1" == "--help" ) ||  ( "$1" == "-h" ) ]]; then 
-	usage
-	exit 0
+    usage
+    exit 0
 fi 
 
 BINROOT=$(dirname `readlink -f "$0"`)
@@ -37,3 +37,13 @@ mkdir -p ${LOG_ROOT} || die "Cannot create ${LOG_ROOT}, exiting."
 
 [ "$1" != "ubuntu" ] && $BINROOT/deb-mirror $BINROOT/config/mos-ubuntu-updatesonly.cfg
 [ "$1" != "mos" ] && $BINROOT/deb-mirror $BINROOT/config/ubuntu.cfg
+
+[ "$1" != "ubuntu" ] && . $BINROOT/config/mos-ubuntu-updatesonly.cfg && echo " * INFO: MOS mirror was created at: $LOCAL_DIR"
+if [[ "$1" != "mos" ]]; then
+    . $BINROOT/config/ubuntu.cfg
+    if [[ $PARTIAL_UPSTREAM = "1" ]]; then
+	 echo " * INFO: Ubuntu partial mirror was created at: $PARTIAL_UPSTREAM_PATH"
+    else
+	echo " * INFO: Ubuntu mirror was created at: $LOCAL_DIR"
+    fi
+fi
