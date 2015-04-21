@@ -28,7 +28,6 @@ ARCH_ALL_IS_MANDATORY=${ARCH_ALL_IS_MANDATORY:-"no"}
 POSSIBLE_COMPRESSIONS=( gz bz2 xz lzma )
 
 BINROOT=$(dirname `readlink -f "$0"`)
-VERSION="0.1"
 
 . $BINROOT/util/msgs.sh
 . $BINROOT/util/rsync.sh

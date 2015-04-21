@@ -21,6 +21,8 @@ If no parameters specified, script will Create/Update both MOS and Ubuntu mirror
 EOF
 }
 
+die() { echo "$@" 1>&2 ; exit 1; }
+
 if [[ ( "$1" == "--help" ) ||  ( "$1" == "-h" ) ]]; then 
 	usage
 	exit 0
@@ -30,8 +32,8 @@ BINROOT=$(dirname `readlink -f "$0"`)
 
 . $BINROOT/config/common.cfg
 
-mkdir -p ${MIRROR_ROOT}
-mkdir -p ${LOG_ROOT}
+mkdir -p ${MIRROR_ROOT} || die "Cannot create ${MIRROR_ROOT}, exiting."
+mkdir -p ${LOG_ROOT} || die "Cannot create ${LOG_ROOT}, exiting."
 
 [ "$1" != "ubuntu" ] && $BINROOT/deb-mirror $BINROOT/config/mos-ubuntu-updatesonly.cfg
 [ "$1" != "mos" ] && $BINROOT/deb-mirror $BINROOT/config/ubuntu.cfg
