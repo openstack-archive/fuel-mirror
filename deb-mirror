@@ -451,8 +451,6 @@ if [[ "$PARTIAL_UPSTREAM" = "1" ]]; then
 
 info "Resolving dependencies for partial mirror"
 
-[ -f /usr/bin/apt-get ] || fatal "APT not found on this system, creation of partial repository will fail"
-
 # Detect kernel version of debian-installer
 fuel_config_temp=`mktemp --suffix="-fuel-config-temp"`
 if ! wget -nv https://raw.githubusercontent.com/stackforge/fuel-main/${FUEL_BRANCH}/config.mk -O $fuel_config_temp; then
@@ -473,7 +471,14 @@ rm -f "$fuel_config_temp"
 export apt_altstate=`mktemp -d --suffix="-apt-altstate"`
 export FUEL_BRANCH
 
-$BINROOT/util/partial_ubuntu.sh || fatal "Cannot calculate list of dependencies"
+if [[ "$DOCKER_MODE" = "true" ]]; then 
+	# docker pull ubuntu:latest
+	docker -D run --net=bridge --rm -a stdout -a stderr -i -t --privileged -e FUEL_BRANCH=$FUEL_BRANCH -e BINROOT=$BINROOT -e apt_altstate=$apt_altstate -v $BINROOT:$BINROOT:rw -v $apt_altstate:$apt_altstate:rw ubuntu:latest $BINROOT/util/partial_ubuntu.sh || fatal "Cannot calculate list of dependencies"
+        # cleanup ubuntu container
+        docker images | awk '/ubuntu/ { print $3; }' | xargs --no-run-if-empty docker rmi -f 
+else
+	$BINROOT/util/partial_ubuntu.sh || fatal "Cannot calculate list of dependencies"
+fi
 
 # Create download lists for deb and udeb
 awk 'FNR==NR {arr[$0];next} $3 in arr' $apt_altstate/deb "$deb_md5" > $apt_altstate/deb_md5
@@ -605,8 +610,10 @@ EOF
 
 # Build partial mirror
 info "Generating metadata for partial mirror"
+info "Apply fix for upstream dpkg-scanpackages"
+patch -N /usr/bin/dpkg-scanpackages < $BINROOT/util/dpkg.patch
 export BINROOT
-$BINROOT/util/regenerate_ubuntu_repo ${PARTIAL_UPSTREAM_PATH} ${UBUNTU_RELEASE} || failure "Failed to generate partial mirror"
+$BINROOT/util/regenerate_ubuntu_repo ${PARTIAL_UPSTREAM_PATH} ${UBUNTU_RELEASE} || fatal "Failed to generate partial mirror"
 rm -rf $LOCAL_DIR
 fi # "$PARTIAL_UPSTREAM" = "1"
 info "Done"

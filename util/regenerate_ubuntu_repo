@@ -21,12 +21,12 @@ package_udeb=${BINDIR}/debian-installer/binary-${ARCH}/Packages
 cd ${REPO_PATH}
 
 # Scan *.deb packages
-$BINROOT/util/dpkg-scanpackages  -m --extra-override ${extraoverride} -a ${ARCH} pool/main ${binoverride}  > ${package_deb}.tmp 2>/dev/null
+dpkg-scanpackages  -m --extra-override ${extraoverride} -a ${ARCH} pool/main ${binoverride}  > ${package_deb}.tmp 2>/dev/null
 
 gzip -9c ${package_deb}.tmp > ${package_deb}.gz.tmp
 
 # Scan *.udeb packages
-$BINROOT/util/dpkg-scanpackages -t udeb -m -a ${ARCH} pool/debian-installer ${binoverride_udeb}  > ${package_udeb}.tmp 2>/dev/null
+dpkg-scanpackages -t udeb -m -a ${ARCH} pool/debian-installer ${binoverride_udeb}  > ${package_udeb}.tmp 2>/dev/null
 
 gzip -9c ${package_udeb}.tmp > ${package_udeb}.gz.tmp
 

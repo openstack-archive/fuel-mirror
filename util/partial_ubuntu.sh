@@ -54,6 +54,8 @@ if ! apt-get $apt_altstate_opts update; then
 	exit 1
 fi
 
+if ! hash wget 2>/dev/null; then apt-get -y install wget; fi
+
 if ! wget -nv https://raw.githubusercontent.com/stackforge/fuel-main/${FUEL_BRANCH}/requirements-deb.txt -O $apt_altstate/requirements-deb.txt; then
     echo "`basename $0`: failed to fetch requirements-deb.txt"
     exit 1
