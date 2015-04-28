@@ -6,8 +6,11 @@
 
 usage(){
 cat <<EOF
-Usage: create_mirror [-h|--help] | [mos|ubuntu]
+Usage: fuel-createmirror [-h|--help] | [mos|ubuntu]
 Create and update local mirrors of MOS and/or Ubuntu.
+
+USAGE
+-----
 
    -h| --help      This help screen.
 
@@ -16,19 +19,48 @@ Actions could be one of:
    mos             Create/Update MOS local mirror only
    ubuntu          Create/Update Ubuntu local mirror only
 
-If no parameters specified, script will Create/Update both MOS and Ubuntu mirrors.
+If no parameters specified, script will Create/Update both MOS and
+Ubuntu mirrors.
+
+Script will print directory names which can be used as respective
+repository URLs on the "Settings" page of cluster setup, i.e. 
+    file:///var/www/nailgun/ubuntu-part
+
+CUSTOMIZATION
+-------------
+
+The following configuration directives could be used to modify the
+script behavior.
+
+$BINROOT/conf/common.cfg:
+
+    FUEL_VERSION - set the current Fuel version here. If running on
+		   Fuel node, script will autodetect Fuel version,
+		   otherwize you should set the version manually.
+
+$BINROOT/conf/ubuntu.cfg:
+
+    UPSTREAM - hostname of Ubuntu mirror. Only rsync mirrors are
+	       supported!
+
+    PARTIAL_UPSTREAM:
+	    0 - script will mirror all packages from specified distibutions
+		and components. Upstream mirror structure will be preserved.
+	    1 - (default) script will download only packages required for
+		MOS. Script will create partial repository with the "main"
+		component only, original mirror structure will not be preserved.
 
 EOF
 }
 
 die() { echo "$@" 1>&2 ; exit 1; }
 
+BINROOT=$(dirname `readlink -f "$0"`)
+
 if [[ ( "$1" == "--help" ) ||  ( "$1" == "-h" ) ]]; then 
     usage
     exit 0
 fi 
-
-BINROOT=$(dirname `readlink -f "$0"`)
 
 . $BINROOT/config/common.cfg
 

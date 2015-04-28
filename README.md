@@ -1,5 +1,5 @@
-create_mirror
-=============
+fuel-createmirror
+=================
 
 Script for partial deb repositories mirroring with sanity check.
 
