@@ -91,7 +91,7 @@ fi
 if [[ "$1" != "mos" ]]; then
     . $BINROOT/config/ubuntu.cfg
     if [[ $PARTIAL_UPSTREAM = "1" ]]; then
-	 echo " * INFO: Ubuntu partial mirror was created at: $PARTIAL_UPSTREAM_PATH"
+	echo " * INFO: Ubuntu partial mirror was created at: $PARTIAL_UPSTREAM_PATH"
 	print_repositories $PARTIAL_UPSTREAM_PATH
     else
 	echo " * INFO: Ubuntu mirror was created at: $LOCAL_DIR"
