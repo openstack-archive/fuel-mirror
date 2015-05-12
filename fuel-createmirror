@@ -80,6 +80,8 @@ fi
 mkdir -p ${MIRROR_ROOT} || die "Cannot create ${MIRROR_ROOT}, exiting."
 mkdir -p ${LOG_ROOT} || die "Cannot create ${LOG_ROOT}, exiting."
 
+EC=0
+
 if [[ "$1" != "ubuntu" ]]; then
     $BINROOT/deb-mirror $BINROOT/config/mos-ubuntu-updatesonly.cfg
     EC_MOS=$?
@@ -97,6 +99,7 @@ if [[ "$1" != "ubuntu" ]]; then
 	print_repositories $LOCAL_DIR full
     else
 	echo " * FATAL: Creation of MOS mirror FAILED, check logs at $LOG_ROOT"
+	EC=1
     fi
 fi
 if [[ "$1" != "mos" ]]; then
@@ -111,7 +114,8 @@ if [[ "$1" != "mos" ]]; then
 	fi
     else
 	echo " * FATAL: Creation of Ubuntu mirror FAILED, check logs at $LOG_ROOT"
+	EC=1
     fi
 fi
 
-exit ( $EC_MOS || $EC_UBUNTU )
+exit $EC
