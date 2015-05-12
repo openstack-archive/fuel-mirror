@@ -77,24 +77,41 @@ fi
 
 . $BINROOT/config/common.cfg
 
-#mkdir -p ${MIRROR_ROOT} || die "Cannot create ${MIRROR_ROOT}, exiting."
-#mkdir -p ${LOG_ROOT} || die "Cannot create ${LOG_ROOT}, exiting."
-
-#[ "$1" != "ubuntu" ] && $BINROOT/deb-mirror $BINROOT/config/mos-ubuntu-updatesonly.cfg
-#[ "$1" != "mos" ] && $BINROOT/deb-mirror $BINROOT/config/ubuntu.cfg
+mkdir -p ${MIRROR_ROOT} || die "Cannot create ${MIRROR_ROOT}, exiting."
+mkdir -p ${LOG_ROOT} || die "Cannot create ${LOG_ROOT}, exiting."
 
 if [[ "$1" != "ubuntu" ]]; then
-    . $BINROOT/config/mos-ubuntu-updatesonly.cfg
-    echo " * INFO: MOS mirror was created at: $LOCAL_DIR"
-    print_repositories $LOCAL_DIR full
+    $BINROOT/deb-mirror $BINROOT/config/mos-ubuntu-updatesonly.cfg
+    EC_MOS=$?
 fi
+
 if [[ "$1" != "mos" ]]; then
-    . $BINROOT/config/ubuntu.cfg
-    if [[ $PARTIAL_UPSTREAM = "1" ]]; then
-	echo " * INFO: Ubuntu partial mirror was created at: $PARTIAL_UPSTREAM_PATH"
-	print_repositories $PARTIAL_UPSTREAM_PATH
-    else
-	echo " * INFO: Ubuntu mirror was created at: $LOCAL_DIR"
+    $BINROOT/deb-mirror $BINROOT/config/ubuntu.cfg
+    EC_UBUNTU=$?
+fi
+
+if [[ "$1" != "ubuntu" ]]; then
+    if [[ "$EC_MOS" == "0" ]]; then
+	. $BINROOT/config/mos-ubuntu-updatesonly.cfg
+	echo " * INFO: MOS mirror was created at: $LOCAL_DIR"
 	print_repositories $LOCAL_DIR full
+    else
+	echo " * FATAL: Creation of MOS mirror FAILED, check logs at $LOG_ROOT"
     fi
 fi
+if [[ "$1" != "mos" ]]; then
+    if [[ "$EC_UBUNTU" == "0" ]]; then
+	. $BINROOT/config/ubuntu.cfg
+	if [[ $PARTIAL_UPSTREAM = "1" ]]; then
+	    echo " * INFO: Ubuntu partial mirror was created at: $PARTIAL_UPSTREAM_PATH"
+	    print_repositories $PARTIAL_UPSTREAM_PATH
+	else
+	    echo " * INFO: Ubuntu mirror was created at: $LOCAL_DIR"
+	    print_repositories $LOCAL_DIR full
+	fi
+    else
+	echo " * FATAL: Creation of Ubuntu mirror FAILED, check logs at $LOG_ROOT"
+    fi
+fi
+
+exit ( $EC_MOS || $EC_UBUNTU )

@@ -469,12 +469,15 @@ rm -f "$fuel_config_temp"
 # Generate list of MOS dependencies
 export apt_altstate=`mktemp -d --suffix="-apt-altstate"`
 export FUEL_BRANCH
+export BINROOT
 
-if [[ "$DOCKER_MODE" = "true" ]]; then 
+if [[ "$DOCKER_MODE" = "true" ]]; then
+	( docker ps -a | grep fuel-createmirror ) && docker rm -f fuel-createmirror 
 	# docker pull ubuntu:latest
-	docker -D run --net=bridge --rm -a stdout -a stderr -i -t --privileged -e FUEL_BRANCH=$FUEL_BRANCH -e BINROOT=$BINROOT -e apt_altstate=$apt_altstate -v $BINROOT:$BINROOT:rw -v $apt_altstate:$apt_altstate:rw ubuntu:latest $BINROOT/util/partial_ubuntu.sh || fatal "Cannot calculate list of dependencies"
+	docker -D run -d --name=fuel-createmirror --net=host -a stdout -a stderr -i -t --privileged -e FUEL_BRANCH=$FUEL_BRANCH -e BINROOT=$BINROOT -e apt_altstate=$apt_altstate -v $BINROOT:$BINROOT:rw -v $apt_altstate:$apt_altstate:rw ubuntu:latest
+        dockerctl shell fuel-createmirror $BINROOT/util/partial_ubuntu.sh || fatal "Cannot calculate list of dependencies"
         # cleanup ubuntu container
-        docker images | awk '/ubuntu/ { print $3; }' | xargs --no-run-if-empty docker rmi -f 
+        docker rm -f fuel-createmirror
 else
 	$BINROOT/util/partial_ubuntu.sh || fatal "Cannot calculate list of dependencies"
 fi
