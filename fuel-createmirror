@@ -61,10 +61,10 @@ print_repositories() {
     echo " * INFO: Set the following repositories:"; echo
     if [ "$2" == "full" ]; then
 	for dist in "${DISTs[@]}"; do
-	    echo "   $dist deb http://$FUEL_SERVER:8000/$1 $dist ${DIST_COMPONENTs[$dist]}"
+	    echo "   $dist deb http://$FUEL_SERVER:8080/$1 $dist ${DIST_COMPONENTs[$dist]}"
 	done
     else
-	echo "   ${DISTs[0]} deb http://$FUEL_SERVER:8000/$1 ${DISTs[0]} main"
+	echo "   ${DISTs[0]} deb http://$FUEL_SERVER:8080/$1 ${DISTs[0]} main"
     fi
     echo
 }
