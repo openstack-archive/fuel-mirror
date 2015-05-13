@@ -24,7 +24,8 @@ Ubuntu mirrors.
 
 Script will print directory names which can be used as respective
 repository URLs on the "Settings" page of cluster setup, i.e. 
-    file:///var/www/nailgun/ubuntu-part
+
+    http://FUEL_SERVER:8080/ubuntu-part
 
 CUSTOMIZATION
 -------------
@@ -60,10 +61,10 @@ print_repositories() {
     echo " * INFO: Set the following repositories:"; echo
     if [ "$2" == "full" ]; then
 	for dist in "${DISTs[@]}"; do
-	    echo "   $dist deb file://$1 $dist ${DIST_COMPONENTs[$dist]}"
+	    echo "   $dist deb http://$FUEL_SERVER:8000/$1 $dist ${DIST_COMPONENTs[$dist]}"
 	done
     else
-	echo "   ${DISTs[0]} deb file://$1 ${DISTs[0]} main"
+	echo "   ${DISTs[0]} deb http://$FUEL_SERVER:8000/$1 ${DISTs[0]} main"
     fi
     echo
 }
@@ -96,7 +97,7 @@ if [[ "$1" != "ubuntu" ]]; then
     if [[ "$EC_MOS" == "0" ]]; then
 	. $BINROOT/config/mos-ubuntu-updatesonly.cfg
 	echo " * INFO: MOS mirror was created at: $LOCAL_DIR"
-	print_repositories $LOCAL_DIR full
+	print_repositories ${LOCAL_DIR##*/} full
     else
 	echo " * FATAL: Creation of MOS mirror FAILED, check logs at $LOG_ROOT"
 	EC=1
@@ -107,10 +108,10 @@ if [[ "$1" != "mos" ]]; then
 	. $BINROOT/config/ubuntu.cfg
 	if [[ $PARTIAL_UPSTREAM = "1" ]]; then
 	    echo " * INFO: Ubuntu partial mirror was created at: $PARTIAL_UPSTREAM_PATH"
-	    print_repositories $PARTIAL_UPSTREAM_PATH
+	    print_repositories ${PARTIAL_UPSTREAM_PATH##*/}
 	else
 	    echo " * INFO: Ubuntu mirror was created at: $LOCAL_DIR"
-	    print_repositories $LOCAL_DIR full
+	    print_repositories ${LOCAL_DIR##*/} full
 	fi
     else
 	echo " * FATAL: Creation of Ubuntu mirror FAILED, check logs at $LOG_ROOT"

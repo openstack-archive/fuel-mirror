@@ -474,7 +474,9 @@ export BINROOT
 if [[ "$DOCKER_MODE" = "true" ]]; then
         ( docker ps -a | grep fuel-createmirror ) && docker rm -f fuel-createmirror 
         # docker pull ubuntu:latest
-        docker -D run -d --name=fuel-createmirror --net=host -a stdout -a stderr -i -t --privileged -e FUEL_BRANCH=$FUEL_BRANCH -e BINROOT=$BINROOT -e apt_altstate=$apt_altstate -v $BINROOT:$BINROOT:rw -v $apt_altstate:$apt_altstate:rw ubuntu:latest
+        docker -D run -d --name=fuel-createmirror --net=host -a stdout -a stderr -i -t --privileged \
+               -e UBUNTU_RELEASE=$UBUNTU_RELEASE -e FUEL_BRANCH=$FUEL_BRANCH -e BINROOT=$BINROOT \
+               -e apt_altstate=$apt_altstate -v $BINROOT:$BINROOT:rw -v $apt_altstate:$apt_altstate:rw ubuntu:latest
         dockerctl shell fuel-createmirror $BINROOT/util/partial_ubuntu.sh || fatal "Cannot calculate list of dependencies"
         # cleanup ubuntu container
         docker rm -f fuel-createmirror
@@ -582,6 +584,7 @@ mkdir -p ${PARTIAL_UPSTREAM_PATH}/indices
 mkdir -p ${PARTIAL_UPSTREAM_PATH}/dists/${UBUNTU_RELEASE}/main/binary-amd64
 mkdir -p ${PARTIAL_UPSTREAM_PATH}/dists/${UBUNTU_RELEASE}/main/debian-installer/binary-amd64
 mkdir -p ${PARTIAL_UPSTREAM_PATH}/${INITRD_DIR}
+find ${PARTIAL_UPSTREAM_PATH} -type d -print0 | xargs -0 chmod 755 
 temp_dir=`mktemp -d --suffix="-reposync"`
 find $LOCAL_DIR/pool/ -name *.deb -type f -exec cp -vuni '{}' ${temp_dir} ";"
 rsync -a --delete ${temp_dir}/ ${PARTIAL_UPSTREAM_PATH}/pool/main
