@@ -474,7 +474,7 @@ export BINROOT
 if [[ "$DOCKER_MODE" = "true" ]]; then
         ( docker ps -a | grep fuel-createmirror ) && docker rm -f fuel-createmirror 
         # docker pull ubuntu:latest
-        docker -D run -d --name=fuel-createmirror --net=host -a stdout -a stderr -i -t --privileged \
+        docker -D run -d --name=fuel-createmirror --net=host -a stdout -a stderr -t \
                -e UBUNTU_RELEASE=$UBUNTU_RELEASE -e UBUNTU_NETBOOT_FLAVOR=$UBUNTU_NETBOOT_FLAVOR \
                -e UBUNTU_ARCH=$UBUNTU_ARCH -e FUEL_BRANCH=$FUEL_BRANCH -e BINROOT=$BINROOT \
                -e apt_altstate=$apt_altstate -v $BINROOT:$BINROOT:rw -v $apt_altstate:$apt_altstate:rw ubuntu:latest
@@ -585,7 +585,6 @@ mkdir -p ${PARTIAL_UPSTREAM_PATH}/indices
 mkdir -p ${PARTIAL_UPSTREAM_PATH}/dists/${UBUNTU_RELEASE}/main/binary-amd64
 mkdir -p ${PARTIAL_UPSTREAM_PATH}/dists/${UBUNTU_RELEASE}/main/debian-installer/binary-amd64
 mkdir -p ${PARTIAL_UPSTREAM_PATH}/${INITRD_DIR}
-find ${PARTIAL_UPSTREAM_PATH} -type d -print0 | xargs -0 chmod 755 
 temp_dir=`mktemp -d --suffix="-reposync"`
 find $LOCAL_DIR/pool/ -name *.deb -type f -exec cp -vuni '{}' ${temp_dir} ";"
 rsync -a --delete ${temp_dir}/ ${PARTIAL_UPSTREAM_PATH}/pool/main
@@ -594,6 +593,7 @@ find ${LOCAL_DIR}/pool/ -name *.udeb -type f -exec cp -vuni '{}' ${temp_dir} ";"
 rsync -a --delete ${temp_dir}/ ${PARTIAL_UPSTREAM_PATH}/pool/debian-installer
 rm -rf ${temp_dir}
 rsync -a --delete ${LOCAL_DIR}/${INITRD_DIR}/ ${PARTIAL_UPSTREAM_PATH}/${INITRD_DIR}
+find ${PARTIAL_UPSTREAM_PATH} -type d -print0 | xargs -0 chmod 755
 
 # Generate "indices" folder
 cat $LOCAL_DIR/indices/*extra* | sort -u > ${PARTIAL_UPSTREAM_PATH}/indices/override.${UBUNTU_RELEASE}.extra.main
