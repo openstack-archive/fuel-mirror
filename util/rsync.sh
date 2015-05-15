@@ -16,7 +16,7 @@ rsync_ls()
 
     files=`/usr/bin/rsync --no-motd --list-only \
         --relative --recursive --no-implied-dirs \
-        --perms --links --times --hard-links --sparse --safe-links \
+        --perms --copy-links --times --hard-links --sparse --safe-links \
         "${UPSTREAM}::${UPSTREAM_DIR}/$mask" | \
         grep -v "^d" |  sed -e "s/->.*//g" | awk '{$1=$2=$3=$4=""}1'`
 
@@ -41,7 +41,7 @@ fetch()
     [[ -d "$dst_dir" ]] || mkdir -p "$dst_dir"
 
     debug_job_start "Fetching '$src_path' to '$dst_path' with params '${opt_args[@]}'"
-    /usr/bin/rsync --no-motd --perms --links --times --hard-links --sparse --safe-links \
+    /usr/bin/rsync --no-motd --perms --copy-links --times --hard-links --sparse --safe-links \
         ${opt_args[@]} \
         "${UPSTREAM}::${UPSTREAM_DIR}/$src_path" "$dst_path"
     local rsync_ec="$?"
@@ -65,7 +65,7 @@ fetch_all()
     rsync_out=` echo $* | tr ' ' '\n' | \
         rsync --no-motd --relative --out-format='%n' --files-from=- \
         --no-implied-dirs --no-motd \
-        --perms --links --times --hard-links --sparse \
+        --perms --copy-links --times --hard-links --sparse \
         "${UPSTREAM}::${UPSTREAM_DIR}/" "$root" 2> /dev/null`
     for line in $rsync_out; do
         debug "Fetched file $LOCAL_DIR/$line"

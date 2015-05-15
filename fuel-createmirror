@@ -56,17 +56,45 @@ EOF
 
 die() { echo "$@" 1>&2 ; exit 1; }
 
-print_repositories() {
-    echo -e " * INFO: Go to Fuel UI, choose your cluster and go to the 'Settings' tab"
-    echo " * INFO: Set the following repositories:"; echo
-    if [ "$2" == "full" ]; then
+print_repositories_ubuntu() {
+    echo -e " * INFO: In order to setup these repositories MANUALLY, you should"
+    echo -e "         go to Fuel UI, choose your cluster and go to the 'Settings' tab"
+    if [ "$PARTIAL_UPSTREAM" == "0" ]; then
+	echo -e "         Replace the URI value for the following repositories:"
 	for dist in "${DISTs[@]}"; do
-	    echo "   $dist deb http://$FUEL_SERVER:8080/$1 $dist ${DIST_COMPONENTs[$dist]}"
+	    echo -e "         Repository \"$dist\" URI=\"deb http://$FUEL_SERVER:8080/$1 $dist ${DIST_COMPONENTs[$dist]}\""
 	done
     else
-	echo "   ${DISTs[0]} deb http://$FUEL_SERVER:8080/$1 ${DISTs[0]} main"
+	echo -e "         REMOVE all repositories named \"ubuntu-*\" and change URI for the following one:"
+	echo
+	echo -e "         Repository \"ubuntu\" new URI=\"deb http://$FUEL_SERVER:8080/$1 ${DISTs[0]} main\""
     fi
     echo
+}
+
+add_repositories_to_nailgun() {
+# parameters:
+# $1 - release_id for fuel env
+# $2 - distro name in fuel-package-updates format
+# $3 - directory name of local repository
+    echo " * INFO: Attempting to add created repositories to Nailgun..."
+    # find envs with status "new" and with given release_id
+    local release_id=$1
+    local extraopts=""
+    [ "$PARTIAL_UPSTREAM" == "1" ] && extraopts=" --clear-upstream-repos "
+    envs=`fuel env 2>&1 | grep -w new | awk -v release_id=$release_id -F'|' '$5 == release_id {print $1}'`
+    for env in ${envs}; do
+        fuel-package-updates -d $2 -r $FULL_RELEASE --no-download --apply --make-default \
+        -s $FUEL_SERVER -p "$FUEL_ADMIN_PASS" -b http://$FUEL_SERVER:8080/$3 -e $env $extraopts 2>/dev/null
+	EC_FPU=$?
+	if [[ "$EC_FPU" == "0" ]]; then
+	    echo " * INFO: environment id=$env updated successfully, no manual actions is required"
+	else
+	    echo " * WARNING: Failed to add repositories for environment id=$env to Nailgun, please add them MANUALLY"
+	    EC_ADD=1
+	fi
+    done
+    [ "$EC_ADD" == "1" ] && print_repositories_ubuntu $3
 }
 
 BINROOT=$(dirname `readlink -f "$0"`)
@@ -97,7 +125,11 @@ if [[ "$1" != "ubuntu" ]]; then
     if [[ "$EC_MOS" == "0" ]]; then
 	. $BINROOT/config/mos-ubuntu-updatesonly.cfg
 	echo " * INFO: MOS mirror was created at: $LOCAL_DIR"
-	print_repositories ${LOCAL_DIR##*/} full
+	if [[ "$DOCKER_MODE" == "true" ]]; then
+	    add_repositories_to_nailgun 2 ubuntu ${LOCAL_DIR##*/}
+	else
+	    print_repositories_ubuntu ${LOCAL_DIR##*/}
+	fi
     else
 	echo " * FATAL: Creation of MOS mirror FAILED, check logs at $LOG_ROOT"
 	EC=1
@@ -108,10 +140,18 @@ if [[ "$1" != "mos" ]]; then
 	. $BINROOT/config/ubuntu.cfg
 	if [[ $PARTIAL_UPSTREAM = "1" ]]; then
 	    echo " * INFO: Ubuntu partial mirror was created at: $PARTIAL_UPSTREAM_PATH"
-	    print_repositories ${PARTIAL_UPSTREAM_PATH##*/}
+	    if [[ "$DOCKER_MODE" == "true" ]]; then
+		add_repositories_to_nailgun 2 ubuntu-baseos ${PARTIAL_UPSTREAM_PATH##*/}
+	    else
+		print_repositories_ubuntu ${PARTIAL_UPSTREAM_PATH##*/}
+	    fi
 	else
 	    echo " * INFO: Ubuntu mirror was created at: $LOCAL_DIR"
-	    print_repositories ${LOCAL_DIR##*/} full
+	    if [[ "$DOCKER_MODE" == "true" ]]; then
+		add_repositories_to_nailgun 2 ubuntu-baseos ${LOCAL_DIR##*/}
+	    else
+		print_repositories_ubuntu ${LOCAL_DIR##*/}
+	    fi
 	fi
     else
 	echo " * FATAL: Creation of Ubuntu mirror FAILED, check logs at $LOG_ROOT"
