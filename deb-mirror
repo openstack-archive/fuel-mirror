@@ -472,6 +472,7 @@ debug "Detected debian-installer kernel version: "$UBUNTU_INSTALLER_KERNEL_VERSI
 # Generate list of MOS dependencies
 export apt_altstate=`mktemp -d --suffix="-apt-altstate"`
 export BINROOT
+export FUEL_VERSION
 
 if [[ "$DOCKER_MODE" = "true" ]]; then
         ( docker ps -a | grep fuel-createmirror ) && docker rm -f fuel-createmirror 
