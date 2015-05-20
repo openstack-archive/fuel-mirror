@@ -153,24 +153,3 @@ pkg_file_valid()
     debug "md5sum = $md5sum, expected $expected_md5sum"
     return 1
 }
-
-# DEPRECATED
-parse_pkg_file()
-{
-    local file="$1"
-    local to_return=()
-
-    local line
-    declare -A entry
-
-    read_file "$file" | \
-    while read line; do
-        if [[ -z "$line" ]]; then
-            continue
-        fi
-        param=${line%%:*}
-        entry[$param]=#${line#*: }
-        #    #echo "${entry[md5sum]} ${entry[size]} ${entry[filename]}"
-        #    entry=()
-    done
-}

@@ -1,9 +1,20 @@
 #!/bin/bash
 
-if [ -z "$FUEL_BRANCH" ]; then
-	echo "`basename $0`: FUEL_BRANCH is not defined!"
-	exit 1
-fi
+cp $BINROOT/config/requirements-deb.txt $apt_altstate
+
+cat >> $apt_altstate/requirements-deb.txt << EOF
+linux-image-${UBUNTU_INSTALLER_KERNEL_VERSION}
+linux-headers-${UBUNTU_INSTALLER_KERNEL_VERSION}
+linux-image-generic-${UBUNTU_KERNEL_FLAVOR}
+linux-headers-generic-${UBUNTU_KERNEL_FLAVOR}
+EOF
+
+requirements_add_essential_pkgs () {
+        # All essential packages are already installed, so ask dpkg for a list
+        dpkg-query -W -f='${Package} ${Essential}\n' > /tmp/essential.pkgs
+        sed -i /tmp/essential.pkgs -n -e 's/\([^ ]\+\).*yes$/\1/p'
+        cat /tmp/essential.pkgs >> $apt_altstate/requirements-deb.txt
+}
 
 #apt_altstate=`mktemp -d --suffix="-apt-altstate"`
 apt_lists_dir="$apt_altstate/var/lib/apt/lists"
@@ -54,12 +65,7 @@ if ! apt-get $apt_altstate_opts update; then
 	exit 1
 fi
 
-if ! hash wget 2>/dev/null; then apt-get -y install wget; fi
-
-if ! wget -nv https://raw.githubusercontent.com/stackforge/fuel-main/${FUEL_BRANCH}/requirements-deb.txt -O $apt_altstate/requirements-deb.txt; then
-    echo "`basename $0`: failed to fetch requirements-deb.txt"
-    exit 1
-fi
+requirements_add_essential_pkgs
 
 echo "Processing Fuel dependencies..."
 

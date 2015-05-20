@@ -2,61 +2,51 @@
 
 # This shell script was written in order to help you to create and maintain your
 # local mirrors of MOS and/or Ubuntu. You could use this script as a cron job.
-# Dependencies: rsync, wget, gpg, docker + dpkg-dev (only for partial Ubuntu mirror)
+# Dependencies: rsync, gpg, docker + dpkg-dev (only for partial Ubuntu mirror)
 
-usage(){
+usage() {
 cat <<EOF
-Usage: fuel-createmirror [-h|--help] | [mos|ubuntu]
+Usage: `basename $0` [options]
+
 Create and update local mirrors of MOS and/or Ubuntu.
 
-USAGE
------
+IMPORTANT!
+If NO parameters specified, this script will:
+- Create/Update both MOS and Ubuntu local mirrors
+- Set them as repositories for existing NEW environments in Fuel UI
+- Set them as DEFAULT repositories for new environments
 
-   -h| --help      This help screen.
+Options:
 
-Actions could be one of:
-
-   mos             Create/Update MOS local mirror only
-   ubuntu          Create/Update Ubuntu local mirror only
-
-If no parameters specified, script will Create/Update both MOS and
-Ubuntu mirrors.
-
-Script will print directory names which can be used as respective
-repository URLs on the "Settings" page of cluster setup, i.e. 
-
-    http://FUEL_SERVER:8080/ubuntu-part
+  -h| --help          This help screen.
+  -d| --no-default    Don't change default repositories for new environments
+  -a| --no-apply      Don't apply changes to Fuel environments
+  -M| --mos           Create/Update MOS local mirror only
+  -U| --ubuntu        Create/Update Ubuntu local mirror only
+  -N| --dry-run       Show commands to execute instead of running them
 
 CUSTOMIZATION
 -------------
+The following configuration file could be used to modify the
+script behavior:
 
-The following configuration directives could be used to modify the
-script behavior.
+/etc/fuel-createmirror/common.cfg
 
-$BINROOT/conf/common.cfg:
-
-    FUEL_VERSION - set the current Fuel version here. If running on
-		   Fuel node, script will autodetect Fuel version,
-		   otherwize you should set the version manually.
-
-$BINROOT/conf/ubuntu.cfg:
-
-    UPSTREAM - hostname of Ubuntu mirror. Only rsync mirrors are
-	       supported!
-
-    PARTIAL_UPSTREAM:
-	    0 - script will mirror all packages from specified distibutions
-		and components. Upstream mirror structure will be preserved.
-	    1 - (default) script will download only packages required for
-		MOS. Script will create partial repository with the "main"
-		component only, original mirror structure will not be preserved.
+Please refer to the description of parameters in that configuration file.
 
 EOF
+}
+
+usage_short() {
+    echo Usage: `basename $0` [options]
+    echo
+    echo -e Try \``basename $0` --help\' for more options.
 }
 
 die() { echo "$@" 1>&2 ; exit 1; }
 
 print_repositories_ubuntu() {
+# $1 - directory name of local repository
     echo -e " * INFO: In order to setup these repositories MANUALLY, you should"
     echo -e "         go to Fuel UI, choose your cluster and go to the 'Settings' tab"
     if [ "$PARTIAL_UPSTREAM" == "0" ]; then
@@ -78,50 +68,97 @@ add_repositories_to_nailgun() {
 # $2 - distro name in fuel-package-updates format
 # $3 - directory name of local repository
     echo " * INFO: Attempting to add created repositories to Nailgun..."
-    # find envs with status "new" and with given release_id
     local release_id=$1
-    local extraopts=""
-    [ "$PARTIAL_UPSTREAM" == "1" ] && extraopts=" --clear-upstream-repos "
+    local clearupstream=" --clear-upstream-repos "
+    local makedefault=" --make-default "
+    local apply=" --apply "
+    [ "$PARTIAL_UPSTREAM" == "0" ] && clearupstream=""
+    [ "$OPT_NO_DEFAULT" == "1" ] && makedefault=""
+    [ "$OPT_NO_APPLY" == "1" ] && apply=""
+    # find envs with status "new" and with given release_id
     envs=`fuel env 2>&1 | grep -w new | awk -v release_id=$release_id -F'|' '$5 == release_id {print $1}'`
     for env in ${envs}; do
-        fuel-package-updates -d $2 -r $FULL_RELEASE --no-download --apply --make-default \
-        -s $FUEL_SERVER -p "$FUEL_ADMIN_PASS" -b http://$FUEL_SERVER:8080/$3 -e $env $extraopts 2>/dev/null
+        $EXEC_PREFIX fuel-package-updates -d $2 -r $FULL_RELEASE --no-download $makedefault $apply \
+        -s $FUEL_SERVER -p "$FUEL_ADMIN_PASS" -b http://$FUEL_SERVER:8080/$3 -e $env $clearupstream 2>/dev/null
 	EC_FPU=$?
 	if [[ "$EC_FPU" == "0" ]]; then
-	    echo " * INFO: environment id=$env updated successfully, no manual actions is required"
+	    [ "$OPT_NO_APPLY" ] || echo " * INFO: environment id=$env updated successfully, no manual actions is required"
 	else
-	    echo " * WARNING: Failed to add repositories for environment id=$env to Nailgun, please add them MANUALLY"
+	    echo " * INFO: Failed to add repositories for environment id=$env to Nailgun, please add them MANUALLY"
 	    EC_ADD=1
 	fi
+	[ "$OPT_NO_DEFAULT" ] && echo " * INFO: Default repositories for new environments were not modified" || echo " * INFO: Created repositories were set as defaults for new environments"
     done
     [ "$EC_ADD" == "1" ] && print_repositories_ubuntu $3
 }
 
+### BEGIN
+
+# Set defaults
+OPT_MOS=1
+OPT_UBUNTU=1
+EXEC_PREFIX=""
+
+# Parse options
+OPTS=`getopt -o hdaMUN -l help,no-default,no-apply,mos,ubuntu,dry-run -- "$@"`
+if [ $? != 0 ]; then
+    usage_short
+    exit 1
+fi
+
+eval set -- "$OPTS"
+
+while true ; do
+    case "$1" in
+        -h| --help        ) usage ; exit 0;;
+        -d | --no-default ) OPT_NO_DEFAULT=1; shift;;
+        -a | --no-apply   ) OPT_NO_APPLY=1; shift;;
+        -N | --dry-run    ) EXEC_PREFIX="echo  EXEC  "; shift;;
+        -M | --mos        ) unset OPT_UBUNTU; shift;;
+        -U | --ubuntu     ) unset OPT_MOS; shift;;
+        --                ) shift; break;;
+        *                 ) break;;
+    esac
+done
+
+if [[ "$@" != "" ]]; then
+    echo "Invalid option -- $@"
+    usage_short
+    exit 1
+fi
+
+if [ -z $OPT_MOS ] && [ -z $OPT_UBUNTU ]; then
+    echo "The --mos and --ubuntu options are mutually exclusive, aborting..."
+    usage_short
+    exit 1
+fi
+
 BINROOT=$(dirname `readlink -f "$0"`)
 
-if [[ ( "$1" == "--help" ) ||  ( "$1" == "-h" ) ]]; then 
-    usage
-    exit 0
-fi 
-
 . $BINROOT/config/common.cfg
+. $BINROOT/config/fuel.cfg
 
-mkdir -p ${MIRROR_ROOT} || die "Cannot create ${MIRROR_ROOT}, exiting."
-mkdir -p ${LOG_ROOT} || die "Cannot create ${LOG_ROOT}, exiting."
+if [ -z "${RSYNC_PROXY+x}" ] && [ $http_proxy ]; then
+    export http_proxy
+    export RSYNC_PROXY=$http_proxy
+fi
+
+$EXEC_PREFIX mkdir -p ${MIRROR_ROOT} || die "Cannot create ${MIRROR_ROOT}, exiting."
+$EXEC_PREFIX mkdir -p ${LOG_ROOT} || die "Cannot create ${LOG_ROOT}, exiting."
 
 EC=0
 
-if [[ "$1" != "ubuntu" ]]; then
-    $BINROOT/deb-mirror $BINROOT/config/mos-ubuntu-updatesonly.cfg
+if [[ $OPT_MOS ]]; then
+    $EXEC_PREFIX $BINROOT/deb-mirror $BINROOT/config/mos-ubuntu-updatesonly.cfg
     EC_MOS=$?
 fi
 
-if [[ "$1" != "mos" ]]; then
-    $BINROOT/deb-mirror $BINROOT/config/ubuntu.cfg
+if [[ $OPT_UBUNTU ]]; then
+    $EXEC_PREFIX $BINROOT/deb-mirror $BINROOT/config/ubuntu.cfg
     EC_UBUNTU=$?
 fi
 
-if [[ "$1" != "ubuntu" ]]; then
+if [[ $OPT_MOS ]]; then
     if [[ "$EC_MOS" == "0" ]]; then
 	. $BINROOT/config/mos-ubuntu-updatesonly.cfg
 	echo " * INFO: MOS mirror was created at: $LOCAL_DIR"
@@ -135,7 +172,7 @@ if [[ "$1" != "ubuntu" ]]; then
 	EC=1
     fi
 fi
-if [[ "$1" != "mos" ]]; then
+if [[ $OPT_UBUNTU ]]; then
     if [[ "$EC_UBUNTU" == "0" ]]; then
 	. $BINROOT/config/ubuntu.cfg
 	if [[ $PARTIAL_UPSTREAM = "1" ]]; then
