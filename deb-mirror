@@ -479,7 +479,7 @@ if [[ "$DOCKER_MODE" = "true" ]]; then
         docker -D run -d --name=fuel-createmirror --net=host -a stdout -a stderr -t \
                -e UBUNTU_RELEASE=$UBUNTU_RELEASE -e UBUNTU_NETBOOT_FLAVOR=$UBUNTU_NETBOOT_FLAVOR \
                -e UBUNTU_INSTALLER_KERNEL_VERSION=$UBUNTU_INSTALLER_KERNEL_VERSION -e UBUNTU_KERNEL_FLAVOR=$UBUNTU_KERNEL_FLAVOR \
-               -e RSYNC_PROXY=$RSYNC_PROXY -e http_proxy=$http_proxy \
+               -e RSYNC_PROXY=$RSYNC_PROXY -e FUEL_VERSION=$FUEL_VERSION -e http_proxy=$http_proxy \
                -e UBUNTU_ARCH=$UBUNTU_ARCH -e BINROOT=$BINROOT \
                -e apt_altstate=$apt_altstate -v $BINROOT:$BINROOT:rw -v $apt_altstate:$apt_altstate:rw ubuntu:latest
         dockerctl shell fuel-createmirror $BINROOT/util/partial_ubuntu.sh || fatal "Cannot calculate list of dependencies"

@@ -133,7 +133,7 @@ if [ -z $OPT_MOS ] && [ -z $OPT_UBUNTU ]; then
     exit 1
 fi
 
-BINROOT=$(dirname `readlink -f "$0"`)
+export BINROOT=$(dirname `readlink -f "$0"`)
 
 . $BINROOT/config/common.cfg
 . $BINROOT/config/fuel.cfg
