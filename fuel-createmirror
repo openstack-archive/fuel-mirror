@@ -24,6 +24,7 @@ Options:
   -M| --mos           Create/Update MOS local mirror only
   -U| --ubuntu        Create/Update Ubuntu local mirror only
   -N| --dry-run       Show commands to execute instead of running them
+  -p| --password      Fuel Master admin password (defaults to admin)
 
 CUSTOMIZATION
 -------------
@@ -33,6 +34,9 @@ script behavior:
 /etc/fuel-createmirror/common.cfg
 
 Please refer to the description of parameters in that configuration file.
+
+See more detailed description in the Fuel Operations Guide:
+https://docs.mirantis.com/openstack/fuel/fuel-6.1/operations.html#external-ubuntu-ops
 
 EOF
 }
@@ -52,12 +56,15 @@ print_repositories_ubuntu() {
     if [ "$PARTIAL_UPSTREAM" == "0" ]; then
 	echo -e "         Replace the URI value for the following repositories:"
 	for dist in "${DISTs[@]}"; do
-	    echo -e "         Repository \"$dist\" URI=\"deb http://$FUEL_SERVER:8080/$1 $dist ${DIST_COMPONENTs[$dist]}\""
+	    distlabel=`echo "$dist" | sed "s/$FUEL_VERSION//"`
+	    echo -e "         Repository \"$distlabel\" URI=\"deb http://$FUEL_SERVER:8080/$1 $dist ${DIST_COMPONENTs[$dist]}\""
 	done
     else
-	echo -e "         REMOVE all repositories named \"ubuntu-*\" and change URI for the following one:"
+	echo -e "         Replace the URI value for the following repositories:"
 	echo
 	echo -e "         Repository \"ubuntu\" new URI=\"deb http://$FUEL_SERVER:8080/$1 ${DISTs[0]} main\""
+	echo -e "         Repository \"ubuntu-security\" new URI=\"deb http://$FUEL_SERVER:8080/$1 ${DISTs[0]} main\""
+	echo -e "         Repository \"ubuntu-updates\" new URI=\"deb http://$FUEL_SERVER:8080/$1 ${DISTs[0]} main\""
     fi
     echo
 }
@@ -76,7 +83,7 @@ add_repositories_to_nailgun() {
     [ "$OPT_NO_DEFAULT" == "1" ] && makedefault=""
     [ "$OPT_NO_APPLY" == "1" ] && apply=""
     # find envs with status "new" and with given release_id
-    envs=`fuel env 2>&1 | grep -w new | awk -v release_id=$release_id -F'|' '$5 == release_id {print $1}'`
+    envs=`fuel --user=admin --password="$FUEL_ADMIN_PASS" env 2>&1 | grep -w new | awk -v release_id=$release_id -F'|' '$5 == release_id {print $1}'`
     for env in ${envs}; do
         $EXEC_PREFIX fuel-package-updates -d $2 -r $FULL_RELEASE --no-download $makedefault $apply \
         -s $FUEL_SERVER -p "$FUEL_ADMIN_PASS" -b http://$FUEL_SERVER:8080/$3 -e $env $clearupstream 2>/dev/null
@@ -100,7 +107,7 @@ OPT_UBUNTU=1
 EXEC_PREFIX=""
 
 # Parse options
-OPTS=`getopt -o hdaMUN -l help,no-default,no-apply,mos,ubuntu,dry-run -- "$@"`
+OPTS=`getopt -o hdaMUNp: -l help,no-default,no-apply,mos,ubuntu,password:,dry-run -- "$@"`
 if [ $? != 0 ]; then
     usage_short
     exit 1
@@ -116,6 +123,7 @@ while true ; do
         -N | --dry-run    ) EXEC_PREFIX="echo  EXEC  "; shift;;
         -M | --mos        ) unset OPT_UBUNTU; shift;;
         -U | --ubuntu     ) unset OPT_MOS; shift;;
+        -p | --password   ) FUEL_MASTER_PASS="$2"; shift; shift;;
         --                ) shift; break;;
         *                 ) break;;
     esac
@@ -137,6 +145,19 @@ export BINROOT=$(dirname `readlink -f "$0"`)
 
 . $BINROOT/config/common.cfg
 . $BINROOT/config/fuel.cfg
+
+# If running on Fuel node - check if we can connect to backend
+if hash fuel2 2>/dev/null; then
+    echo " * INFO: Verifying connection to the Fuel backend"
+    if fuel --user=admin --password=$FUEL_ADMIN_PASS release &>/dev/null; then
+           echo " * INFO: Fuel backend connection OK"
+    else
+           echo " * FATAL: Connect to Fuel backend failed. Please verify that Fuel services are up&running."
+           echo "   If services are OK, please make sure you have specified the correct Fuel Master admin password"
+           usage_short
+           exit 1
+    fi
+fi
 
 if [ -z "${RSYNC_PROXY+x}" ] && [ $http_proxy ]; then
     export http_proxy
