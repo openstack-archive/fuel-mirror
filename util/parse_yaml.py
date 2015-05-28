@@ -1,12 +1,11 @@
 #!/usr/bin/python
-# Enumerate YAML file and produce prefixed output
+# Enumerate YAML from stdin and produce prefixed output
 
 import re
 import sys
 import yaml
 
-filename = sys.argv[1]
-prefix = sys.argv[2]
+prefix = sys.argv[1]
 
 def serialize(value, name):
     if value is None:
@@ -22,6 +21,6 @@ def serialize(value, name):
     else:
         print('{0}="{1}"'.format(name, value))
 
-with open(filename, 'r') as yaml_file:
+with sys.stdin as yaml_file:
     data = yaml.load(yaml_file)
     serialize(data, prefix)
