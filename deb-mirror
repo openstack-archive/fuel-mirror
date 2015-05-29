@@ -458,10 +458,10 @@ info "Resolving dependencies for partial mirror"
 
 # Detect kernel version of debian-installer
 fuel_config=$BINROOT/config/config.mk
-export UBUNTU_RELEASE=`awk -F '[:=?]' '/^UBUNTU_RELEASE\>/ {print $NF}' $fuel_config`
-export UBUNTU_NETBOOT_FLAVOR=`awk -F '[:=?]' '/^UBUNTU_NETBOOT_FLAVOR\>/ {print $NF}' $fuel_config`
-export UBUNTU_KERNEL_FLAVOR=`awk -F '[:=?]' '/^UBUNTU_KERNEL_FLAVOR\>/ {print $NF}' $fuel_config`
-export UBUNTU_ARCH=`awk -F '[:=?]' '/^UBUNTU_ARCH\>/ {print $NF}' $fuel_config`
+export UBUNTU_RELEASE=`grep -w ^UBUNTU_RELEASE $fuel_config | awk -F '[:=?]' '{print $NF}'`
+export UBUNTU_NETBOOT_FLAVOR=`grep -w ^UBUNTU_NETBOOT_FLAVOR $fuel_config | awk -F '[:=?]' '{print $NF}'`
+export UBUNTU_KERNEL_FLAVOR=`grep -w ^UBUNTU_KERNEL_FLAVOR $fuel_config | awk -F '[:=?]' '{print $NF}'`
+export UBUNTU_ARCH=`grep -w ^UBUNTU_ARCH $fuel_config | awk -F '[:=?]' '{print $NF}'`
 
 INITRD_DIR="/dists/${UBUNTU_RELEASE}-updates/main/installer-${UBUNTU_ARCH}/current/images/${UBUNTU_NETBOOT_FLAVOR}/ubuntu-installer/${UBUNTU_ARCH}/"
 mkdir -p "$LOCAL_DIR/$INITRD_DIR"
