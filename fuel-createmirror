@@ -85,9 +85,9 @@ add_repositories_to_nailgun() {
     [ "$OPT_NO_DEFAULT" == "1" ] && makedefault=""
     [ "$OPT_NO_APPLY" == "1" ] && apply=""
     # find envs with status "new" and with given release_id
-    envs=`fuel --user=admin --password="$FUEL_ADMIN_PASS" env 2>&1 | grep -w new | awk -v release_id=$release_id -F'|' '$5 == release_id {print $1}'`
+    envs=`env http_proxy="" fuel --user=admin --password="$FUEL_ADMIN_PASS" env 2>&1 | grep -w new | awk -v release_id=$release_id -F'|' '$5 == release_id {print $1}'`
     for env in ${envs}; do
-        $EXEC_PREFIX fuel-package-updates -d $2 -r $FULL_RELEASE --no-download $makedefault $apply \
+        $EXEC_PREFIX env http_proxy="" fuel-package-updates -d $2 -r $FULL_RELEASE --no-download $makedefault $apply \
         -s $FUEL_SERVER -p "$FUEL_ADMIN_PASS" -b http://$FUEL_SERVER:8080/$3 -e $env $clearupstream 2>/dev/null
 	EC_FPU=$?
 	if [[ "$EC_FPU" == "0" ]]; then
@@ -151,7 +151,7 @@ export BINROOT=$(dirname `readlink -f "$0"`)
 # If running on Fuel node - check if we can connect to backend
 if hash fuel2 2>/dev/null; then
     echo " * INFO: Verifying connection to the Fuel backend"
-    if fuel --user=admin --password=$FUEL_ADMIN_PASS release &>/dev/null; then
+    if env http_proxy="" fuel --user=admin --password=$FUEL_ADMIN_PASS release &>/dev/null; then
            echo " * INFO: Fuel backend connection OK"
     else
            echo " * FATAL: Connect to Fuel backend failed. Please verify that Fuel services are up&running."
