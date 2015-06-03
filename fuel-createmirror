@@ -33,6 +33,8 @@ script behavior:
 
 /etc/fuel-createmirror/common.cfg
 
+If you are behind a proxy, you should set both http_proxy and RSYNC_PROXY env vars.
+
 Please refer to the description of parameters in that configuration file.
 
 See more detailed description in the Fuel Operations Guide:
