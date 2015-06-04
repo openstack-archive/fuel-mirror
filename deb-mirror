@@ -582,6 +582,10 @@ echo "Updated at: `date`" > $LOCAL_DIR/.lastupdate
 # If partial mirroring is enabled, get the list of partial mirror packages
 if [[ "$PARTIAL_UPSTREAM" = "1" ]]; then
 
+# netboot images URI used by Nailgun differs from the one used in script
+# see https://bugs.launchpad.net/bugs/1461927 for details
+PARTIAL_INITRD_DIR="/dists/${UBUNTU_RELEASE}/main/installer-${UBUNTU_ARCH}/current/images/${UBUNTU_NETBOOT_FLAVOR}/ubuntu-installer/${UBUNTU_ARCH}/"
+
 # Prepare directory structure for partial repository
 info "Generating partial mirror"
 mkdir -p ${PARTIAL_UPSTREAM_PATH}/pool/debian-installer
@@ -589,7 +593,7 @@ mkdir -p ${PARTIAL_UPSTREAM_PATH}/pool/main
 mkdir -p ${PARTIAL_UPSTREAM_PATH}/indices
 mkdir -p ${PARTIAL_UPSTREAM_PATH}/dists/${UBUNTU_RELEASE}/main/binary-amd64
 mkdir -p ${PARTIAL_UPSTREAM_PATH}/dists/${UBUNTU_RELEASE}/main/debian-installer/binary-amd64
-mkdir -p ${PARTIAL_UPSTREAM_PATH}/${INITRD_DIR}
+mkdir -p ${PARTIAL_UPSTREAM_PATH}/${PARTIAL_INITRD_DIR}
 temp_dir=`mktemp -d --suffix="-reposync"`
 find $LOCAL_DIR/pool/ -name *.deb -type f -exec cp -vuni '{}' ${temp_dir} ";"
 rsync -a --delete ${temp_dir}/ ${PARTIAL_UPSTREAM_PATH}/pool/main
@@ -597,7 +601,7 @@ rm -f ${temp_dir}/*
 find ${LOCAL_DIR}/pool/ -name *.udeb -type f -exec cp -vuni '{}' ${temp_dir} ";"
 rsync -a --delete ${temp_dir}/ ${PARTIAL_UPSTREAM_PATH}/pool/debian-installer
 rm -rf ${temp_dir}
-rsync -a --delete ${LOCAL_DIR}/${INITRD_DIR}/ ${PARTIAL_UPSTREAM_PATH}/${INITRD_DIR}
+rsync -a --delete ${LOCAL_DIR}/${INITRD_DIR}/ ${PARTIAL_UPSTREAM_PATH}/${PARTIAL_INITRD_DIR}
 find ${PARTIAL_UPSTREAM_PATH} -type d -print0 | xargs -0 chmod 755
 
 # Generate "indices" folder
