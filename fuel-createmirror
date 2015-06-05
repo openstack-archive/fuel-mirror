@@ -73,11 +73,11 @@ print_repositories_ubuntu() {
 
 add_repositories_to_nailgun() {
 # parameters:
-# $1 - release_id for fuel env
+# $1 - operating_system from fuel env
 # $2 - distro name in fuel-package-updates format
 # $3 - directory name of local repository
     echo " * INFO: Attempting to add created repositories to Nailgun..."
-    local release_id=$1
+    local release_id=`env http_proxy="" fuel --user=admin --password="$FUEL_ADMIN_PASS" release 2>/dev/null| awk -F"|" '{print $1" "$4" "$5}' | grep "$1" | grep "$FUEL_RELEASE" | awk '{print $1}'`
     local clearupstream=" --clear-upstream-repos "
     local makedefault=" --make-default "
     local apply=" --apply "
@@ -186,7 +186,7 @@ if [[ $OPT_MOS ]]; then
 	. $BINROOT/config/mos-ubuntu-updatesonly.cfg
 	echo " * INFO: MOS mirror was created at: $LOCAL_DIR"
 	if [[ "$DOCKER_MODE" == "true" ]]; then
-	    add_repositories_to_nailgun 2 ubuntu ${LOCAL_DIR##*/}
+	    add_repositories_to_nailgun Ubuntu ubuntu ${LOCAL_DIR##*/}
 	else
 	    print_repositories_ubuntu ${LOCAL_DIR##*/}
 	fi
@@ -201,14 +201,14 @@ if [[ $OPT_UBUNTU ]]; then
 	if [[ $PARTIAL_UPSTREAM = "1" ]]; then
 	    echo " * INFO: Ubuntu partial mirror was created at: $PARTIAL_UPSTREAM_PATH"
 	    if [[ "$DOCKER_MODE" == "true" ]]; then
-		add_repositories_to_nailgun 2 ubuntu-baseos ${PARTIAL_UPSTREAM_PATH##*/}
+		add_repositories_to_nailgun Ubuntu ubuntu-baseos ${PARTIAL_UPSTREAM_PATH##*/}
 	    else
 		print_repositories_ubuntu ${PARTIAL_UPSTREAM_PATH##*/}
 	    fi
 	else
 	    echo " * INFO: Ubuntu mirror was created at: $LOCAL_DIR"
 	    if [[ "$DOCKER_MODE" == "true" ]]; then
-		add_repositories_to_nailgun 2 ubuntu-baseos ${LOCAL_DIR##*/}
+		add_repositories_to_nailgun Ubuntu ubuntu-baseos ${LOCAL_DIR##*/}
 	    else
 		print_repositories_ubuntu ${LOCAL_DIR##*/}
 	    fi
