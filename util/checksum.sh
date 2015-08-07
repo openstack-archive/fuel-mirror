@@ -1,5 +1,5 @@
 check_file()
-{   
+{
     checksum_file=$1
     root=$2
     file_to_check=$3

@@ -1,0 +1,7 @@
+/config/common.cfg
+/config/config.mk
+/config/fuel.cfg
+/config/mos-ubuntu-updatesonly.cfg
+/config/mos-ubuntu.cfg
+/config/requirements-deb.txt
+/config/ubuntu.cfg
