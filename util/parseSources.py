@@ -5,10 +5,10 @@
 import re
 import sys
 
-# Regex to parse 
-regex=re.compile("^(?P<param>[a-zA-Z0-9_-]+):\s?(?P<value>.*)$") 
-files_regex=re.compile("(?P<md5>[a-f0-9]{32}) [0-9]+ (?P<filename>.*)") 
-    
+# Regex to parse
+regex=re.compile("^(?P<param>[a-zA-Z0-9_-]+):\s?(?P<value>.*)$")
+files_regex=re.compile("(?P<md5>[a-f0-9]{32}) [0-9]+ (?P<filename>.*)")
+
 for pkgfile in sys.argv[1:]:
     if pkgfile.endswith(".gz"):
         import gzip
