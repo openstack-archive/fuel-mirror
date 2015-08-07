@@ -513,6 +513,9 @@ rsync --verbose --out-format="%i %n" --stats \
     --bwlimit=5192 \
     "${UPSTREAM}::${UPSTREAM_DIR}/" "$LOCAL_DIR" | tee "$rsync_log"
 
+# fix directory permissions for pool files
+find "$LOCAL_DIR" -type d -exec chmod 755 {} \;
+
 #    --files-from="$files_to_dl_list" \--block-size=8192 
 #--max-delete=40000 --delay-updates --delete --delete-after \
 # Check if rsync was ok
