@@ -1,0 +1,3 @@
+#!/bin/bash
+ln -sf /opt/fuel-createmirror-6.1/fuel-createmirror /usr/bin/
+ln -sf /opt/fuel-createmirror-6.1/config /etc/fuel-createmirror

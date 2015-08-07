@@ -1,0 +1,10 @@
+#!/bin/bash
+if [ "$1" = "1" ]; then
+    rm -f /usr/bin/fuel-createmirror
+    rm -f /etc/fuel-createmirror
+    ln -sf /opt/fuel-createmirror-6.1/fuel-createmirror /usr/bin/
+    ln -sf /opt/fuel-createmirror-6.1/config /etc/fuel-createmirror
+else
+    rm -f /usr/bin/fuel-createmirror
+    rm -f /etc/fuel-createmirror
+fi
