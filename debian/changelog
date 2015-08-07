@@ -1,0 +1,36 @@
+fuel-createmirror (6.1-14) experimental; urgency=low
+
+  * Fri Jul 24 2015 aschultz <aschultz@mirantis.com>
+
+  - Fixing permisions after rsync of pool data
+
+ -- aschultz <aschultz@mirtantis.com>  Fri, 24 Jul 2015 13:45:00 -0600
+
+fuel-createmirror (6.1-13) experimental; urgency=low
+
+  * Thu Jun 11 2015 vparakhin <vparakhin@mirantis.com>
+
+  - Add sysfsutils package to requirements-deb.txt
+
+  * Fri Jun 5 2015 vparakhin <vparakhin@mirantis.com>
+
+  - Fix release ID hardcoded in fuel-createmirror
+
+  * Thu Jun 4 2015 vparakhin <vparakhin@mirantis.com>
+
+  - Change netboot installer path for partial mirror
+
+  * Tue Jun 2 2015 vparakhin <vparakhin@mirantis.com>
+
+  - Bypass http proxy while accessing Fuel Master node
+
+  * Tue Jun 2 2015 mmosesohn <mmosesohn@mirantis.com>
+
+  - Added proxy info to help
+
+
+  * Converted from .rpm format to .deb
+
+  - Added fuel-package-updates integration
+
+ -- vparakhin <vparakhin@vparakhin-pc>  Fri, 22 May 2015 14:58:48 +0300
