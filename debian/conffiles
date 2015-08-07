@@ -1,0 +1,7 @@
+/opt/fuel-createmirror-6.1/config/common.cfg
+/opt/fuel-createmirror-6.1/config/config.mk
+/opt/fuel-createmirror-6.1/config/fuel.cfg
+/opt/fuel-createmirror-6.1/config/mos-ubuntu-updatesonly.cfg
+/opt/fuel-createmirror-6.1/config/mos-ubuntu.cfg
+/opt/fuel-createmirror-6.1/config/requirements-deb.txt
+/opt/fuel-createmirror-6.1/config/ubuntu.cfg
