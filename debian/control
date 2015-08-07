@@ -1,0 +1,14 @@
+Source: fuel-createmirror
+Section: admin
+Priority: optional
+Maintainer: Mirantis Product <product@mirantis.com>
+Build-Depends: debhelper (>= 7)
+Standards-Version: 3.9.2
+
+Package: fuel-createmirror
+Architecture: all
+Depends: ${shlibs:Depends},python,dpkg-dev,openssl,rsync
+Description: CLI script for MOS/upstream mirroring
+  **fuel-createmirror -- utility for creating local mirrors of MOS and
+  upstream OS repositories
+ .

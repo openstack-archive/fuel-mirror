@@ -5,7 +5,7 @@ DEBUG=${DEBUG:-"no"}
 QUIET=${QUIET:-"no"}
 
 # If no LOG_FILE set, discard log output
-LOG_FILE=${LOG_FILE:-"/dev/null"} 
+LOG_FILE=${LOG_FILE:-"/dev/null"}
 
 ################################################################################
 # Magic FD manipulations

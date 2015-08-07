@@ -26,12 +26,12 @@ guess_filename()
 
 # Determines if file is compressed, and uncompresses into stdout
 # $1 -- file too cat
-# $2=false -- Try to guess filename 
+# $2=false -- Try to guess filename
 read_file()
 {
     local file="$1"
     local try_to_guess="${2:-'false'}"
-    if [[ ! -f "$file" ]]; then 
+    if [[ ! -f "$file" ]]; then
         if [[ "$try_to_guess" = "false" ]]; then
             return
         else
@@ -91,7 +91,7 @@ get_dist_architectures()
     local dist_arches=( `read_file "$1"| egrep "^Architectures: "| cut -d' ' -f'2-'` )
     local user_arches=( $* )
     local to_return=""
-    # Filter out arches that not listed in 'ARCHs' global variable 
+    # Filter out arches that not listed in 'ARCHs' global variable
     for arch in ${user_arches[@]}; do
         if contains "$arch" "${dist_arches[@]}"; then
             to_return="${to_return} $arch"
