@@ -33,7 +33,7 @@ index 9a3d59c..3d6724b 100755
 @@ -143,7 +143,12 @@ sub load_override_extra
  	s/\s+$//;
  	next unless $_;
- 
+
 -	my ($p, $field, $value) = split(/\s+/, $_, 3);
 +	my ($pr, $field, $value) = split(/\s+/, $_, 3);
 +
@@ -41,9 +41,9 @@ index 9a3d59c..3d6724b 100755
 +        if (defined($options{arch}) and defined($parch)) {
 +            next unless ($options{arch} eq $parch);
 +        }
- 
+
  	next unless defined($packages{$p});
- 
--- 
+
+--
 1.8.5.5
 
