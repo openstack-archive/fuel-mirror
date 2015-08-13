@@ -1,3 +1,9 @@
+fuel-createmirror (7.0-2) experimental; urgency=low
+
+  * Thu Aug 13 2015 vparakhin <vparakhin@mirantis.com>
+
+  - Switch MOS DEB repos to new format, update configs from fuel-main
+
 fuel-createmirror (7.0-1) experimental; urgency=low
 
   * Fri Aug 07 2015 skulanov <skulanov@mirantis.com>
