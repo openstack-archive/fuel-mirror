@@ -56,8 +56,8 @@ done
 
 cat <<EOF > ${apt_alt_etc}/preferences
 Package: *
-Pin: origin ${UPSTREAM}
-Pin-Priority: 1001
+Pin: release o=Mirantis
+Pin-Priority: 1101
 EOF
 
 if ! apt-get $apt_altstate_opts update; then

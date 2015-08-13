@@ -1,6 +1,6 @@
 %define name fuel-createmirror
 %{!?version: %define version 7.0}
-%{!?release: %define release 1}
+%{!?release: %define release 2}
 
 Name:           %{name}
 Version:        %{version}
@@ -69,6 +69,9 @@ fi
 /opt/%{name}-%{version}/README.md
 
 %changelog
+* Thu Aug 13 2015 vparakhin <vparakhin@mirantis.com>
+- Switch MOS DEB repos to new format, update configs from fuel-main
+
 * Fri Aug 07 2015 Sergey Kulanov <skulanov@mirantis.com>
 - Bump version to 7.0. Update code from upstream
 
