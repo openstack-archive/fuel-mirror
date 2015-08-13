@@ -42,6 +42,7 @@ dstat
 erlang-dev
 ethtool
 fence-agents
+fuel-agent
 fuel-utils
 galera
 git
@@ -78,6 +79,8 @@ libnss3-tools
 libssl0.9.8
 linux-firmware
 linux-firmware-nonfree
+live-boot
+live-boot-initramfs-tools
 lksctp-tools
 lldpad
 mc
@@ -89,10 +92,13 @@ memcached
 mongodb-clients
 mongodb-server
 monit
-murano
+msmtp-mta
+murano-api
 murano-dashboard
+murano-engine
 mysql-client
 mysql-server-wsrep-5.6
+nailgun-agent
 nailgun-mcagents
 nailgun-net-check
 neutron-common
@@ -140,14 +146,15 @@ nova-compute-kvm
 nova-compute-qemu
 nova-conductor
 nova-consoleauth
+nova-consoleproxy
 nova-network
-nova-novncproxy
 nova-objectstore
 nova-scheduler
 novnc
 ntp
 ohai
 openhpid
+openssh-client
 openssh-server
 openstack-dashboard
 openvswitch-switch
@@ -228,6 +235,7 @@ sahara-engine
 screen
 sheepdog
 socat
+squashfs-tools
 swift
 swift-account
 swift-container
@@ -247,6 +255,7 @@ vim
 virt-what
 vlan
 xinetd
+xz-utils
 zabbix-agent
 zabbix-frontend-php
 zabbix-server-mysql
