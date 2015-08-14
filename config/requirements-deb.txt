@@ -2,6 +2,7 @@ anacron
 apache2
 aptitude
 atop
+atop2
 bc
 bridge-utils
 build-essential
