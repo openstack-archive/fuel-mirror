@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Code-Review+2: Vitaly Parakhin <vparakhin@mirantis.com>
+Code-Review+2: Sergey Kulanov <skulanov@mirantis.com>
+Workflow+1: Sergey Kulanov <skulanov@mirantis.com>
+Submitted-by: Jenkins
+Submitted-at: Tue, 18 Aug 2015 12:30:44 +0000
+Reviewed-on: https://review.openstack.org/214158
+Project: stackforge/fuel-mirror
+Branch: refs/heads/master
