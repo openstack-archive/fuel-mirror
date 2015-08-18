@@ -42,7 +42,6 @@ dstat
 erlang-dev
 ethtool
 fence-agents
-fm10k-dkms
 fuel-agent
 fuel-utils
 galera
