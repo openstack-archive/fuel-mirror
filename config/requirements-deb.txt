@@ -1,9 +1,12 @@
+acl
 anacron
 apache2
 aptitude
 atop
+bash-completion
 bc
 bridge-utils
+bsdmainutils
 build-essential
 ceilometer-agent-central
 ceilometer-agent-compute
@@ -45,6 +48,7 @@ fence-agents
 fuel-agent
 fuel-utils
 galera
+gdisk
 git
 glance-api
 glance-common
@@ -79,10 +83,13 @@ libnss3-tools
 libssl0.9.8
 linux-firmware
 linux-firmware-nonfree
+linux-headers-generic-lts-trusty
+linux-image-generic-lts-trusty
 live-boot
 live-boot-initramfs-tools
 lksctp-tools
 lldpad
+lvm2
 mc
 mcelog
 mcollective
@@ -165,6 +172,7 @@ percona-toolkit
 percona-xtrabackup
 pssh
 puppet
+python-amqp
 python-carrot
 python-ceilometer
 python-ceilometerclient
@@ -218,6 +226,7 @@ qemu-utils
 rabbitmq-server
 radosgw
 ruby
+ruby-augeas
 ruby-cstruct
 ruby-deep-merge
 ruby-dev
@@ -228,6 +237,7 @@ ruby-json
 ruby-netaddr
 ruby-openstack
 ruby-rethtool
+ruby-shadow
 ruby-stomp
 sahara-api
 sahara-common
@@ -246,10 +256,12 @@ sysfsutils
 sysstat
 tasksel
 tcptraceroute
+telnet
 tmux
 traceroute
 ubuntu-minimal
 ubuntu-standard
+uuid-runtime
 vgabios
 vim
 virt-what

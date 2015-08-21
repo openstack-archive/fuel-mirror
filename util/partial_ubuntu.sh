@@ -58,6 +58,10 @@ cat <<EOF > ${apt_alt_etc}/preferences
 Package: *
 Pin: release o=Mirantis
 Pin-Priority: 1101
+
+Package: dh-python
+Pin: release o=Ubuntu
+Pin-Priority: 1199
 EOF
 
 if ! apt-get $apt_altstate_opts update; then
