@@ -82,12 +82,11 @@ add_repositories_to_nailgun() {
     local makedefault=" --make-default "
     local apply=" --apply "
     [ "$PARTIAL_UPSTREAM" == "0" ] && clearupstream=""
-    [ "$OPT_NO_DEFAULT" == "1" ] && makedefault=""
     [ "$OPT_NO_APPLY" == "1" ] && apply=""
     # find envs with status "new" and with given release_id
     envs=`env http_proxy="" fuel --user=admin --password="$FUEL_ADMIN_PASS" env 2>&1 | grep -w new | awk -v release_id=$release_id -F'|' '$5 == release_id {print $1}'`
     for env in ${envs}; do
-        $EXEC_PREFIX env http_proxy="" fuel-package-updates -d $2 -r $FULL_RELEASE --no-download $makedefault $apply \
+        $EXEC_PREFIX env http_proxy="" fuel-package-updates -d $2 -r $FULL_RELEASE --no-download $apply \
         -s $FUEL_SERVER -p "$FUEL_ADMIN_PASS" -b http://$FUEL_SERVER:8080/$3 -e $env $clearupstream 2>/dev/null
 	EC_FPU=$?
 	if [[ "$EC_FPU" == "0" ]]; then
@@ -96,8 +95,19 @@ add_repositories_to_nailgun() {
 	    echo " * INFO: Failed to add repositories for environment id=$env to Nailgun, please add them MANUALLY"
 	    EC_ADD=1
 	fi
-	[ "$OPT_NO_DEFAULT" ] && echo " * INFO: Default repositories for new environments were not modified" || echo " * INFO: Created repositories were set as defaults for new environments"
     done
+    if [ "$OPT_NO_DEFAULT" ]; then
+	echo " * INFO: Default repositories for new environments were not modified"
+    else
+	$EXEC_PREFIX env http_proxy="" fuel-package-updates -d $2 -r $FULL_RELEASE --no-download --make-default \
+	-s $FUEL_SERVER -p "$FUEL_ADMIN_PASS" -b http://$FUEL_SERVER:8080/$3 $apply $clearupstream 2>/dev/null
+	EC_FPU=$?
+	if [[ "$EC_FPU" == "0" ]]; then
+	    echo " * INFO: Created repositories were set as defaults for new environments"
+	else
+	    echo " * WARN: Failed to set repositories as defaults for new environments"
+	fi
+    fi
     [ "$EC_ADD" == "1" ] && print_repositories_ubuntu $3
 }
 
