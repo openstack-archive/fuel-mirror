@@ -13,4 +13,3 @@ inconsistent during the update. Please use these scripts in conjunction
 with snapshots, on inactive repos, etc.
 
 Only rsync mirrors are supported.
-
