@@ -65,6 +65,7 @@ intel-microcode
 iperf
 iperf3
 ipmitool
+iptstate
 iptables-persistent
 kdump-tools
 keystone
@@ -101,6 +102,7 @@ mysql-server-wsrep-5.6
 nailgun-agent
 nailgun-mcagents
 nailgun-net-check
+net-snmp-perl
 neutron-common
 neutron-dhcp-agent
 neutron-l3-agent
@@ -163,6 +165,7 @@ pacemaker
 pcs
 percona-toolkit
 percona-xtrabackup
+php5-mysql
 pssh
 puppet
 python-carrot
@@ -234,6 +237,8 @@ sahara-common
 sahara-engine
 screen
 sheepdog
+snmptt
+snmp-client
 socat
 squashfs-tools
 swift
