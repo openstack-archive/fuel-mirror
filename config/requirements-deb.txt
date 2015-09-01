@@ -260,3 +260,4 @@ zabbix-agent
 zabbix-frontend-php
 zabbix-server-mysql
 zabbix-server-pgsql
+php5-mysql
