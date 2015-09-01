@@ -163,6 +163,7 @@ pacemaker
 pcs
 percona-toolkit
 percona-xtrabackup
+php5-mysql
 pssh
 puppet
 python-carrot
