@@ -24,9 +24,9 @@ binary-arch: build
 	dh_installchangelogs
 
 # Copy the packages's files.
-	mkdir -p debian/$(PACKAGE)/opt/$(PACKAGE)-7.0
+	mkdir -p debian/$(PACKAGE)/opt/$(PACKAGE)-8.0
 	find . -maxdepth 1 -mindepth 1 -not -name debian -print0 | \
-		xargs -0 -r -i cp -a {} debian/$(PACKAGE)/opt/$(PACKAGE)-7.0
+		xargs -0 -r -i cp -a {} debian/$(PACKAGE)/opt/$(PACKAGE)-8.0
 
 #
 # If you need to move files around in debian/$(PACKAGE) or do some

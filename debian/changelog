@@ -1,3 +1,11 @@
+fuel-createmirror (8.0-1) experimental; urgency=low
+
+  * Thu Sep 03 2015 skulanov <skulanov@mirantis.com>
+
+  - Bump to version 8.0
+
+ -- skulanov <skulanov@mirantis.com>  Thu, 03 Sep 2015 12:35:26 +0300
+
 fuel-createmirror (7.0-2) experimental; urgency=low
 
   * Thu Aug 13 2015 vparakhin <vparakhin@mirantis.com>
