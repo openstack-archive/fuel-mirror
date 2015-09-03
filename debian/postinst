@@ -1,3 +1,3 @@
 #!/bin/bash
-ln -sf /opt/fuel-createmirror-7.0/fuel-createmirror /usr/bin/
-ln -sf /opt/fuel-createmirror-7.0/config /etc/fuel-createmirror
+ln -sf /opt/fuel-createmirror-8.0/fuel-createmirror /usr/bin/
+ln -sf /opt/fuel-createmirror-8.0/config /etc/fuel-createmirror
