@@ -18,8 +18,8 @@ FETCH_I18N=${FETCH_I18N:-"yes"}             # Fetch translations
 FETCH_SOURCES=${FETCH_SOURCES:-"no"}        # Fetch packages sources
 FETCH_CONTENTS=${FETCH_CONTENTS:-"no"}      # Fetch 'Contents' file for distro
 FETCH_INSTALLER=${FETCH_INSTALLER:="no"}    # Fetch separate 'debian-installer'
-FETCH_DIFF=${FETCH_DIFF:-"no"}              # Fetch diffs of 'Packages' 
-FETCH_INDICES=${FETCH_INDICES:-"yes"}       # Fetch indices 
+FETCH_DIFF=${FETCH_DIFF:-"no"}              # Fetch diffs of 'Packages'
+FETCH_INDICES=${FETCH_INDICES:-"yes"}       # Fetch indices
 
 # Misc
 ARCH_ALL_IS_MANDATORY=${ARCH_ALL_IS_MANDATORY:-"no"}
@@ -124,7 +124,7 @@ for dist in "${DISTs[@]}"; do
             if [ ! -L $LOCAL_DIR/dists/$dist_alias ]; then
                 debug "Creating dist alias '$dist_alias' -> '$normal_dist'"
                 ln -s "$normal_dist" "$LOCAL_DIR/dists/$dist_alias" || \
-                    error "Error creating alias for $normal_dist ($dist_alias)" 
+                    error "Error creating alias for $normal_dist ($dist_alias)"
             fi
         done
         dist="$normal_dist"
@@ -175,7 +175,7 @@ for dist in "${DISTs[@]}"; do
 
     ############################################################################
     # Phase 5: Determine which components and arches to download
-    # Case A: If we have user specified component list, and hasn't found any 
+    # Case A: If we have user specified component list, and hasn't found any
     #         in distro description, then blindly use user given values
     # Case B: If we have no user specified component list, try to get them from
     #         repository Release file, if it fails - bail out
@@ -191,7 +191,7 @@ for dist in "${DISTs[@]}"; do
     binary_components="$components"
 
     ############################################################################
-    # Phase 7: Check if we must fetch 'debian-installer' sub-components and add 
+    # Phase 7: Check if we must fetch 'debian-installer' sub-components and add
     # them to the binary_components list if needed
     ############################################################################
     if [[ "$FETCH_INSTALLER" = "yes" ]]; then
@@ -223,7 +223,7 @@ for dist in "${DISTs[@]}"; do
 
             # Check if remote the dir exists
             if ! rsync_file_exists "$arch_path"; then
-                # Missing 'all' architecture in a non critical error 
+                # Missing 'all' architecture in a non critical error
                 if [[ "$arch" = "all" ]] && [[ "$ARCH_ALL_IS_MANDATORY" != "yes" ]]; then
                     debug "Missing 'all' architecture in $dist/$component"
                     continue
@@ -457,11 +457,10 @@ if [[ "$PARTIAL_UPSTREAM" = "1" ]]; then
 info "Resolving dependencies for partial mirror"
 
 # Detect kernel version of debian-installer
-fuel_config=$BINROOT/config/config.mk
-export UBUNTU_RELEASE=`grep -w ^UBUNTU_RELEASE $fuel_config | awk -F '[:=?]' '{print $NF}'`
-export UBUNTU_NETBOOT_FLAVOR=`grep -w ^UBUNTU_NETBOOT_FLAVOR $fuel_config | awk -F '[:=?]' '{print $NF}'`
-export UBUNTU_KERNEL_FLAVOR=`grep -w ^UBUNTU_KERNEL_FLAVOR $fuel_config | awk -F '[:=?]' '{print $NF}'`
-export UBUNTU_ARCH=`grep -w ^UBUNTU_ARCH $fuel_config | awk -F '[:=?]' '{print $NF}'`
+export UBUNTU_RELEASE=trusty
+export UBUNTU_NETBOOT_FLAVOR=netboot
+export UBUNTU_KERNEL_FLAVOR=lts-trusty
+export UBUNTU_ARCH=amd64
 
 INITRD_DIR="/dists/${UBUNTU_RELEASE}-updates/main/installer-${UBUNTU_ARCH}/current/images/${UBUNTU_NETBOOT_FLAVOR}/ubuntu-installer/${UBUNTU_ARCH}/"
 mkdir -p "$LOCAL_DIR/$INITRD_DIR"
@@ -475,7 +474,7 @@ export BINROOT
 export FUEL_VERSION
 
 if [[ "$DOCKER_MODE" = "true" ]]; then
-        ( docker ps -a | grep fuel-createmirror ) && docker rm -f fuel-createmirror 
+        ( docker ps -a | grep fuel-createmirror ) && docker rm -f fuel-createmirror
         # docker pull ubuntu:latest
         docker -D run -d --name=fuel-createmirror --net=host -a stdout -a stderr -t \
                -e UBUNTU_RELEASE=$UBUNTU_RELEASE -e UBUNTU_NETBOOT_FLAVOR=$UBUNTU_NETBOOT_FLAVOR \
@@ -516,7 +515,7 @@ rsync --verbose --out-format="%i %n" --stats \
 # fix directory permissions for pool files
 find "$LOCAL_DIR" -type d -exec chmod 755 {} \;
 
-#    --files-from="$files_to_dl_list" \--block-size=8192 
+#    --files-from="$files_to_dl_list" \--block-size=8192
 #--max-delete=40000 --delay-updates --delete --delete-after \
 # Check if rsync was ok
 if [[ $? != 0 ]]; then
@@ -530,9 +529,9 @@ fi
 # Let's check new file MD5sums
 fresh_files=`egrep "^>f......... .*" "$rsync_log" | awk '{print $2}'`
 
-for fresh_file in $fresh_files; do 
+for fresh_file in $fresh_files; do
     check_file "$deb_md5" "$LOCAL_DIR" "$fresh_file"
-    if [[ $? != 0 ]]; then 
+    if [[ $? != 0 ]]; then
         rm "$deb_md5"
         rm "$rsync_log"
         fatal "MD5sum check failed for file $LOCAL_DIR/$fresh_file"
@@ -543,7 +542,7 @@ rm "$rsync_log"
 
 # Now iterate through all downloaded files and check if any of them are symlink
 # download neccessary files if needed
-# Yeah, some times section can contain a metainfo for symlink to file in 
+# Yeah, some times section can contain a metainfo for symlink to file in
 # diffirent section that is no longer exists in there, so it will be wiped as
 # unused
 wayback="`pwd`"

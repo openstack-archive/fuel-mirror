@@ -1,5 +1,4 @@
 /opt/fuel-createmirror-8.0/config/common.cfg
-/opt/fuel-createmirror-8.0/config/config.mk
 /opt/fuel-createmirror-8.0/config/fuel.cfg
 /opt/fuel-createmirror-8.0/config/mos-ubuntu-updatesonly.cfg
 /opt/fuel-createmirror-8.0/config/mos-ubuntu.cfg
