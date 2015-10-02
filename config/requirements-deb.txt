@@ -43,7 +43,6 @@ erlang-dev
 ethtool
 fence-agents
 fuel-agent
-fuel-utils
 galera
 git
 glance-api
