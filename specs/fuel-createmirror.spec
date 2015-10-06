@@ -38,7 +38,7 @@ rm -rf %{name}-%{version}/{debian,specs}
 rm -rf %{buildroot}
 mkdir -p %{buildroot}/opt/%{name}-%{version}
 cp -R %{name}-%{version}/* %{buildroot}/opt/%{name}-%{version}
-rm -f %{buildroot}/opt/%{name}-%{version}/version.txt
+rm -f %{buildroot}/opt/%{name}-%{version}/version*
 
 %clean
 rm -rf %{buildroot}
