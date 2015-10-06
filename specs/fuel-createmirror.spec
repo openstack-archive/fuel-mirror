@@ -63,6 +63,7 @@ fi
 %dir /opt/%{name}-%{version}/
 /opt/%{name}-%{version}/%{name}
 /opt/%{name}-%{version}/deb-mirror
+/opt/%{name}-%{version}/version
 /opt/%{name}-%{version}/util/
 %config /opt/%{name}-%{version}/config/
 /opt/%{name}-%{version}/LICENSE
