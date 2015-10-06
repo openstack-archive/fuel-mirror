@@ -1,0 +1,4 @@
+bintrees
+chardet
+python-debian
+six>=1.5.2
