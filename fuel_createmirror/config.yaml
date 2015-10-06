@@ -1,0 +1,44 @@
+globals:
+    retries: 4
+    retry_delay: 2
+
+    proxy:
+        server: ""
+        username: ""
+        password: ""
+
+tp:
+    threads_count: 2
+
+logging:
+  filename: /var/log/fuel-mirror.log
+  level: debug
+
+
+repositories:
+    localpath: /var/www/nailgun/
+
+    arch: x86_64
+
+    depends:
+        mos:
+            - system
+
+    releases:
+        ubuntu: trusty
+        mos: 8.0
+
+    mirrors:
+        ubuntu: http://archive.ubuntu.com/ubuntu
+        mos: http://mirror.fuel-infra.org/mirror/mos-repos
+
+    sources:
+        ubuntu:
+            system:
+                main: deb {mirrors.ubuntu}/dists {releases.ubuntu} main multiverse universe
+                updates: deb {mirrors.ubuntu}/dists {releases.ubuntu}-updates main multiverse universe
+                security: deb {mirrors.ubuntu}/dists {releases.ubuntu}-security main multiverse universe
+            mos:
+                main: deb {mirrors.mos}/ubuntu/{releases.mos}/dists mos{releases.mos} main restricted
+                updates: deb {mirrors.mos}/ubuntu/{releases.mos}/dists mos{releases.mos}-updates main restricted
+                security: deb {mirrors.mos}/ubuntu/{releases.mos}/dists mos{releases.mos}-security main restricted
