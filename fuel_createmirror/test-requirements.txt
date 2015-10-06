@@ -1,0 +1,7 @@
+-r requirements.txt
+mock==1.0.1
+nose==1.1.2
+unittest2==0.5.1
+nose2==0.4.1
+tox==1.7.1
+pytest
