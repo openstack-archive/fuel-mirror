@@ -1,0 +1,7 @@
+[run]
+branch = True
+source = packetary
+omit = packetary/openstack/*
+
+[report]
+ignore_errors = True
