@@ -481,7 +481,9 @@ if [[ "$DOCKER_MODE" = "true" ]]; then
                -e UBUNTU_INSTALLER_KERNEL_VERSION=$UBUNTU_INSTALLER_KERNEL_VERSION -e UBUNTU_KERNEL_FLAVOR=$UBUNTU_KERNEL_FLAVOR \
                -e RSYNC_PROXY=$RSYNC_PROXY -e FUEL_VERSION=$FUEL_VERSION -e http_proxy=$http_proxy \
                -e UBUNTU_ARCH=$UBUNTU_ARCH -e BINROOT=$BINROOT \
-               -e apt_altstate=$apt_altstate -v $BINROOT:$BINROOT:rw -v $apt_altstate:$apt_altstate:rw ubuntu:latest
+               -e apt_altstate=$apt_altstate -v $BINROOT:$BINROOT:rw -v $apt_altstate:$apt_altstate:rw ubuntu:latest \
+               || fatal "Cannot run the docker container, please check connectivity to index.docker.io"
+
         dockerctl shell fuel-createmirror $BINROOT/util/partial_ubuntu.sh || fatal "Cannot calculate list of dependencies"
         # cleanup ubuntu container
         docker rm -f fuel-createmirror
