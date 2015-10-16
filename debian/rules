@@ -24,9 +24,13 @@ binary-arch: build
 	dh_installchangelogs
 
 # Copy the packages's files.
-	mkdir -p debian/$(PACKAGE)/opt/$(PACKAGE)-8.0
-	find . -maxdepth 1 -mindepth 1 -not -name debian -print0 | \
-		xargs -0 -r -i cp -a {} debian/$(PACKAGE)/opt/$(PACKAGE)-8.0
+	mkdir -p debian/$(PACKAGE)/opt/$(PACKAGE)-$(DEB_VERSION_EPOCH_UPSTREAM)
+	cp fuel-createmirror debian/$(PACKAGE)/opt/$(PACKAGE)-$(DEB_VERSION_EPOCH_UPSTREAM)
+	cp deb-mirror debian/$(PACKAGE)/opt/$(PACKAGE)-$(DEB_VERSION_EPOCH_UPSTREAM)
+	cp -r util debian/$(PACKAGE)/opt/$(PACKAGE)-$(DEB_VERSION_EPOCH_UPSTREAM)
+	cp -r config debian/$(PACKAGE)/opt/$(PACKAGE)-$(DEB_VERSION_EPOCH_UPSTREAM)
+	cp LICENSE debian/$(PACKAGE)/opt/$(PACKAGE)-$(DEB_VERSION_EPOCH_UPSTREAM)
+	cp README.md debian/$(PACKAGE)/opt/$(PACKAGE)-$(DEB_VERSION_EPOCH_UPSTREAM)
 
 #
 # If you need to move files around in debian/$(PACKAGE) or do some
