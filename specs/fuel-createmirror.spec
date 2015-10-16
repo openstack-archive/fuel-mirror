@@ -30,7 +30,7 @@ Requires: rsync
 rm -rf %{name}-%{version}
 mkdir %{name}-%{version}
 tar xzvf %{SOURCE0} -C %{name}-%{version}
-rm -rf %{name}-%{version}/{debian,specs}
+rm -rf %{name}-%{version}/{debian,specs,perestroika}
 
 %build
 

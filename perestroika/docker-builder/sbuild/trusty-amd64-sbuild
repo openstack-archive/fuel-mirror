@@ -1,0 +1,8 @@
+[trusty-amd64-sbuild]
+type=directory
+description=Ubuntu trusty/amd64 build environment
+directory=/srv/images/trusty-amd64
+groups=root,sbuild
+root-groups=root,sbuild
+profile=sbuild
+union-type=aufs
