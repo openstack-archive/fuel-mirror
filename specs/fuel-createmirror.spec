@@ -30,15 +30,18 @@ Requires: rsync
 rm -rf %{name}-%{version}
 mkdir %{name}-%{version}
 tar xzvf %{SOURCE0} -C %{name}-%{version}
-rm -rf %{name}-%{version}/{debian,specs}
 
 %build
 
 %install
 rm -rf %{buildroot}
 mkdir -p %{buildroot}/opt/%{name}-%{version}
-cp -R %{name}-%{version}/* %{buildroot}/opt/%{name}-%{version}
-rm -f %{buildroot}/opt/%{name}-%{version}/version*
+cp %{name}-%{version}/%{name} %{buildroot}/opt/%{name}-%{version}
+cp %{name}-%{version}/deb-mirror %{buildroot}/opt/%{name}-%{version}
+cp -R %{name}-%{version}/util/ %{buildroot}/opt/%{name}-%{version}
+cp -R %{name}-%{version}/config/ %{buildroot}/opt/%{name}-%{version}
+cp %{name}-%{version}/LICENSE %{buildroot}/opt/%{name}-%{version}
+cp %{name}-%{version}/README.md %{buildroot}/opt/%{name}-%{version}
 
 %clean
 rm -rf %{buildroot}
