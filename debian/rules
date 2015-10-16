@@ -1,5 +1,12 @@
 #!/usr/bin/make -f
 
+# FIXME (skulanov)
+# Since we are still building packages with ISO
+# we have to define DEB_VERSION_EPOCH_UPSTREAM explicitly
+export DEB_VERSION_EPOCH_UPSTREAM=8.0
+# otherwise this variable correctly defined below
+# include /usr/share/dpkg/pkg-info.mk
+
 export DH_ALWAYS_EXCLUDE=CVS:.git:specs
 
 PACKAGE=$(shell dh_listpackages)
@@ -24,9 +31,13 @@ binary-arch: build
 	dh_installchangelogs
 
 # Copy the packages's files.
-	mkdir -p debian/$(PACKAGE)/opt/$(PACKAGE)-8.0
-	find . -maxdepth 1 -mindepth 1 -not -name debian -print0 | \
-		xargs -0 -r -i cp -a {} debian/$(PACKAGE)/opt/$(PACKAGE)-8.0
+	mkdir -p debian/$(PACKAGE)/opt/$(PACKAGE)-$(DEB_VERSION_EPOCH_UPSTREAM)
+	cp fuel-createmirror debian/$(PACKAGE)/opt/$(PACKAGE)-$(DEB_VERSION_EPOCH_UPSTREAM)
+	cp deb-mirror debian/$(PACKAGE)/opt/$(PACKAGE)-$(DEB_VERSION_EPOCH_UPSTREAM)
+	cp -r util debian/$(PACKAGE)/opt/$(PACKAGE)-$(DEB_VERSION_EPOCH_UPSTREAM)
+	cp -r config debian/$(PACKAGE)/opt/$(PACKAGE)-$(DEB_VERSION_EPOCH_UPSTREAM)
+	cp LICENSE debian/$(PACKAGE)/opt/$(PACKAGE)-$(DEB_VERSION_EPOCH_UPSTREAM)
+	cp README.md debian/$(PACKAGE)/opt/$(PACKAGE)-$(DEB_VERSION_EPOCH_UPSTREAM)
 
 #
 # If you need to move files around in debian/$(PACKAGE) or do some
