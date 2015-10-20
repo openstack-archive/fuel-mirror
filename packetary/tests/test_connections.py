@@ -22,127 +22,121 @@ from packetary.library import connections
 from packetary.tests import base
 
 
-class TestConnectionsPool(base.TestCase):
-    def test_get_connection(self):
-        pool = connections.ConnectionsPool(count=2)
-        self.assertEqual(2, pool.free.qsize())
-        with pool.get():
-            self.assertEqual(1, pool.free.qsize())
-        self.assertEqual(2, pool.free.qsize())
+@mock.patch("packetary.library.connections.logger")
+class TestConnectionManager(base.TestCase):
+    def _check_proxies(self, manager, http_proxy, https_proxy):
+        for h in manager.opener.handlers:
+            if isinstance(h, connections.urllib.ProxyHandler):
+                self.assertEqual(
+                    (http_proxy, https_proxy),
+                    (h.proxies["http"], h.proxies["https"])
+                )
+                break
+        else:
+            self.fail("ProxyHandler should be in list of handlers.")
 
-    def _check_proxies(self, pool, http_proxy, https_proxy):
-        with pool.get() as c:
-            for h in c.opener.handlers:
-                if isinstance(h, connections.urllib_request.ProxyHandler):
-                    self.assertEqual(
-                        (http_proxy, https_proxy),
-                        (h.proxies["http"], h.proxies["https"])
-                    )
-                    break
-            else:
-                self.fail("ProxyHandler should be in list of handlers.")
-
-    def test_set_proxy(self):
-        pool = connections.ConnectionsPool(count=1, proxy="http://localhost")
-        self._check_proxies(pool, "http://localhost", "http://localhost")
-        pool = connections.ConnectionsPool(
+    def test_set_proxy(self, _):
+        manager = connections.ConnectionsManager(proxy="http://localhost")
+        self._check_proxies(
+            manager, "http://localhost", "http://localhost"
+        )
+        manager = connections.ConnectionsManager(
             proxy="http://localhost", secure_proxy="https://localhost")
-        self._check_proxies(pool, "http://localhost", "https://localhost")
+        self._check_proxies(
+            manager, "http://localhost", "https://localhost"
+        )
+        manager = connections.ConnectionsManager(retries_num=2)
+        self.assertEqual(2, manager.retries_num)
+        for h in manager.opener.handlers:
+            if isinstance(h, connections.RetryHandler):
+                break
+        else:
+            self.fail("RetryHandler should be in list of handlers.")
 
-    def test_reliability(self):
-        pool = connections.ConnectionsPool(count=0, retries_num=2)
-        self.assertEqual(1, pool.free.qsize())
-        with pool.get() as c:
-            self.assertEqual(2, c.retries_num)
-            for h in c.opener.handlers:
-                if isinstance(h, connections.RetryHandler):
-                    break
-            else:
-                self.fail("RetryHandler should be in list of handlers.")
-
-
-class TestConnection(base.TestCase):
-    def setUp(self):
-        super(TestConnection, self).setUp()
-        self.connection = connections.Connection(mock.MagicMock(), 2)
-
-    def test_make_request(self):
-        request = self.connection.make_request("/test/file", 0)
+    @mock.patch("packetary.library.connections.urllib.build_opener")
+    def test_make_request(self, *_):
+        manager = connections.ConnectionsManager(retries_num=2)
+        request = manager.make_request("/test/file", 0)
         self.assertIsInstance(request, connections.RetryableRequest)
         self.assertEqual("file:///test/file", request.get_full_url())
         self.assertEqual(0, request.offset)
         self.assertEqual(2, request.retries_left)
-        request2 = self.connection.make_request("http://server/path", 100)
+        request2 = manager.make_request("http://server/path", 100)
         self.assertEqual("http://server/path", request2.get_full_url())
         self.assertEqual(100, request2.offset)
 
-    def test_open_stream(self):
-        self.connection.open_stream("/test/file")
-        self.assertEqual(1, self.connection.opener.open.call_count)
-        args = self.connection.opener.open.call_args[0]
+    @mock.patch("packetary.library.connections.urllib.build_opener")
+    def test_open_stream(self, *_):
+        manager = connections.ConnectionsManager(retries_num=2)
+        manager.open_stream("/test/file")
+        self.assertEqual(1, manager.opener.open.call_count)
+        args = manager.opener.open.call_args[0]
         self.assertIsInstance(args[0], connections.RetryableRequest)
         self.assertEqual(2, args[0].retries_left)
 
-    @mock.patch("packetary.library.connections.logger")
-    def test_retries_on_io_error(self, logger):
-        self.connection.opener.open.side_effect = [
+    @mock.patch("packetary.library.connections.urllib.build_opener")
+    def test_retries_on_io_error(self, _, logger):
+        manager = connections.ConnectionsManager(retries_num=2)
+        manager.opener.open.side_effect = [
             IOError("I/O error"),
             mock.MagicMock()
         ]
-        self.connection.open_stream("/test/file")
-        self.assertEqual(2, self.connection.opener.open.call_count)
+        manager.open_stream("/test/file")
+        self.assertEqual(2, manager.opener.open.call_count)
         logger.exception.assert_called_with(
             "Failed to open url - %s: %s. retries left - %d.",
             "/test/file", "I/O error", 1
         )
 
-        self.connection.opener.open.side_effect = IOError("I/O error")
+        manager.opener.open.side_effect = IOError("I/O error")
         with self.assertRaises(IOError):
-            self.connection.open_stream("/test/file")
+            manager.open_stream("/test/file")
         logger.exception.assert_called_with(
             "Failed to open url - %s: %s. retries left - %d.",
             "/test/file", "I/O error", 0
         )
 
-    def test_raise_other_errors(self):
-        self.connection.opener.open.side_effect = \
-            connections.urllib_error.HTTPError("", 500, "", {}, None)
+    @mock.patch("packetary.library.connections.urllib.build_opener")
+    def test_raise_other_errors(self, *_):
+        manager = connections.ConnectionsManager()
+        manager.opener.open.side_effect = \
+            connections.urlerror.HTTPError("", 500, "", {}, None)
 
-        with self.assertRaises(connections.urllib_error.URLError):
-            self.connection.open_stream("/test/file")
+        with self.assertRaises(connections.urlerror.URLError):
+            manager.open_stream("/test/file")
 
-        self.assertEqual(1, self.connection.opener.open.call_count)
+        self.assertEqual(1, manager.opener.open.call_count)
 
+    @mock.patch("packetary.library.connections.urllib.build_opener")
     @mock.patch("packetary.library.connections.os")
-    def test_retrieve_from_offset(self, os):
+    def test_retrieve_from_offset(self, os, *_):
+        manager = connections.ConnectionsManager()
         os.path.mkdirs.side_effect = OSError(17, "")
         os.open.return_value = 1
         response = mock.MagicMock()
-        self.connection.opener.open.return_value = response
+        manager.opener.open.return_value = response
         response.read.side_effect = [b"test", b""]
-        self.connection.retrieve("/file/src", "/file/dst", 10)
+        manager.retrieve("/file/src", "/file/dst", 10)
         os.lseek.assert_called_once_with(1, 10, os.SEEK_SET)
         os.ftruncate.assert_called_once_with(1, 10)
         self.assertEqual(1, os.write.call_count)
         os.fsync.assert_called_once_with(1)
         os.close.assert_called_once_with(1)
 
-    @mock.patch.multiple(
-        "packetary.library.connections",
-        logger=mock.DEFAULT,
-        os=mock.DEFAULT
-    )
-    def test_retrieve_from_offset_fail(self, os, logger):
-        os.path.mkdirs.side_effect = OSError(17, "")
+    @mock.patch("packetary.library.connections.urllib.build_opener")
+    @mock.patch("packetary.library.connections.os")
+    def test_retrieve_from_offset_fail(self, os, _, logger):
+        manager = connections.ConnectionsManager(retries_num=2)
+        os.path.mkdirs.side_effect = OSError(connections.errno.EACCES, "")
         os.open.return_value = 1
         response = mock.MagicMock()
-        self.connection.opener.open.side_effect = [
+        manager.opener.open.side_effect = [
             connections.RangeError("error"), response
         ]
         response.read.side_effect = [b"test", b""]
-        self.connection.retrieve("/file/src", "/file/dst", 10)
+        manager.retrieve("/file/src", "/file/dst", 10)
         logger.warning.assert_called_once_with(
-            "Failed to resume download, starts from begin: %s",
+            "Failed to resume download, starts from the beginning: %s",
             "/file/src"
         )
         os.lseek.assert_called_once_with(1, 0, os.SEEK_SET)
