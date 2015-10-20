@@ -1,9 +1,9 @@
 #!/usr/bin/python
 
+from __future__ import print_function
 import argparse
 import gzip
 import os
-import sys
 
 from lxml import etree as ET
 
@@ -57,9 +57,9 @@ def main():
             ET.QName(primary.nsmap[None], 'version')).attrib['rel']
         location = item.getparent().getparent().find(
             ET.QName(primary.nsmap[None], 'location')).attrib['href']
-        print '{name} {epoch} {ver} {rel} {arch} {location}'.format(
+        print('{name} {epoch} {ver} {rel} {arch} {location}'.format(
             name=name, epoch=epoch, ver=ver, rel=rel,
-            arch=arch, location=location)
+            arch=arch, location=location))
 
 
 if __name__ == "__main__":
