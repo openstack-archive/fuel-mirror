@@ -14,18 +14,26 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-
-"""
-test_packetary
-----------------------------------
-
-Tests for `packetary` module.
-"""
-
-from packetary import base
+import functools
+import hashlib
 
 
-class TestPacketary(base.TestCase):
+def _checksum(method):
+    """Makes function to calculate checksum for stream."""
+    @functools.wraps(method)
+    def calculate(stream, chunksize=16 * 1024):
+        s = method()
+        while True:
+            chunk = stream.read(chunksize)
+            if not chunk:
+                break
+            s.update(chunk)
+        return s.hexdigest()
+    return calculate
 
-    def test_something(self):
-        pass
+
+md5 = _checksum(hashlib.md5)
+
+sha1 = _checksum(hashlib.sha1)
+
+sha256 = _checksum(hashlib.sha256)
