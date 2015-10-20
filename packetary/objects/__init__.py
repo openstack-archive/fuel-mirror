@@ -20,6 +20,7 @@ from packetary.objects.package import FileChecksum
 from packetary.objects.package import Package
 from packetary.objects.package_relation import PackageRelation
 from packetary.objects.package_relation import VersionRange
+from packetary.objects.package_version import PackageVersion
 from packetary.objects.packages_tree import PackagesTree
 from packetary.objects.repository import Repository
 
@@ -30,6 +31,7 @@ __all__ = [
     "Package",
     "PackageRelation",
     "PackagesTree",
+    "PackageVersion",
     "Repository",
     "VersionRange",
 ]

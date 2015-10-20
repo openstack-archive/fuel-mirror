@@ -87,6 +87,11 @@ class TestLibraryUtils(base.TestCase):
         with self.assertRaises(ValueError):
             utils.get_path_from_url("http:///a/f.txt")
 
+        self.assertEqual(
+            "/f.txt",
+            utils.get_path_from_url("http://host/f.txt", False)
+        )
+
     @mock.patch("packetary.library.utils.os")
     def test_ensure_dir_exist(self, os):
         os.makedirs.side_effect = [
