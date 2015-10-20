@@ -1,0 +1,6 @@
+Archive: trusty
+Version: 14.04
+Component: main
+Origin: Ubuntu
+Label: Ubuntu
+Architecture: amd64
