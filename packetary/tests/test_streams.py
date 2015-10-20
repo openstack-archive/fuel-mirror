@@ -14,11 +14,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import gzip
 import six
 
 from packetary.library import streams
 from packetary.tests import base
+from packetary.tests.stubs.helpers import get_compressed
 
 
 class TestBufferedStream(base.TestCase):
@@ -57,16 +57,12 @@ class TestBufferedStream(base.TestCase):
 class TestGzipDecompress(base.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.gzipped = six.BytesIO()
-        gz = gzip.GzipFile(fileobj=cls.gzipped, mode="w")
-        gz.write(b"line1\nline2\nline3\n")
-        gz.flush()
-        gz.close()
+        cls.compressed = get_compressed(six.BytesIO(b"line1\nline2\nline3\n"))
 
     def setUp(self):
         super(TestGzipDecompress, self).setUp()
-        self.gzipped.seek(0)
-        self.stream = streams.GzipDecompress(self.gzipped)
+        self.compressed.reset()
+        self.stream = streams.GzipDecompress(self.compressed)
 
     def test_read(self):
         chunk = self.stream.read(5)

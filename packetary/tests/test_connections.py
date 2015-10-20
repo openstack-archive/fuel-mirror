@@ -108,10 +108,10 @@ class TestConnectionManager(base.TestCase):
         self.assertEqual(1, manager.opener.open.call_count)
 
     @mock.patch("packetary.library.connections.urllib.build_opener")
+    @mock.patch("packetary.library.connections.ensure_dir_exist")
     @mock.patch("packetary.library.connections.os")
     def test_retrieve_from_offset(self, os, *_):
         manager = connections.ConnectionsManager()
-        os.path.mkdirs.side_effect = OSError(17, "")
         os.stat.return_value = mock.MagicMock(st_size=10)
         os.open.return_value = 1
         response = mock.MagicMock()
@@ -125,10 +125,10 @@ class TestConnectionManager(base.TestCase):
         os.close.assert_called_once_with(1)
 
     @mock.patch("packetary.library.connections.urllib.build_opener")
+    @mock.patch("packetary.library.connections.ensure_dir_exist")
     @mock.patch("packetary.library.connections.os")
     def test_retrieve_non_existence(self, os, *_):
         manager = connections.ConnectionsManager()
-        os.path.mkdirs.side_effect = OSError(17, "")
         os.stat.side_effect = OSError(2, "")
         os.open.return_value = 1
         response = mock.MagicMock()
@@ -141,11 +141,13 @@ class TestConnectionManager(base.TestCase):
         os.fsync.assert_called_once_with(1)
         os.close.assert_called_once_with(1)
 
-    @mock.patch("packetary.library.connections.urllib.build_opener")
+    @mock.patch("packetary.library.connections.urllib.build_opener",
+                new=mock.MagicMock())
+    @mock.patch("packetary.library.connections.ensure_dir_exist",
+                new=mock.MagicMock())
     @mock.patch("packetary.library.connections.os")
-    def test_retrieve_from_offset_fail(self, os, _, logger):
+    def test_retrieve_from_offset_fail(self, os, logger):
         manager = connections.ConnectionsManager(retries_num=2)
-        os.path.mkdirs.side_effect = OSError(connections.errno.EACCES, "")
         os.stat.return_value = mock.MagicMock(st_size=10)
         os.open.return_value = 1
         response = mock.MagicMock()
