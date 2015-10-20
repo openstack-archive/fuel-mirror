@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE comps PUBLIC "-//CentOS//DTD Comps info//EN" "comps.dtd">
+<comps>
+    <group>
+        <id>core</id>
+        <packagelist>
+            <packagereq type="mandatory">test1</packagereq>
+            <packagereq type="optional">test2</packagereq>
+        </packagelist>
+    </group>
+    <group>
+        <id>other</id>
+        <packagelist>
+            <packagereq type="mandatory">test1</packagereq>
+        </packagelist>
+    </group>
+</comps>
