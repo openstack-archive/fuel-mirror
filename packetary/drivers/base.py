@@ -59,9 +59,9 @@ class RepositoryDriverBase(object):
         """
 
     @abc.abstractmethod
-    def clone_repository(self, connection, repository, destination,
-                         source=False, locale=False):
-        """Creates copy of repository.
+    def fork_repository(self, connection, repository, destination,
+                        source=False, locale=False):
+        """Creates the new repository with same metadata.
 
         :param connection: the connection manager instance
         :param repository: the source repository

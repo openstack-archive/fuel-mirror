@@ -24,6 +24,7 @@ import six.moves.urllib_error as urlerror
 import time
 
 from packetary.library.streams import StreamWrapper
+from packetary.library.utils import ensure_dir_exist
 
 
 logger = logging.getLogger(__package__)
@@ -207,7 +208,7 @@ class ConnectionsManager(object):
         except OSError as e:
             if e.errno != errno.ENOENT:
                 raise
-            self._ensure_dir_exists(filename)
+            ensure_dir_exist(os.path.dirname(filename))
 
         logger.info("download: %s from the offset: %d", url, offset)
 
@@ -225,16 +226,6 @@ class ConnectionsManager(object):
         finally:
             os.fsync(fd)
             os.close(fd)
-
-    @staticmethod
-    def _ensure_dir_exists(dst):
-        """Checks that directory exists and creates otherwise."""
-        target_dir = os.path.dirname(dst)
-        try:
-            os.makedirs(target_dir)
-        except OSError as e:
-            if e.errno != errno.EEXIST:
-                raise
 
     def _copy_stream(self, fd, url, offset):
         """Copies remote file to local.
