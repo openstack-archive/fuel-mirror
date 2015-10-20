@@ -134,10 +134,10 @@ class TestRepositoryController(base.TestCase):
             gen_repository(name="test2")
         ]
         clones = [copy.copy(x) for x in repos]
-        self.driver.clone_repository.side_effect = clones
+        self.driver.fork_repository.side_effect = clones
         mirrors = self.ctrl.clone_repositories(repos, "./repo")
         for r in repos:
-            self.driver.clone_repository.assert_any_call(
+            self.driver.fork_repository.assert_any_call(
                 self.context.connection, r, "/root/repo", False, False
             )
         self.assertEqual(mirrors, dict(zip(repos, clones)))
