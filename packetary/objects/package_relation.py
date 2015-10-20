@@ -24,6 +24,9 @@ class VersionRange(object):
     the compare operation can be one of:
     equal, greater, less, greater or equal, less or equal.
     """
+
+    __slots__ = ["op", "edge"]
+
     def __init__(self, op=None, edge=None):
         """Initialises.
 
@@ -95,6 +98,8 @@ class PackageRelation(object):
     Relation includes the name of required package
     and range of versions that satisfies requirement.
     """
+
+    __slots__ = ["name", "version", "alternative"]
 
     def __init__(self, name, version=None, alternative=None):
         """Initialises.
