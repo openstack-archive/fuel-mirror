@@ -15,17 +15,6 @@
 #    under the License.
 
 
-"""
-test_packetary
-----------------------------------
+import eventlet
 
-Tests for `packetary` module.
-"""
-
-from packetary import base
-
-
-class TestPacketary(base.TestCase):
-
-    def test_something(self):
-        pass
+eventlet.monkey_patch()
