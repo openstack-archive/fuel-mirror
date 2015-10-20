@@ -14,18 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+byte_null = b""
 
-"""
-test_packetary
-----------------------------------
-
-Tests for `packetary` module.
-"""
-
-from packetary import base
-
-
-class TestPacketary(base.TestCase):
-
-    def test_something(self):
-        pass
+byte_lf = b"\n"
