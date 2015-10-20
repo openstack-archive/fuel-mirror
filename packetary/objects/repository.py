@@ -32,12 +32,12 @@ class Repository(object):
     def __str__(self):
         if isinstance(self.name, tuple):
             return ".".join(self.name)
-        return str(self.name)
+        return self.name
 
     def __unicode__(self):
         if isinstance(self.name, tuple):
             return u".".join(self.name)
-        return unicode(self.name, "utf8")
+        return self.name
 
     def __copy__(self):
         """Creates shallow copy of package."""
