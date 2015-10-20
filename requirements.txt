@@ -9,3 +9,5 @@ bintrees>=2.0.2
 chardet>=2.3.0
 stevedore>=1.1.0
 six>=1.5.2
+python-debian>=0.1.23
+lxml>=3.2

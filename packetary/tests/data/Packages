@@ -1,0 +1,19 @@
+Package: test
+Source: test.src
+Version: 1.1.1-1~u14.04+test
+Architecture: all
+Maintainer: Test
+Installed-Size: 3509
+Homepage: http://localhost/
+Priority: required
+Section: web
+Filename: pool/main/t/test.deb
+Size: 100
+Depends: test2 (>= 0.8.16~exp9)|tes2-old, test3
+Pre-Depends: test-main
+Provides: file
+Replaces: test-old
+SHA256: 14d6e308d8699b7f9ba2fe1ef778c0e38cf295614d308039d687b6b097d50859
+SHA1: 402bd18c145ae3b5344edf07f246be159397fd40
+MD5sum: 1ae09f80109f40dfbfaf3ba423c8625a
+Description: test package
