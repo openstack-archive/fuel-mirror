@@ -21,7 +21,6 @@ import os
 
 import six
 
-
 urlparse = six.moves.urllib.parse.urlparse
 
 
@@ -72,19 +71,22 @@ def get_size_and_checksum_for_files(files, checksum_algo):
         yield filename, size, checksum
 
 
-def get_path_from_url(url):
+def get_path_from_url(url, ensure_file=True):
     """Get the path from the URL.
 
     :param url: the URL
-    :return: the filepath
+    :param ensure_file: If True, ensure that scheme is "file"
+    :return: the path component from URL
     :raises ValueError
     """
 
     comps = urlparse(url, scheme="file")
-    if comps.scheme != "file":
+    if ensure_file and comps.scheme != "file":
         raise ValueError(
             "The absolute path is expected, actual have: {0}.".format(url)
         )
+    if os.sep != "/":
+        return comps.path.replace("/", os.sep)
     return comps.path
 
 
