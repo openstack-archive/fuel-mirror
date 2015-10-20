@@ -14,7 +14,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import gzip
 import mock
+import six
 
 
 class CallbacksAdapter(mock.MagicMock):
@@ -37,3 +39,25 @@ class CallbacksAdapter(mock.MagicMock):
                 callback(d)
         else:
             callback(data)
+
+
+class Buffer(object):
+    """Helper to hide BytesIO methods."""
+
+    def __init__(self, io):
+        self.io = io
+        self.reset()
+
+    def reset(self):
+        self.io.seek(0)
+
+    def read(self, s=-1):
+        return self.io.read(s)
+
+
+def get_compressed(stream):
+    """Gets compressed stream."""
+    compressed = six.BytesIO()
+    with gzip.GzipFile(fileobj=compressed, mode="wb") as gz:
+        gz.write(stream.read())
+    return Buffer(compressed)
