@@ -14,12 +14,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import errno
 import logging
 import os
 import six
 import six.moves.http_client as http_client
-import six.moves.urllib.request as urllib_request
-import six.moves.urllib_error as urllib_error
+import six.moves.urllib.request as urllib
+import six.moves.urllib_error as urlerror
 import time
 
 from packetary.library.streams import StreamWrapper
@@ -31,11 +32,11 @@ logger = logging.getLogger(__package__)
 RETRYABLE_ERRORS = (http_client.HTTPException, IOError)
 
 
-class RangeError(urllib_error.URLError):
+class RangeError(urlerror.URLError):
     pass
 
 
-class RetryableRequest(urllib_request.Request):
+class RetryableRequest(urllib.Request):
     offset = 0
     retries_left = 1
     start_time = 0
@@ -66,6 +67,7 @@ class ResumableResponse(StreamWrapper):
                 self.request.offset += len(chunk)
                 return chunk
             except RETRYABLE_ERRORS as e:
+                # TODO(check hashsums)
                 response = self.opener.error(
                     self.request.get_type(), self.request,
                     self.stream, 502, six.text_type(e), self.stream.info()
@@ -73,7 +75,7 @@ class ResumableResponse(StreamWrapper):
                 self.stream = response.stream
 
 
-class RetryHandler(urllib_request.BaseHandler):
+class RetryHandler(urllib.BaseHandler):
     """urllib Handler to add ability for retrying on server errors."""
 
     @staticmethod
@@ -114,23 +116,36 @@ class RetryHandler(urllib_request.BaseHandler):
     https_response = http_response
 
 
-class Connection(object):
-    """Helper class to deal with streams."""
+class ConnectionsManager(object):
+    """The connections manager."""
 
-    def __init__(self, opener, retries_num):
-        """Initializes.
+    def __init__(self, proxy=None, secure_proxy=None, retries_num=0):
+        """Initialises.
 
-        :param opener: the instance of urllib.OpenerDirector
+        :param proxy: the url of proxy for http-connections
+        :param secure_proxy: the url of proxy for https-connections
         :param retries_num: the number of allowed retries
         """
-        self.opener = opener
+        if proxy:
+            proxies = {
+                "http": proxy,
+                "https": secure_proxy or proxy,
+            }
+        else:
+            proxies = None
+
         self.retries_num = retries_num
+        self.opener = urllib.build_opener(
+            RetryHandler(),
+            urllib.ProxyHandler(proxies)
+        )
 
     def make_request(self, url, offset=0):
         """Makes new http request.
 
         :param url: the remote file`s url
-        :param offset: the number of bytes from begin, that will be skipped
+        :param offset: the number of bytes from the beginning,
+                       that will be skipped
         :return: The new http request
         """
 
@@ -146,14 +161,15 @@ class Connection(object):
         """Opens remote file for streaming.
 
         :param url: the remote file`s url
-        :param offset: the number of bytes from begin, that will be skipped
+        :param offset: the number of bytes from the beginning,
+                       that will be skipped
         """
 
         request = self.make_request(url, offset)
         while 1:
             try:
                 return self.opener.open(request)
-            except (RangeError, urllib_error.HTTPError):
+            except (RangeError, urlerror.HTTPError):
                 raise
             except RETRYABLE_ERRORS as e:
                 if request.retries_left <= 0:
@@ -169,7 +185,8 @@ class Connection(object):
 
         :param url: the remote file`s url
         :param filename: the file`s name, that includes path on local fs
-        :param offset: the number of bytes from begin, that will be skipped
+        :param offset: the number of bytes from the beginning,
+                       that will be skipped
         """
 
         self._ensure_dir_exists(filename)
@@ -180,7 +197,8 @@ class Connection(object):
             if offset == 0:
                 raise
             logger.warning(
-                "Failed to resume download, starts from begin: %s", url
+                "Failed to resume download, starts from the beginning: %s",
+                url
             )
             self._copy_stream(fd, url, 0)
         finally:
@@ -194,7 +212,7 @@ class Connection(object):
         try:
             os.makedirs(target_dir)
         except OSError as e:
-            if e.errno != 17:
+            if e.errno != errno.EEXIST:
                 raise
 
     def _copy_stream(self, fd, url, offset):
@@ -202,7 +220,8 @@ class Connection(object):
 
         :param fd: the file`s descriptor
         :param url: the remote file`s url
-        :param offset: the number of bytes from begin, that will be skipped
+        :param offset: the number of bytes from the beginning,
+                       that will be skipped
         """
 
         source = self.open_stream(url, offset)
@@ -214,67 +233,3 @@ class Connection(object):
             if not chunk:
                 break
             os.write(fd, chunk)
-
-
-class ConnectionContext(object):
-    """Helper class acquire and release connection within context."""
-    def __init__(self, connection, on_exit):
-        self.connection = connection
-        self.on_exit = on_exit
-
-    def __enter__(self):
-        return self.connection
-
-    def __exit__(self, *_):
-        self.on_exit(self.connection)
-
-
-class ConnectionsPool(object):
-    """Controls the number of simultaneously opened connections."""
-
-    MIN_CONNECTIONS_COUNT = 1
-
-    def __init__(self, count=0, proxy=None, secure_proxy=None, retries_num=0):
-        """Initialises.
-
-        :param count: the number of allowed simultaneously connections
-        :param proxy: the url of proxy for http-connections
-        :param secure_proxy: the url of proxy for https-connections
-        :param retries_num: the number of allowed retries
-        """
-        if proxy:
-            proxies = {
-                "http": proxy,
-                "https": secure_proxy or proxy,
-            }
-        else:
-            proxies = None
-
-        opener = urllib_request.build_opener(
-            RetryHandler(),
-            urllib_request.ProxyHandler(proxies)
-        )
-
-        limit = max(count, self.MIN_CONNECTIONS_COUNT)
-        connections = six.moves.queue.Queue()
-        while limit > 0:
-            connections.put(Connection(opener, retries_num))
-            limit -= 1
-
-        self.free = connections
-
-    def get(self, timeout=None):
-        """Gets the free connection.
-
-        Blocks in case if there is no free connections.
-
-        :param timeout: the timeout in seconds to wait.
-            by default infinity waiting.
-        """
-        return ConnectionContext(
-            self.free.get(timeout=timeout), self._release
-        )
-
-    def _release(self, connection):
-        """Puts back connection to free connections."""
-        self.free.put(connection)
