@@ -15,21 +15,13 @@
 #    under the License.
 
 
-from packetary.objects.index import Index
-from packetary.objects.package import FileChecksum
-from packetary.objects.package import Package
-from packetary.objects.package_relation import PackageRelation
-from packetary.objects.package_relation import VersionRange
-from packetary.objects.packages_tree import PackagesTree
-from packetary.objects.repository import Repository
+class Executor(object):
+    def __enter__(self):
+        return self
 
+    def __exit__(self, *_):
+        return False
 
-__all__ = [
-    "FileChecksum",
-    "Index",
-    "Package",
-    "PackageRelation",
-    "PackagesTree",
-    "Repository",
-    "VersionRange",
-]
+    @staticmethod
+    def execute(f, *args, **kwargs):
+        return f(*args, **kwargs)
