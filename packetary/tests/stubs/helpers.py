@@ -14,22 +14,26 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-
-from packetary.objects.index import Index
-from packetary.objects.package import FileChecksum
-from packetary.objects.package import Package
-from packetary.objects.package_relation import PackageRelation
-from packetary.objects.package_relation import VersionRange
-from packetary.objects.packages_tree import PackagesTree
-from packetary.objects.repository import Repository
+import mock
 
 
-__all__ = [
-    "FileChecksum",
-    "Index",
-    "Package",
-    "PackageRelation",
-    "PackagesTree",
-    "Repository",
-    "VersionRange",
-]
+class CallbacksAdapter(mock.MagicMock):
+    """Helper to return data through callback."""
+
+    def __call__(self, *args, **kwargs):
+        if len(args) > 0:
+            callback = args[-1]
+        else:
+            callback = None
+
+        if not callable(callback):
+            return super(CallbacksAdapter, self).__call__(*args, **kwargs)
+
+        args = args[:-1]
+        data = super(CallbacksAdapter, self).__call__(*args, **kwargs)
+
+        if isinstance(data, list):
+            for d in data:
+                callback(d)
+        else:
+            callback(data)
