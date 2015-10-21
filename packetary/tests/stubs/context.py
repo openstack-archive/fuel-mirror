@@ -14,22 +14,24 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import mock
 
-from packetary.objects.index import Index
-from packetary.objects.package import FileChecksum
-from packetary.objects.package import Package
-from packetary.objects.package_relation import PackageRelation
-from packetary.objects.package_relation import VersionRange
-from packetary.objects.packages_tree import PackagesTree
-from packetary.objects.repository import Repository
+from packetary.tests.stubs.executor import Executor
 
 
-__all__ = [
-    "FileChecksum",
-    "Index",
-    "Package",
-    "PackageRelation",
-    "PackagesTree",
-    "Repository",
-    "VersionRange",
-]
+class Context(object):
+    def __init__(self):
+        self.executor = Executor()
+        self.connections = mock.MagicMock()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        self.shutdown()
+
+    def async_section(self, ignore_errors=None):
+        return self.executor
+
+    def shutdown(self, wait=True):
+        pass
