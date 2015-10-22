@@ -166,7 +166,15 @@ class VersionRange(_VersionRangeBase):
 class Relation(_RelationBase):
     """Describes the package`s relation."""
 
-    def __new__(cls, package, version, choice=None):
+    def __new__(cls, package, version=None, choice=None):
+        if isinstance(package, (list, tuple)):
+            if len(package) > 1:
+                version = VersionRange(package[1:3])
+            if len(package) > 3:
+                choice = Relation(package[3:])
+            package = package[0]
+        if version is None:
+            version = VersionRange()
         return _RelationBase.__new__(cls, package, version, choice)
 
     def __str__(self):
