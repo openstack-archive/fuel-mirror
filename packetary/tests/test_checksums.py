@@ -35,3 +35,16 @@ class TestChecksum(base.TestCase):
                 self.assertEqual(
                     expected, algo(stream, chunksize)
                 )
+
+    def test_composite(self):
+        stream = six.BytesIO(b"line1\nline2\nline3\n")
+        result = checksum.composite('md5', 'sha1', 'sha256')(stream)
+        self.assertEqual(
+            [
+                "cc3d5ed5fda53dfa81ea6aa951d7e1fe",
+                "8c84f6f36dd2230d3e9c954fa436e5fda90b1957",
+                "66663af9c7aa341431a8ee2ff27b72"
+                "abd06c9218f517bb6fef948e4803c19e03"
+            ],
+            result
+        )
