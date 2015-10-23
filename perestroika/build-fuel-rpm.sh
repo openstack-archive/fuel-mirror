@@ -4,16 +4,27 @@ set -o xtrace
 set -o errexit
 
 [ -f .fuel-default ] && source .fuel-default
-source $(dirname `readlink -e $0`)/build-functions.sh
+BINDIR=${0%/*}
+source "${BINDIR}/build-functions.sh"
 
 main () {
     set_default_params
     [ -n "$GERRIT_BRANCH" ] && SOURCE_BRANCH=$GERRIT_BRANCH && SOURCE_REFSPEC=$GERRIT_REFSPEC
     [ -n "$GERRIT_PROJECT" ] && SRC_PROJECT=$GERRIT_PROJECT
     PACKAGENAME=${SRC_PROJECT##*/}
-    # Get package tree from gerrit
-    fetch_upstream
-    local _srcpath="${MYOUTDIR}/${PACKAGENAME}-src"
+
+    # If we are triggered from gerrit env, let's keep current workflow,
+    # and fetch code from upstream
+    # otherwise let's define custom path to already prepared source code
+    # using $CUSTOM_SRC_PATH variable
+    if [ -n "${GERRIT_BRANCH}" ]; then
+        # Get package tree from gerrit
+        fetch_upstream
+        local _srcpath="${MYOUTDIR}/${PACKAGENAME}-src"
+    else
+        local _srcpath="${CUSTOM_SRC_PATH}"
+    fi
+
     local _specpath="${_srcpath}/specs"
 
     # Get last commit info
@@ -78,18 +89,20 @@ main () {
     [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && [ "$IS_UPDATES" == "false" ] && \
       EXTRAREPO="${EXTRAREPO}|repo3,http://${REMOTE_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${RPM_OS_REPO_PATH}/x86_64"
     [ "$GERRIT_STATUS" == "NEW" ] && [ "$IS_UPDATES" == "true" ] && \
-      EXTRAREPO="${EXTRAREPO}|repo3,http://${REMOTE_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${RPM_PROPOSED_REPO_PATH}/x86_64"
+      EXTRAREPO="${EXTRAREPO}|repo3,http://${REMOTE_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${RPM_PROPOSED_REPO_PATH}/x86_64" && \
+    [ -n "${EXTRA_RPM_REPOS}" ] && \
+      EXTRAREPO="${EXTRAREPO}|${EXTRA_RPM_REPOS}"
     export EXTRAREPO
 
     pushd $BUILDDIR &>/dev/null
     echo "BUILD_SUCCEEDED=false" > ${WRKDIR}/buildresult.params
-    bash -x ${WRKDIR}/docker-builder/build-rpm-package.sh
+    bash -x ${BINDIR}/docker-builder/build-rpm-package.sh
     local exitstatus=`cat build/exitstatus.mock || echo 1`
     rm -f build/exitstatus.mock build/state.log
     [ -f "build/build.log" ] && mv build/build.log ${WRKDIR}/buildlog.txt
     [ -f "build/root.log" ] && mv build/root.log ${WRKDIR}/rootlog.txt
     fill_buildresult $exitstatus 0 $PACKAGENAME RPM
-    if [ "$exitstatus" == "0" ] ; then
+    if [ "$exitstatus" == "0" ] && [ -n "${GERRIT_BRANCH}" ]; then
         tmpdir=`mktemp -d ${PKG_DIR}/build-XXXXXXXX`
         rm -f ${WRKDIR}/buildresult.params
         cat >${WRKDIR}/buildresult.params<<-EOL
