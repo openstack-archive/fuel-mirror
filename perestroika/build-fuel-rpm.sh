@@ -11,9 +11,19 @@ main () {
     [ -n "$GERRIT_BRANCH" ] && SOURCE_BRANCH=$GERRIT_BRANCH && SOURCE_REFSPEC=$GERRIT_REFSPEC
     [ -n "$GERRIT_PROJECT" ] && SRC_PROJECT=$GERRIT_PROJECT
     PACKAGENAME=${SRC_PROJECT##*/}
-    # Get package tree from gerrit
-    fetch_upstream
-    local _srcpath="${MYOUTDIR}/${PACKAGENAME}-src"
+
+    # If we are triggered from gerrit env, let's keep current workflow,
+    # and fetch code from upstream
+    # otherwise let's define custom path to already prepared source code
+    # using $CUSTOM_SRC_PATH variable
+    if [ -n "${GERRIT_BRANCH}" ]; then
+        # Get package tree from gerrit
+        fetch_upstream
+        local _srcpath="${MYOUTDIR}/${PACKAGENAME}-src"
+    else
+        local _srcpath="${CUSTOM_SRC_PATH}"
+    fi
+
     local _specpath="${_srcpath}/specs"
 
     # Get last commit info
