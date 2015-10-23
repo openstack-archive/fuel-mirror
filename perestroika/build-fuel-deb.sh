@@ -13,11 +13,21 @@ main () {
     [ -n "$GERRIT_PROJECT" ] && SRC_PROJECT=$GERRIT_PROJECT
     PACKAGENAME=${SRC_PROJECT##*/}
     local DEBSPECFILES="${PACKAGENAME}-src/debian"
-    fetch_upstream
 
-    local _srcpath="${MYOUTDIR}/${PACKAGENAME}-src"
+    # If we are triggered from gerrit env, let's keep current workflow,
+    # and fetch code from upstream
+    # otherwise let's define custom path to already prepared source code
+    # using $CUSTOM_SRC_PATH variable
+    if [ -n "${GERRIT_BRANCH}" ]; then
+        # Get package tree from gerrit
+        fetch_upstream
+        local _srcpath="${MYOUTDIR}/${PACKAGENAME}-src"
+    else
+        local _srcpath="${CUSTOM_SRC_PATH}"
+    fi
+
     local _specpath=$_srcpath
-    local _debianpath=$_specpath
+    local _debianpath=$_srcpath
 
     if [ -d "${_debianpath}/debian" ] ; then
         # Unpacked sources and specs
@@ -57,11 +67,14 @@ main () {
         DEBFULLNAME=$author DEBEMAIL=$email dch -c ${_debianpath}/debian/changelog -a "$commitsha $message"
         # Prepare source tarball
         # Exclude debian dir
-        mv ${_srcpath}/debian ${_srcpath}/renameforexcludedebian
-        pushd ${_srcpath} &>/dev/null
-        tar -czf "${BUILDDIR}/${TAR_NAME}" $EXCLUDES --exclude=renameforexcludedebian *
+        pushd $_srcpath &>/dev/null
+            cat >.gitattributes<<-EOF
+				/debian export-ignore
+				/.gitignore export-ignore
+				/.gitreview export-ignore
+			EOF
+            git archive --prefix=./ --format=tar.gz --worktree-attributes HEAD --output="${BUILDDIR}/${TAR_NAME}"
         popd &>/dev/null
-        mv ${_srcpath}/renameforexcludedebian ${_srcpath}/debian
 
         mkdir -p ${BUILDDIR}/$srcpackagename
         cp -R ${_debianpath}/debian ${BUILDDIR}/${srcpackagename}/
@@ -89,7 +102,7 @@ main () {
     rm -f buildresult/exitstatus.sbuild
     [ -f "buildresult/buildlog.sbuild" ] && mv buildresult/buildlog.sbuild ${WRKDIR}/buildlog.txt
     fill_buildresult $exitstatus 0 $PACKAGENAME DEB
-    if [ "$exitstatus" == "0" ] ; then
+    if [ "$exitstatus" == "0" ] && [ -n "${GERRIT_BRANCH}" ]; then
         tmpdir=`mktemp -d ${PKG_DIR}/build-XXXXXXXX`
         rm -f ${WRKDIR}/buildresult.params
         cat >${WRKDIR}/buildresult.params<<-EOL
