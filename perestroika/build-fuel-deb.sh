@@ -4,19 +4,28 @@ set -o xtrace
 set -o errexit
 
 [ -f .fuel-default ] && source .fuel-default
-source $(dirname `readlink -e $0`)/build-functions.sh
+BINDIR=${0%/*}
+source "${BINDIR}/build-functions.sh"
 
 main () {
     set_default_params
     [ -n "$GERRIT_BRANCH" ] && SOURCE_BRANCH=$GERRIT_BRANCH && SOURCE_REFSPEC=$GERRIT_REFSPEC
     [ -n "$GERRIT_PROJECT" ] && SRC_PROJECT=$GERRIT_PROJECT
     PACKAGENAME=${SRC_PROJECT##*/}
-    local DEBSPECFILES="${PACKAGENAME}-src/debian"
-    fetch_upstream
 
-    local _srcpath="${MYOUTDIR}/${PACKAGENAME}-src"
-    local _specpath=$_srcpath
-    local _debianpath=$_specpath
+    # If we are triggered from gerrit env, let's keep current workflow,
+    # and fetch code from upstream
+    # otherwise let's define custom path to already prepared source code
+    # using $CUSTOM_SRC_PATH variable
+    if [ -n "${GERRIT_BRANCH}" ]; then
+        # Get package tree from gerrit
+        fetch_upstream
+        local _srcpath="${MYOUTDIR}/${PACKAGENAME}-src"
+    else
+        local _srcpath="${CUSTOM_SRC_PATH}"
+    fi
+
+    local _debianpath=$_srcpath
 
     if [ -d "${_debianpath}/debian" ] ; then
         # Unpacked sources and specs
@@ -56,11 +65,12 @@ main () {
         DEBFULLNAME=$author DEBEMAIL=$email dch -c ${_debianpath}/debian/changelog -a "$commitsha $message"
         # Prepare source tarball
         # Exclude debian dir
-        mv ${_srcpath}/debian ${_srcpath}/renameforexcludedebian
-        pushd ${_srcpath} &>/dev/null
-        tar -czf "${BUILDDIR}/${TAR_NAME}" $EXCLUDES --exclude=renameforexcludedebian *
-        popd &>/dev/null
-        mv ${_srcpath}/renameforexcludedebian ${_srcpath}/debian
+            cat > .gitattributes <<EOF
+            /debian export-ignore
+            /.gitignore export-ignore
+            /.gitreview export-ignore
+EOF
+        git archive --prefix=./ --format=tar.gz --worktree-attributes --output="${BUILDDIR}/${TAR_NAME}" HEAD "${_srcpath}"
 
         mkdir -p ${BUILDDIR}/$srcpackagename
         cp -R ${_debianpath}/debian ${BUILDDIR}/${srcpackagename}/
@@ -78,16 +88,18 @@ main () {
         && EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${DEB_REPO_PATH} ${DEB_DIST_NAME} ${COMPONENTS}"
     [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && [ "$IS_UPDATES" == "true" ] \
         && EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${DEB_REPO_PATH} ${DEB_PROPOSED_DIST_NAME} ${COMPONENTS}"
+    [ -n "${EXTRA_DEB_REPOS}" ] \
+        && EXTRAREPO="${EXTRAREPO}|${EXTRA_DEB_REPOS}"
     export EXTRAREPO
 
     pushd $BUILDDIR &>/dev/null
     echo "BUILD_SUCCEEDED=false" > ${WRKDIR}/buildresult.params
-    bash -ex ${WRKDIR}/docker-builder/build-deb-package.sh
+    bash -ex ${BINDIR}/docker-builder/build-deb-package.sh
     local exitstatus=`cat buildresult/exitstatus.sbuild || echo 1`
     rm -f buildresult/exitstatus.sbuild
     [ -f "buildresult/buildlog.sbuild" ] && mv buildresult/buildlog.sbuild ${WRKDIR}/buildlog.txt
     fill_buildresult $exitstatus 0 $PACKAGENAME DEB
-    if [ "$exitstatus" == "0" ] ; then
+    if [ "$exitstatus" == "0" ] && [ -n "${GERRIT_BRANCH}" ]; then
         tmpdir=`mktemp -d ${PKG_DIR}/build-XXXXXXXX`
         rm -f ${WRKDIR}/buildresult.params
         cat >${WRKDIR}/buildresult.params<<-EOL
