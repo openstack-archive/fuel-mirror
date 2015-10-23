@@ -12,12 +12,20 @@ main () {
     [ -n "$GERRIT_BRANCH" ] && SOURCE_BRANCH=$GERRIT_BRANCH && SOURCE_REFSPEC=$GERRIT_REFSPEC
     [ -n "$GERRIT_PROJECT" ] && SRC_PROJECT=$GERRIT_PROJECT
     PACKAGENAME=${SRC_PROJECT##*/}
-    local DEBSPECFILES="${PACKAGENAME}-src/debian"
-    fetch_upstream
 
-    local _srcpath="${MYOUTDIR}/${PACKAGENAME}-src"
-    local _specpath=$_srcpath
-    local _debianpath=$_specpath
+    # If we are triggered from gerrit env, let's keep current workflow,
+    # and fetch code from upstream
+    # otherwise let's define custom path to already prepared source code
+    # using $CUSTOM_SRC_PATH variable
+    if [ -n "${GERRIT_BRANCH}" ]; then
+        # Get package tree from gerrit
+        fetch_upstream
+        local _srcpath="${MYOUTDIR}/${PACKAGENAME}-src"
+    else
+        local _srcpath="${CUSTOM_SRC_PATH}"
+    fi
+
+    local _debianpath=$_srcpath
 
     if [ -d "${_debianpath}/debian" ] ; then
         # Unpacked sources and specs
@@ -89,7 +97,7 @@ main () {
     rm -f buildresult/exitstatus.sbuild
     [ -f "buildresult/buildlog.sbuild" ] && mv buildresult/buildlog.sbuild ${WRKDIR}/buildlog.txt
     fill_buildresult $exitstatus 0 $PACKAGENAME DEB
-    if [ "$exitstatus" == "0" ] ; then
+    if [ "$exitstatus" == "0" ] && [ -n "${GERRIT_BRANCH}" ]; then
         tmpdir=`mktemp -d ${PKG_DIR}/build-XXXXXXXX`
         rm -f ${WRKDIR}/buildresult.params
         cat >${WRKDIR}/buildresult.params<<-EOL
