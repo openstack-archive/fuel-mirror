@@ -22,8 +22,12 @@ main () {
       local version=`head -1 ${_debianpath}/debian/changelog | sed 's|^.*(||;s|).*$||' | awk -F "-" '{print $1}'`
       # Get version number from the latest git tag for openstack packages
       [ "$IS_OPENSTACK" == "true" ] && version=`git -C $_srcpath describe --abbrev=0`
-      # TODO: Deal with openstack RC tags like 2015.1.0rc1
-      # It breaks debian version comparison. Need to replace 'rc' with '~rc'
+      # Deal with PyPi versions like 2015.1.0rc1
+      # It breaks version comparison
+      # Change it to 2015.1.0~rc1
+      local convert_version_py="$(dirname $(readlink -e $0))/convert-version.py"
+      version=$(python ${convert_version_py} --tag ${version})
+
       local binpackagenames="`cat ${_debianpath}/debian/control | grep ^Package | cut -d' ' -f 2 | tr '\n' ' '`"
       local epochnumber=`head -1 ${_debianpath}/debian/changelog | grep -o "(.:" | sed 's|(||'`
       local distro=`head -1 ${_debianpath}/debian/changelog | awk -F'[ ;]' '{print $3}'`
