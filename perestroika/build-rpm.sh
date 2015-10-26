@@ -39,8 +39,12 @@ This package provides the %{-n*} kernel modules
   if [ "$IS_OPENSTACK" == "true" ] ; then
       # Get version number from the latest git tag for openstack packages
       local version=`git -C $_srcpath describe --abbrev=0`
-      # TODO: Deal with openstack RC tags like 2015.1.0rc1
-      # It breaks rpm version comparison.
+      # Deal with PyPi versions like 2015.1.0rc1
+      # It breaks version comparison
+      # Change it to 2015.1.0~rc1
+      local convert_version_py="$(dirname $(readlink -e $0))/convert-version.py"
+      version=$(python ${convert_version_py} --tag ${version})
+
       # Get revision number as commit count for src+spec projects
       local _src_commit_count=`git -C $_srcpath rev-list --no-merges origin/${SOURCE_BRANCH} | wc -l`
       local _spec_commit_count=`git -C $_specpath rev-list --no-merges origin/${SPEC_BRANCH} | wc -l`
