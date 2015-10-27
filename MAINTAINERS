@@ -26,17 +26,34 @@ description:
 
 maintainers:
 
-- util/:
-    - name:   Vitaly Parakhin
-      email:  vparakhin@mirantis.com
-      IRC:    brain461
+- contrib/:
+    - name:   Bulat Gaifullin
+      email:  bgaifullin@mirantis.com
+      IRC:    bgaifullin
 
-- perestroika/:
-    - name:   Dmitry Burmistrov
-      email:  dburmistrov@mirantis.com
-      IRC:    dburmistrov
+    - name:   Vladimir Kozhukalov
+      email:  vkozhukalov@mirantis.com
+      IRC:    kozhukalov
 
 - packetary/:
     - name:   Bulat Gaifullin
       email:  bgaifullin@mirantis.com
       IRC:    bgaifullin
+
+    - name:   Vladimir Kozhukalov
+      email:  vkozhukalov@mirantis.com
+      IRC:    kozhukalov
+
+- perestroika/: &build_team
+    - name:   Dmitry Burmistrov
+      email:  dburmistrov@mirantis.com
+      IRC:    dburmistrov
+
+    - name:   Sergey Kulanov
+      email:  skulanov@mirantis.com
+      IRC:    SergK
+
+- util/:
+    - name:   Vitaly Parakhin
+      email:  vparakhin@mirantis.com
+      IRC:    brain461
