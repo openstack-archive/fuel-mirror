@@ -36,7 +36,15 @@ maintainers:
       email:  dburmistrov@mirantis.com
       IRC:    dburmistrov
 
+    - name:   Sergey Kulanov
+      email:  skulanov@mirantis.com
+      IRC:    SergK
+
 - packetary/:
     - name:   Bulat Gaifullin
       email:  bgaifullin@mirantis.com
       IRC:    bgaifullin
+
+    - name:   Vladimir Kozhukalov
+      email:  vkozhukalov@mirantis.com
+      IRC:    kozhukalov
