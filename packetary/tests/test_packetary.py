@@ -22,7 +22,7 @@ test_packetary
 Tests for `packetary` module.
 """
 
-from packetary import base
+from packetary.tests import base
 
 
 class TestPacketary(base.TestCase):
