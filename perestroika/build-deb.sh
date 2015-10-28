@@ -21,12 +21,13 @@ main () {
       local srcpackagename=`head -1 ${_debianpath}/debian/changelog | cut -d' ' -f1`
       local version=`head -1 ${_debianpath}/debian/changelog | sed 's|^.*(||;s|).*$||' | awk -F "-" '{print $1}'`
       # Get version number from the latest git tag for openstack packages
-      [ "$IS_OPENSTACK" == "true" ] && version=`git -C $_srcpath describe --abbrev=0`
+      local release_tag=${version}
+      [ "$IS_OPENSTACK" == "true" ] && release_tag=`git -C $_srcpath describe --abbrev=0`
       # Deal with PyPi versions like 2015.1.0rc1
       # It breaks version comparison
       # Change it to 2015.1.0~rc1
       local convert_version_py="$(dirname $(readlink -e $0))/convert-version.py"
-      version=$(python ${convert_version_py} --tag ${version})
+      version=$(python ${convert_version_py} --tag ${release_tag})
 
       local binpackagenames="`cat ${_debianpath}/debian/control | grep ^Package | cut -d' ' -f 2 | tr '\n' ' '`"
       local epochnumber=`head -1 ${_debianpath}/debian/changelog | grep -o "(.:" | sed 's|(||'`
@@ -36,7 +37,7 @@ main () {
       # $message $author $email $cdate $commitsha $lastgitlog
       get_last_commit_info ${_srcpath}
 
-      TAR_NAME="${srcpackagename}_${version#*:}.orig.tar.gz"
+      TAR_NAME="${srcpackagename}_${version}.orig.tar.gz"
       if [ "$IS_OPENSTACK" == "true" ] ; then
           # Get revision number as commit count for src+spec projects
           local _src_commit_count=`git -C $_srcpath rev-list --no-merges origin/${SOURCE_BRANCH} | wc -l`
@@ -59,28 +60,38 @@ main () {
               DEBFULLNAME="$author" DEBEMAIL="$email" $cmd "$commitid $subject"
           done
           # Prepare source tarball
-          pushd $_srcpath &>/dev/null
           if [ "$PACKAGENAME" == "murano-apps" -o "$PACKAGENAME" == "rally" ]; then
-              # Do not perform `setup.py sdist` for murano-apps and rally packages
-              tar -czf ${BUILDDIR}/$TAR_NAME $EXCLUDES .
+              git -C $_srcpath archive --format tar.gz -o ${BUILDDIR}/${TAR_NAME} ${release_tag}
           else
-              python setup.py --version  # this will download pbr if it's not available
-              PBR_VERSION=$version python setup.py sdist -d ${BUILDDIR}/
-              mv ${BUILDDIR}/*.gz ${BUILDDIR}/$TAR_NAME
+              git -C $_srcpath archive --format tar.gz --prefix ${srcpackagename}-${version}/ -o ${BUILDDIR}/${TAR_NAME} ${release_tag}
           fi
-          popd &>/dev/null
+          # Prepare patch-file
+          local _patches=${_debianpath}/debian/patches
+          local _series=${_patches}/series
+          local _patchfile="HEAD-${gitshasrc}.patch"
+          [ ! -d "${_patches}" ] && mkdir -p ${_patches}
+          git -C $_srcpath diff -p ${release_tag}..HEAD > ${_patches}/${_patchfile}
+          if [ $(cat ${_patches}/${_patchfile} | wc -l) -gt 0 ] ; then
+              if [ ! -f "${_series}" ] ; then
+                  echo "${_patchfile}" > ${_series}
+              else
+                  sed -e "1i${_patchfile}" -i ${_series}
+              fi
+          else
+              rm -f ${_patches}/${_patchfile}
+          fi
       else
           # Update changelog
           DEBFULLNAME=$author DEBEMAIL=$email dch -c ${_debianpath}/debian/changelog -a "$commitsha $message"
           # Prepare source tarball
           # Exclude debian and tests dir
-          mv ${_srcpath}/debian ${_srcpath}/renameforexcludedebian
-          [ -d "${_srcpath}/tests" ] && mv ${_srcpath}/tests ${_srcpath}/renameforexcludetests
-          pushd ${_srcpath} &>/dev/null
-          tar -czf "${BUILDDIR}/${TAR_NAME}" $EXCLUDES --exclude=renameforexcludedebian --exclude=renameforexcludetests *
-          popd &>/dev/null
-          mv ${_srcpath}/renameforexcludedebian ${_srcpath}/debian
-          [ -d "${_srcpath}/renameforexcludetests" ] && mv ${_srcpath}/renameforexcludetests ${_srcpath}/tests
+          cat > ${_srcpath}/.gitattributes <<-EOF
+			/debian export-ignore
+			/tests export-ignore
+			/.gitignore export-ignore
+			/.gitreview export-ignore
+			EOF
+          git -C ${_srcpath} archive --format tar.gz --worktree-attributes -o ${BUILDDIR}/${TAR_NAME} HEAD
       fi
       mkdir -p ${BUILDDIR}/$srcpackagename
       cp -R ${_debianpath}/debian ${BUILDDIR}/${srcpackagename}/
