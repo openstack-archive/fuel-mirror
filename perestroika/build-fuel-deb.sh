@@ -12,6 +12,7 @@ main () {
     [ -n "$GERRIT_PROJECT" ] && SRC_PROJECT=$GERRIT_PROJECT
     PACKAGENAME=${SRC_PROJECT##*/}
     local DEBSPECFILES="${PACKAGENAME}-src/debian"
+    # Get package tree from gerrit
     fetch_upstream
 
     local _srcpath="${MYOUTDIR}/${PACKAGENAME}-src"
@@ -22,9 +23,13 @@ main () {
         # Unpacked sources and specs
         local srcpackagename=`head -1 ${_debianpath}/debian/changelog | cut -d' ' -f1`
         local version=`head -1 ${_debianpath}/debian/changelog | sed 's|^.*(||;s|).*$||' | awk -F "-" '{print $1}'`
+        local release_tag=`git -C $_srcpath describe --abbrev=0 --always`
         local binpackagenames="`cat ${_debianpath}/debian/control | grep ^Package | cut -d' ' -f 2 | tr '\n' ' '`"
         local epochnumber=`head -1 ${_debianpath}/debian/changelog | grep -o "(.:" | sed 's|(||'`
         local distro=`head -1 ${_debianpath}/debian/changelog | awk -F'[ ;]' '{print $3}'`
+        local convert_version_py="$(dirname $(readlink -e $0))/convert-version.py"
+        local pkg_release_tag=$(python ${convert_version_py} --tag ${release_tag})
+
 
         # Get last commit info
         # $message $author $email $cdate $commitsha $lastgitlog
@@ -33,6 +38,13 @@ main () {
         # Get revision number as commit count for src+spec projects
         local _rev=`git -C $_srcpath rev-list --no-merges origin/${SOURCE_BRANCH} | wc -l`
         [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && _rev=$(( $_rev + 1 ))
+
+        if [ "$version" != "${pkg_release_tag}" ] ; then
+            local commit_date=$(date --date="${cdate}" +"%Y%m%d")
+            version=${version}~git${commit_date}+${_rev}
+            release_tag=HEAD
+        fi
+
         local release="1~u14.04+mos${_rev}"
         [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && release="${release}+git.${gitshasrc}"
         local fullver=${epochnumber}${version}-${release}
@@ -49,16 +61,32 @@ main () {
             DEBFULLNAME="$author" DEBEMAIL="$email" $cmd "$commitid $subject"
         done
 
-        TAR_NAME="${srcpackagename}_${version#*:}.orig.tar.gz"
+        TAR_NAME="${srcpackagename}_${version}.orig.tar.gz"
         # Update changelog
         DEBFULLNAME=$author DEBEMAIL=$email dch -c ${_debianpath}/debian/changelog -a "$commitsha $message"
         # Prepare source tarball
         # Exclude debian dir
-        mv ${_srcpath}/debian ${_srcpath}/renameforexcludedebian
-        pushd ${_srcpath} &>/dev/null
-        tar -czf "${BUILDDIR}/${TAR_NAME}" $EXCLUDES --exclude=renameforexcludedebian *
-        popd &>/dev/null
-        mv ${_srcpath}/renameforexcludedebian ${_srcpath}/debian
+        cat > ${_srcpath}/.gitattributes <<-EOF
+			/debian export-ignore
+			/.gitignore export-ignore
+			/.gitreview export-ignore
+			EOF
+        git -C ${_srcpath} archive --format tar.gz --worktree-attributes -o ${BUILDDIR}/${TAR_NAME} ${release_tag}
+        # Prepare patch-file
+        local _patches=${_debianpath}/debian/patches
+        local _series=${_patches}/series
+        local _patchfile="HEAD-${gitshasrc}.patch"
+        [ ! -d "${_patches}" ] && mkdir -p ${_patches}
+        git -C $_srcpath diff -p ${release_tag}..HEAD > ${_patches}/${_patchfile}
+        if [ $(wc -l < ${_patches}/${_patchfile}) -gt 0 ] ; then
+            if [ ! -f "${_series}" ] ; then
+                echo "${_patchfile}" > ${_series}
+            else
+                sed -e "1i${_patchfile}" -i ${_series}
+            fi
+        else
+            rm -f ${_patches}/${_patchfile}
+        fi
 
         mkdir -p ${BUILDDIR}/$srcpackagename
         cp -R ${_debianpath}/debian ${BUILDDIR}/${srcpackagename}/
