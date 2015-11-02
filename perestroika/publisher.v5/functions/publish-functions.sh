@@ -69,21 +69,21 @@ sync-repo() {
                 && rsync_delete_file $host $RSYNC_USER ${REQUEST_PATH_PREFIX}${REQUEST_NUM}
             REMOTE_DIR=${REQUEST_PATH_PREFIX}${REQUEST_NUM}/${REMOTE_DIR}
         fi
-    elif [ -n "$REQUEST_PATH_PREFIX" ] ; then
-        # Remove unused request repos
-        if [ -n "$REQUEST_NUM" ] ; then
-            if [ $(rsync_list_links $host $RSYNC_USER ${REQUEST_PATH_PREFIX} | grep -c "^${REQUEST_NUM} ") -eq 0 ] ; then
-                rsync_delete_dir $host $RSYNC_USER ${REQUEST_PATH_PREFIX}${REQUEST_NUM}
-            else
-                rsync_delete_file $host $RSYNC_USER ${REQUEST_PATH_PREFIX}${REQUEST_NUM}
-            fi
-            [ $(rsync_list_files $host $RSYNC_USER ${REQUEST_PATH_PREFIX} | grep -cF $REQUEST_NUM) -gt 0 ] \
-              && rsync_delete_file $host $RSYNC_USER ${REQUEST_PATH_PREFIX}${REQUEST_NUM}.target.txt
-        fi
-        # Do not remove LP_BUG repo until all linked repos removed
-        [ -n "$LP_BUG" ] \
-            && [ $(rsync_list_links $host $RSYNC_USER ${REQUEST_PATH_PREFIX} | grep -cF $LP_BUG) -eq 0 ] \
-            && rsync_delete_dir $host $RSYNC_USER ${REQUEST_PATH_PREFIX}/$LP_BUG
+    #elif [ -n "$REQUEST_PATH_PREFIX" ] ; then
+    #    # Remove unused request repos
+    #    if [ -n "$REQUEST_NUM" ] ; then
+    #        if [ $(rsync_list_links $host $RSYNC_USER ${REQUEST_PATH_PREFIX} | grep -c "^${REQUEST_NUM} ") -eq 0 ] ; then
+    #            rsync_delete_dir $host $RSYNC_USER ${REQUEST_PATH_PREFIX}${REQUEST_NUM}
+    #        else
+    #            rsync_delete_file $host $RSYNC_USER ${REQUEST_PATH_PREFIX}${REQUEST_NUM}
+    #        fi
+    #        [ $(rsync_list_files $host $RSYNC_USER ${REQUEST_PATH_PREFIX} | grep -cF $REQUEST_NUM) -gt 0 ] \
+    #          && rsync_delete_file $host $RSYNC_USER ${REQUEST_PATH_PREFIX}${REQUEST_NUM}.target.txt
+    #    fi
+    #    # Do not remove LP_BUG repo until all linked repos removed
+    #    [ -n "$LP_BUG" ] \
+    #        && [ $(rsync_list_links $host $RSYNC_USER ${REQUEST_PATH_PREFIX} | grep -cF $LP_BUG) -eq 0 ] \
+    #        && rsync_delete_dir $host $RSYNC_USER ${REQUEST_PATH_PREFIX}/$LP_BUG
     fi
     rsync_transfer $host $RSYNC_USER $LOCAL_DIR $REMOTE_DIR || mirrors_fail+=" ${host}"
   done

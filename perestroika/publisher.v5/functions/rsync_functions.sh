@@ -174,6 +174,7 @@ function rsync_transfer() {
     local SNAPSHOT_PATH=$(dirname $SNAPSHOT_DIR) # 1/2
     local REMOTE_ROOT=$(echo $REMOTE_DIR | sed "s|^$SNAPSHOT_PATH/||")
     local REMOTE_ROOT=${REMOTE_ROOT%%/*} # 3
+
     rsync_list_dirs $RSYNC_HOST $RSYNC_USER $SNAPSHOT_DIR/${REMOTE_ROOT}-${DATE} \
         || rsync_create_dir $RSYNC_HOST $RSYNC_USER $SNAPSHOT_DIR/${REMOTE_ROOT}-${DATE}
 
@@ -188,6 +189,16 @@ function rsync_transfer() {
        && rsync_remove_old_versions $RSYNC_HOST $RSYNC_USER ${SNAPSHOT_DIR} ${REMOTE_ROOT}
     RESULT=$?
     [ $RESULT -ne 0 ] && rsync_delete_dir $RSYNC_HOST $RSYNC_USER ${SNAPSHOT_DIR}/${REMOTE_ROOT}-${DATE}
+
+    # Create symlinked ZUUL_CUSTOM_REPO_ID repository pointed
+    # to the same snapshot as CR one
+    if [ "$GERRIT_CHANGE_STATUS" == "NEW" -a -n "$ZUUL_CUSTOM_REPO_ID" -a $RESULT -eq 0 ] ; then
+        local CREMOTE_DIR=$(echo "$REMOTE_DIR" | sed -r "s!/(CR|LP|FUEL)-[^/]*/!/${ZUUL_CUSTOM_REPO_ID}/!")
+        local CREMOTE_PATH=$(dirname $CREMOTE_DIR)
+        local CRELATIVE_PREFIX=$(echo ${CREMOTE_PATH} | sed -r 's|[^/]+|..|g')
+        rsync_create_dir $RSYNC_HOST $RSYNC_USER $CREMOTE_PATH
+        rsync_create_symlink $RSYNC_HOST $RSYNC_USER $CREMOTE_DIR ${CRELATIVE_PREFIX}/${SNAPSHOT_DIR}/${REMOTE_ROOT}-${DATE}
+    fi
 
     return $RESULT
 }
