@@ -17,6 +17,8 @@
 from __future__ import with_statement
 
 import logging
+import sys
+
 import six
 
 from eventlet.greenpool import GreenPool
@@ -40,11 +42,11 @@ class AsynchronousSection(object):
 
         self.executor = GreenPool(max(size, self.MIN_POOL_SIZE))
         self.ignore_errors_num = ignore_errors_num
-        self.errors = 0
+        self.errors = []
         self.tasks = set()
 
     def __enter__(self):
-        self.errors = 0
+        self.errors[:] = []
         return self
 
     def __exit__(self, etype, *_):
@@ -52,12 +54,13 @@ class AsynchronousSection(object):
 
     def execute(self, func, *args, **kwargs):
         """Calls function asynchronously."""
-        if 0 <= self.ignore_errors_num < self.errors:
+        if 0 <= self.ignore_errors_num < len(self.errors):
             raise RuntimeError("Too many errors.")
 
         gt = self.executor.spawn(func, *args, **kwargs)
         self.tasks.add(gt)
         gt.link(self.on_complete)
+        return gt
 
     def on_complete(self, gt):
         """Callback to handle task completion."""
@@ -65,8 +68,8 @@ class AsynchronousSection(object):
         try:
             gt.wait()
         except Exception as e:
-            self.errors += 1
-            logger.exception("Task failed: %s", six.text_type(e))
+            logger.error("Task failed: %s", six.text_type(e))
+            self.errors.append(sys.exc_info())
         finally:
             self.tasks.discard(gt)
 
@@ -76,7 +79,13 @@ class AsynchronousSection(object):
         Do not use directly, will be called from context manager.
         """
         self.executor.waitall()
-        if not ignore_errors and self.errors > 0:
-            raise RuntimeError(
-                "Operations completed with errors. See log for more details."
-            )
+        if len(self.errors) > 0:
+            for exc_info in self.errors:
+                logger.exception("error details.", exc_info=exc_info)
+
+            self.errors[:] = []
+            if not ignore_errors:
+                raise RuntimeError(
+                    "Operations completed with errors.\n"
+                    "See log for more details."
+                )
