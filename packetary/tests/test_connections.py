@@ -112,13 +112,31 @@ class TestConnectionManager(base.TestCase):
     def test_retrieve_from_offset(self, os, *_):
         manager = connections.ConnectionsManager()
         os.path.mkdirs.side_effect = OSError(17, "")
+        os.stat.return_value = mock.MagicMock(st_size=10)
         os.open.return_value = 1
         response = mock.MagicMock()
         manager.opener.open.return_value = response
         response.read.side_effect = [b"test", b""]
-        manager.retrieve("/file/src", "/file/dst", 10)
+        manager.retrieve("/file/src", "/file/dst", size=20)
         os.lseek.assert_called_once_with(1, 10, os.SEEK_SET)
         os.ftruncate.assert_called_once_with(1, 10)
+        self.assertEqual(1, os.write.call_count)
+        os.fsync.assert_called_once_with(1)
+        os.close.assert_called_once_with(1)
+
+    @mock.patch("packetary.library.connections.urllib.build_opener")
+    @mock.patch("packetary.library.connections.os")
+    def test_retrieve_non_existence(self, os, *_):
+        manager = connections.ConnectionsManager()
+        os.path.mkdirs.side_effect = OSError(17, "")
+        os.stat.side_effect = OSError(2, "")
+        os.open.return_value = 1
+        response = mock.MagicMock()
+        manager.opener.open.return_value = response
+        response.read.side_effect = [b"test", b""]
+        manager.retrieve("/file/src", "/file/dst", size=20)
+        os.lseek.assert_called_once_with(1, 0, os.SEEK_SET)
+        os.ftruncate.assert_called_once_with(1, 0)
         self.assertEqual(1, os.write.call_count)
         os.fsync.assert_called_once_with(1)
         os.close.assert_called_once_with(1)
@@ -128,13 +146,14 @@ class TestConnectionManager(base.TestCase):
     def test_retrieve_from_offset_fail(self, os, _, logger):
         manager = connections.ConnectionsManager(retries_num=2)
         os.path.mkdirs.side_effect = OSError(connections.errno.EACCES, "")
+        os.stat.return_value = mock.MagicMock(st_size=10)
         os.open.return_value = 1
         response = mock.MagicMock()
         manager.opener.open.side_effect = [
             connections.RangeError("error"), response
         ]
         response.read.side_effect = [b"test", b""]
-        manager.retrieve("/file/src", "/file/dst", 10)
+        manager.retrieve("/file/src", "/file/dst", size=20)
         logger.warning.assert_called_once_with(
             "Failed to resume download, starts from the beginning: %s",
             "/file/src"
@@ -198,12 +217,12 @@ class TestRetryHandler(base.TestCase):
         self.handler.http_error(
             request, mock.MagicMock(), 500, "error", mock.MagicMock()
         )
-        logger.warning.assert_called_with(
+        logger.error.assert_called_with(
             "fail request: %s - %d(%s), retries left - %d.",
-            "/test", 500, "error", 0
+            "/test", 500, "error", 1
         )
         self.handler.http_error(
-            request, mock.MagicMock(), 500, "error", mock.MagicMock()
+            request, mock.MagicMock(), 404, "error", mock.MagicMock()
         )
         self.handler.parent.open.assert_called_once_with(request)
 
