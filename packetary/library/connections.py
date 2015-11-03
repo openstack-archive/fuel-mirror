@@ -104,16 +104,22 @@ class RetryHandler(urllib.BaseHandler):
 
     def http_error(self, req, fp, code, msg, hdrs):
         """Checks error code and retries request if it is allowed."""
-        if code >= 500 and req.retries_left > 0:
+        logger.error(
+            "fail request: %s - %d(%s), retries left - %d.",
+            req.get_full_url(), code, msg, req.retries_left
+        )
+        if req.retries_left > 0 and is_retryable_http_error(code):
             req.retries_left -= 1
-            logger.warning(
-                "fail request: %s - %d(%s), retries left - %d.",
-                req.get_full_url(), code, msg, req.retries_left
-            )
             return self.parent.open(req)
 
     https_request = http_request
     https_response = http_response
+
+
+def is_retryable_http_error(code):
+    """Checks that http error can be retried."""
+    return code == http_client.NOT_FOUND or\
+        code >= http_client.INTERNAL_SERVER_ERROR
 
 
 class ConnectionsManager(object):
@@ -180,19 +186,34 @@ class ConnectionsManager(object):
                     url, six.text_type(e), request.retries_left
                 )
 
-    def retrieve(self, url, filename, offset=0):
+    def retrieve(self, url, filename, **attributes):
         """Downloads remote file.
 
         :param url: the remote file`s url
         :param filename: the file`s name, that includes path on local fs
-        :param offset: the number of bytes from the beginning,
-                       that will be skipped
+        :param attributes: the file attributes, like size, hashsum, etc.
+        :return: False if file was not changed, otherwise True
         """
+        offset = 0
+        try:
+            stats = os.stat(filename)
+            expected_size = attributes.get('size', -1)
+            if expected_size == stats.st_size:
+                # TODO(check hashsum)
+                return 0
 
-        self._ensure_dir_exists(filename)
+            if stats.st_size < expected_size:
+                offset = stats.st_size
+        except OSError as e:
+            if e.errno != errno.ENOENT:
+                raise
+            self._ensure_dir_exists(filename)
+
+        logger.info("download: %s from the offset: %d", url, offset)
+
         fd = os.open(filename, os.O_CREAT | os.O_WRONLY)
         try:
-            self._copy_stream(fd, url, offset)
+            return self._copy_stream(fd, url, offset)
         except RangeError:
             if offset == 0:
                 raise
@@ -200,7 +221,7 @@ class ConnectionsManager(object):
                 "Failed to resume download, starts from the beginning: %s",
                 url
             )
-            self._copy_stream(fd, url, 0)
+            return self._copy_stream(fd, url, 0)
         finally:
             os.fsync(fd)
             os.close(fd)
@@ -222,14 +243,18 @@ class ConnectionsManager(object):
         :param url: the remote file`s url
         :param offset: the number of bytes from the beginning,
                        that will be skipped
+        :return: the bytes copied
         """
 
         source = self.open_stream(url, offset)
         os.ftruncate(fd, offset)
         os.lseek(fd, offset, os.SEEK_SET)
         chunk_size = 16 * 1024
+        size = 0
         while 1:
             chunk = source.read(chunk_size)
             if not chunk:
                 break
             os.write(fd, chunk)
+            size += len(chunk)
+        return size
