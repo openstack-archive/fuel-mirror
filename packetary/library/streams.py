@@ -66,7 +66,7 @@ class StreamWrapper(object):
                 result = self._align_chunk(result, size)
             size -= len(result)
             while size > 0:
-                chunk = self.read_chunk(max(self.CHUNK_SIZE, size))
+                chunk = self.read_chunk(self.CHUNK_SIZE)
                 if not chunk:
                     break
                 if len(chunk) > size:
@@ -115,11 +115,17 @@ class GzipDecompress(StreamWrapper):
 
     def read_chunk(self, chunksize):
         if self.decompress.unconsumed_tail:
-            return self.decompress.decompress(
+            uncompressed = self.decompress.decompress(
                 self.decompress.unconsumed_tail, chunksize
             )
+            if uncompressed:
+                return uncompressed
 
-        chunk = self.stream.read(chunksize)
-        if not chunk:
-            return self.decompress.flush()
-        return self.decompress.decompress(chunk, chunksize)
+        while True:
+            chunk = self.stream.read(chunksize)
+            if not chunk:
+                break
+            uncompressed = self.decompress.decompress(chunk, chunksize)
+            if uncompressed:
+                return uncompressed
+        return self.decompress.flush()
