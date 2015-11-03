@@ -58,14 +58,10 @@ This package provides the %{-n*} kernel modules
       sed -i "/Release/s|%{?dist}.*$|%{?dist}~${release}|" $specfile
       sed -i "s|Source0:.*$|Source0: ${TAR_NAME}|" $specfile
       # Prepare source tarball
-      pushd $_srcpath &>/dev/null
-      if [ "$PACKAGENAME" == "murano-apps" ]; then
-          # Do not perform `setup.py sdist` for murano-apps package
-          tar -czf ${BUILDDIR}/$TAR_NAME $EXCLUDES .
+      if [ "$PACKAGENAME" == "murano-apps" -o "$PACKAGENAME" == "rally" ]; then
+          git -C $_srcpath archive --format tar.gz -o ${BUILDDIR}/${TAR_NAME} HEAD
       else
-          python setup.py --version  # this will download pbr if it's not available
-          PBR_VERSION=$version python setup.py sdist -d ${BUILDDIR}/
-          mv ${BUILDDIR}/*.gz ${BUILDDIR}/$TAR_NAME || :
+          git -C $_srcpath archive --format tar.gz --prefix ${srcpackagename}-${version}/ -o ${BUILDDIR}/${TAR_NAME} HEAD
       fi
       cp $_specpath/rpm/SOURCES/* ${BUILDDIR}/ &>/dev/null || :
   else

@@ -59,16 +59,11 @@ main () {
               DEBFULLNAME="$author" DEBEMAIL="$email" $cmd "$commitid $subject"
           done
           # Prepare source tarball
-          pushd $_srcpath &>/dev/null
           if [ "$PACKAGENAME" == "murano-apps" -o "$PACKAGENAME" == "rally" ]; then
-              # Do not perform `setup.py sdist` for murano-apps and rally packages
-              tar -czf ${BUILDDIR}/$TAR_NAME $EXCLUDES .
+              git -C $_srcpath archive --format tar.gz -o ${BUILDDIR}/${TAR_NAME} HEAD
           else
-              python setup.py --version  # this will download pbr if it's not available
-              PBR_VERSION=$version python setup.py sdist -d ${BUILDDIR}/
-              mv ${BUILDDIR}/*.gz ${BUILDDIR}/$TAR_NAME
+              git -C $_srcpath archive --format tar.gz --prefix ${srcpackagename}-${version}/ -o ${BUILDDIR}/${TAR_NAME} HEAD
           fi
-          popd &>/dev/null
       else
           # Update changelog
           DEBFULLNAME=$author DEBEMAIL=$email dch -c ${_debianpath}/debian/changelog -a "$commitsha $message"
