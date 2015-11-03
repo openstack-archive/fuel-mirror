@@ -83,7 +83,7 @@ class TestIndex(base.TestCase):
         index = Index()
         p1 = gen_package(idx=1, version=2)
         p2 = gen_package(idx=2, version=2)
-        p2.obsoletes.extend(
+        p2.obsoletes.append(
             gen_relation(p1.name, ["lt", p1.version])
         )
         index.add(p1)
