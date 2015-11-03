@@ -91,3 +91,11 @@ class TestGzipDecompress(base.TestCase):
         self.assertEqual(
             [b"line1\n", b"line2\n", b"line3\n"],
             lines)
+
+    def test_handle_case_if_not_enough_data_to_decompress(self):
+        self.stream.CHUNK_SIZE = 1
+        chunk = self.stream.read()
+        self.assertEqual(
+            b"line1\nline2\nline3\n",
+            chunk
+        )
