@@ -20,14 +20,6 @@ main () {
       # Unpacked sources and specs
       local srcpackagename=`head -1 ${_debianpath}/debian/changelog | cut -d' ' -f1`
       local version=`head -1 ${_debianpath}/debian/changelog | sed 's|^.*(||;s|).*$||' | awk -F "-" '{print $1}'`
-      # Get version number from the latest git tag for openstack packages
-      [ "$IS_OPENSTACK" == "true" ] && version=`git -C $_srcpath describe --abbrev=0`
-      # Deal with PyPi versions like 2015.1.0rc1
-      # It breaks version comparison
-      # Change it to 2015.1.0~rc1
-      local convert_version_py="$(dirname $(readlink -e $0))/convert-version.py"
-      version=$(python ${convert_version_py} --tag ${version})
-
       local binpackagenames="`cat ${_debianpath}/debian/control | grep ^Package | cut -d' ' -f 2 | tr '\n' ' '`"
       local epochnumber=`head -1 ${_debianpath}/debian/changelog | grep -o "(.:" | sed 's|(||'`
       local distro=`head -1 ${_debianpath}/debian/changelog | awk -F'[ ;]' '{print $3}'`
@@ -36,8 +28,16 @@ main () {
       # $message $author $email $cdate $commitsha $lastgitlog
       get_last_commit_info ${_srcpath}
 
-      TAR_NAME="${srcpackagename}_${version#*:}.orig.tar.gz"
+      TAR_NAME="${srcpackagename}_${version}.orig.tar.gz"
       if [ "$IS_OPENSTACK" == "true" ] ; then
+          # Get version number from the latest git tag for openstack packages
+          local release_tag=$(git -C $_srcpath describe --abbrev=0)
+          # Deal with PyPi versions like 2015.1.0rc1
+          # It breaks version comparison
+          # Change it to 2015.1.0~rc1
+          local convert_version_py="$(dirname $(readlink -e $0))/convert-version.py"
+          version=$(python ${convert_version_py} --tag ${release_tag})
+          local TAR_NAME="${srcpackagename}_${version}.orig.tar.gz"
           # Get revision number as commit count for src+spec projects
           local _src_commit_count=`git -C $_srcpath rev-list --no-merges origin/${SOURCE_BRANCH} | wc -l`
           local _spec_commit_count=`git -C $_specpath rev-list --no-merges origin/${SPEC_BRANCH} | wc -l`
@@ -65,8 +65,20 @@ main () {
               tar -czf ${BUILDDIR}/$TAR_NAME $EXCLUDES .
           else
               python setup.py --version  # this will download pbr if it's not available
-              PBR_VERSION=$version python setup.py sdist -d ${BUILDDIR}/
-              mv ${BUILDDIR}/*.gz ${BUILDDIR}/$TAR_NAME
+              PBR_VERSION=$release_tag python setup.py sdist -d ${BUILDDIR}/
+              # Fix source folder name at sdist tarball
+              local sdist_tarball=$(find ${BUILDDIR}/ -maxdepth 1 -name "*.gz")
+              if [ "$(tar -tf $sdist_tarball | head -n 1 | cut -d'/' -f1)" != "${srcpackagename}-${version}" ] ; then
+                  # rename source folder
+                  local tempdir=$(mktemp -d)
+                  tar -C $tempdir -xf $sdist_tarball
+                  mv $tempdir/* $tempdir/${srcpackagename}-${version}
+                  tar -C $tempdir -czf ${BUILDDIR}/$TAR_NAME ${srcpackagename}-${version}
+                  rm -f $sdist_tarball
+                  [ -d "$tempdir" ] && rm -rf $tempdir
+              else
+                  mv $sdist_tarball ${BUILDDIR}/$TAR_NAME || :
+              fi
           fi
           popd &>/dev/null
       else
