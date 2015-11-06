@@ -105,8 +105,8 @@ class TestRelationObject(TestObjectBase):
 
     def test_hashable(self):
         self.check_hashable(
-            generator.gen_relation(name="test1")[0],
-            generator.gen_relation(name="test1", version=["le", 1])[0]
+            generator.gen_relation(name="test1"),
+            generator.gen_relation(name="test1", version=["le", 1])
         )
 
     def test_from_args(self):
@@ -135,9 +135,9 @@ class TestRelationObject(TestObjectBase):
 class TestVersionRange(TestObjectBase):
     def test_equal(self):
         self.check_equal(
-            generator.gen_relation(name="test1"),
-            generator.gen_relation(name="test1"),
-            generator.gen_relation(name="test2")
+            VersionRange("eq", 1),
+            VersionRange("eq", 1),
+            VersionRange("le", 1)
         )
 
     def test_hashable(self):
