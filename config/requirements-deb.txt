@@ -3,6 +3,7 @@ apache2
 aptitude
 atop
 bc
+biosdevname
 bridge-utils
 build-essential
 ceilometer-agent-central
