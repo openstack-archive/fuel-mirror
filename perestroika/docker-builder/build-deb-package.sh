@@ -2,6 +2,8 @@
 . $(dirname $(readlink -f $0))/config
 CONTAINERNAME=sbuild:latest
 CACHEPATH=/var/cache/docker-builder/sbuild
+STARTTIME=`date +%s`
+
 [ -z "$DIST" ] && DIST=trusty
 
 if [ -n "$EXTRAREPO" ] ; then
@@ -25,10 +27,11 @@ elif [ -n "$debianfolder" ] ; then
     SOURCEDEST=$debianfolder
 fi
 
+exec 1> >(exec perl -e '$|=1;while(<STDIN>){my $p=sprintf("[%5ds]", time()-'$STARTTIME');print STDOUT $p.$_}') 2>&1
+
 docker run ${DNSPARAM} --privileged --rm -v ${CACHEPATH}:/srv/images:ro \
     -v $(pwd):/srv/source ${CONTAINERNAME} \
     bash -c "( sed -i '/debian\/rules/d' /usr/bin/sbuild
-
              DEB_BUILD_OPTIONS=nocheck /usr/bin/sbuild -d ${DIST} --nolog \
                  --source --force-orig-source \
                  $EXTRACMD \

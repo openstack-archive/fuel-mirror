@@ -3,6 +3,7 @@
 CONTAINERNAME=mockbuild:latest
 CACHEPATH=/var/cache/docker-builder/mock
 DIST_VERSION=`echo $DIST | sed 's|centos||'`
+STARTTIME=`date +%s`
 [ -z "${DIST_VERSION}" ] && DIST_VERSION=7
 
 EXTRACMD=":"
@@ -20,6 +21,8 @@ if [ -n "$EXTRAREPO" ] ; then
    IFS="$OLDIFS"
    EXTRACMD="$EXTRACMD /etc/mock/centos-${DIST_VERSION}-x86_64.cfg"
 fi
+
+exec 1> >(exec perl -e '$|=1;while(<STDIN>){my $p=sprintf("[%5ds]", time()-'$STARTTIME');print STDOUT $p.$_}') 2>&1
 
 docker run ${DNSPARAM} --privileged --rm -v ${CACHEPATH}:/srv/mock:ro \
     -v $(pwd):/home/abuild/rpmbuild ${CONTAINERNAME} \
