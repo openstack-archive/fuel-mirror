@@ -37,13 +37,24 @@ class PackagesTree(Index):
         if package.mandatory:
             self.mandatory_packages.append(package)
 
-    def get_unresolved_dependencies(self, unresolved=None):
+    def get_unresolved_dependencies(self, base=None):
         """Gets the set of unresolved dependencies.
 
-        :param unresolved: the known list of unresolved packages.
+        :param base: the base index to resolve dependencies
         :return: the set of unresolved depends.
         """
-        return self.__get_unresolved_dependencies(self)
+        external = self.__get_unresolved_dependencies(self)
+        if base is None:
+            return external
+
+        unresolved = set()
+        for relation in external:
+            for rel in relation:
+                if base.find(rel.name, rel.version) is not None:
+                    break
+            else:
+                unresolved.add(relation)
+        return unresolved
 
     def get_minimal_subset(self, main, requirements):
         """Gets the minimal work subset.
