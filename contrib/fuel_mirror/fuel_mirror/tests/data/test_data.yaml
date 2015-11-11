@@ -1,0 +1,43 @@
+osnames:
+    ubuntu: "ubuntu"
+    mos: "ubuntu"
+    mos_centos: "centos"
+    centos: "centos"
+
+packages: &packages
+    - "package1"
+
+inheritance:
+    ubuntu: mos
+    centos: mos_centos
+
+groups:
+    mos:
+        -   name: "mos"
+            type: "deb"
+            uri: "http://localhost/mos"
+            suite: "mos$mos_version"
+            section: "main restricted"
+            priority: 1000
+
+    ubuntu:
+        -   name: "ubuntu"
+            type: "deb"
+            uri: "http://localhost/ubuntu"
+            suite: "trusty"
+            section: "main multiverse restricted universe"
+            priority: 500
+
+    mos_centos:
+        -   name: "mos"
+            type: "rpm"
+            uri: "http://localhost/mos$mos_version/x86_64"
+            priority: 10
+    centos:
+        -   name: "centos"
+            type: "rpm"
+            uri: "http://localhost/centos/os/x86_64"
+            priority: 5
+
+requirements:
+    ubuntu: *packages
