@@ -20,6 +20,7 @@ import sys
 
 import six
 
+from packetary.library.utils import localize_repo_url
 from packetary.objects import FileChecksum
 from packetary.tests import base
 from packetary.tests.stubs.generator import gen_repository
@@ -65,12 +66,15 @@ class TestRpmDriver(base.TestCase):
         repos = []
 
         self.driver.get_repository(
-            self.connection, "http://host/centos/os", "x86_64", repos.append
+            self.connection,
+            "http://host/centos/os/x86_64",
+            "x86_64",
+            repos.append
         )
 
         self.assertEqual(1, len(repos))
         repo = repos[0]
-        self.assertEqual("os", repo.name)
+        self.assertEqual("/centos/os/x86_64", repo.name)
         self.assertEqual("", repo.origin)
         self.assertEqual("x86_64", repo.architecture)
         self.assertEqual("http://host/centos/os/x86_64/", repo.url)
@@ -189,16 +193,17 @@ class TestRpmDriver(base.TestCase):
 
     @mock.patch("packetary.drivers.rpm_driver.utils")
     def test_fork_repository(self, utils):
-        repo = gen_repository("os", url="http://localhost/os/x86_64")
-        clone = self.driver.fork_repository(
+        repo = gen_repository("os", url="http://localhost/os/x86_64/")
+        utils.localize_repo_url = localize_repo_url
+        new_repo = self.driver.fork_repository(
             self.connection,
             repo,
             "/repo"
         )
 
         utils.ensure_dir_exist.assert_called_once_with("/repo/os/x86_64/")
-        self.assertEqual(repo.name, clone.name)
-        self.assertEqual(repo.architecture, clone.architecture)
-        self.assertEqual("/repo/os/x86_64/", clone.url)
+        self.assertEqual(repo.name, new_repo.name)
+        self.assertEqual(repo.architecture, new_repo.architecture)
+        self.assertEqual("/repo/os/x86_64/", new_repo.url)
         self.createrepo.MetaDataGenerator()\
             .doFinalMove.assert_called_once_with()

@@ -72,15 +72,10 @@ class RpmRepositoryDriver(RepositoryDriverBase):
         return (url.rstrip("/") for url in urls)
 
     def get_repository(self, connection, url, arch, consumer):
-        """Overrides method of superclass."""
-        # Currently supported repositories, that has URL in following format:
-        # baseurl/{name}/{architecture}
-        # because the architecture is sentetic part of rpm repository URL
-        name = url.rsplit("/", 1)[-1]
-        baseurl = "/".join((url, arch, ""))
+        name = utils.get_path_from_url(url, False)
         consumer(Repository(
             name=name,
-            url=baseurl,
+            url=url + "/",
             architecture=arch,
             origin=""
         ))
@@ -165,17 +160,14 @@ class RpmRepositoryDriver(RepositoryDriverBase):
 
     def fork_repository(self, connection, repository, destination,
                         source=False, locale=False):
-        """Overrides method of superclass."""
         # TODO(download gpk)
         # TODO(sources and locales)
-        destination = os.path.join(
-            destination, repository.name,
-            repository.architecture, ""
-        )
         new_repo = copy.copy(repository)
-        new_repo.url = destination
-        self.logger.info("clone repository %s to %s", repository, destination)
-        utils.ensure_dir_exist(destination)
+        new_repo.url = utils.localize_repo_url(destination, repository.url)
+        self.logger.info(
+            "clone repository %s to %s", repository, new_repo.url
+        )
+        utils.ensure_dir_exist(new_repo.url)
         self.rebuild_repository(new_repo, set())
         return new_repo
 
