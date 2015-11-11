@@ -46,6 +46,29 @@ class TestPackagesTree(base.TestCase):
             (x.name for x in unresolved)
         )
 
+    def test_get_unresolved_dependencies_with_main(self):
+        ptree = PackagesTree()
+        ptree.add(generator.gen_package(
+            1, requires=[generator.gen_relation("unresolved")]))
+        ptree.add(generator.gen_package(2, requires=None))
+        ptree.add(generator.gen_package(
+            3, requires=[generator.gen_relation("package1")]
+        ))
+        ptree.add(generator.gen_package(
+            4,
+            requires=[generator.gen_relation("package5")]
+        ))
+        main = Index()
+        main.add(generator.gen_package(5, requires=[
+            generator.gen_relation("package6")
+        ]))
+
+        unresolved = ptree.get_unresolved_dependencies(main)
+        self.assertItemsEqual(
+            ["unresolved"],
+            (x.name for x in unresolved)
+        )
+
     def test_get_minimal_subset_with_master(self):
         ptree = PackagesTree()
         ptree.add(generator.gen_package(1, requires=None))
