@@ -90,6 +90,16 @@ def get_path_from_url(url, ensure_file=True):
     return comps.path
 
 
+def localize_repo_url(localurl, repo_url):
+    """Gets local repository url.
+
+    :param localurl: the base local URL
+    :param repo_url: the origin URL of repository
+    :return: localurl + get_path_from_url(repo_url)
+    """
+    return localurl.rstrip("/") + urlparse(repo_url).path
+
+
 def ensure_dir_exist(path):
     """Creates directory if it does not exist.
 
