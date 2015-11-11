@@ -1,0 +1,8 @@
+include AUTHORS
+include ChangeLog
+recursive-include etc *
+
+exclude .gitignore
+exclude .gitreview
+
+global-exclude *.pyc
