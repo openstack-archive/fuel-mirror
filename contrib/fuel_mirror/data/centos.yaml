@@ -1,0 +1,57 @@
+centos_baseurl: &centos_baseurl
+mos_baseurl: &mos_baseurl
+
+sources:
+    -   &centos
+        name: "centos"
+        uri: "http://mirror.centos.org/centos/6/os/x86_64"
+        type: "rpm"
+        priority: null
+
+    -   &centos_updates
+        name: "centos-updates"
+        uri: "http://mirror.centos.org/centos/6/updates/x86_64"
+        type: "rpm"
+        priority: null
+
+    -   &mos
+        name: "mos"
+        uri: "http://mirror.fuel-infra.org/mos-repos/centos/mos$mos_version-centos6-fuel/os/x86_64"
+        type: "rpm"
+        priority: null
+
+    -   &mos_updates
+        name: "mos-updates"
+        uri: "http://mirror.fuel-infra.org/mos-repos/centos/mos$mos_version-centos6-fuel/updates/x86_64"
+        type: "rpm"
+        priority: null
+
+    -   &mos_security
+        name: "mos-security"
+        uri: "http://mirror.fuel-infra.org/mos-repos/centos/mos$mos_version-centos6-fuel/security/x86_64"
+        type: "rpm"
+        priority: null
+
+    -   &mos_holdback
+        name: "mos-holdback"
+        uri: "http://mirror.fuel-infra.org/mos-repos/centos/mos$mos_version-centos6-fuel/holdback/x86_64"
+        type: "rpm"
+        priority: null
+
+repositories:
+    mos:
+        - *mos
+        - *mos_updates
+        - *mos_security
+        - *mos_holdback
+
+    centos:
+        - *centos
+        - *centos_updates
+
+
+inheritance:
+    mos: centos
+
+osnames:
+    mos: centos
