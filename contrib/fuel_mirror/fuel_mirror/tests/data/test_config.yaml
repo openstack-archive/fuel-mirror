@@ -1,0 +1,6 @@
+threads_num: 1
+ignore_errors_num: 2
+retries_num: 3
+http_proxy: "http://localhost"
+https_proxy: "https://localhost"
+target_dir: "/var/www/"

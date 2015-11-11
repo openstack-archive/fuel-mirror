@@ -1,0 +1,22 @@
+fuel_release_match:
+   operating_system: CentOS
+
+inheritance:
+    centos: mos
+
+groups:
+    mos:
+        -   name: "mos"
+            type: "rpm"
+            uri: "http://localhost/mos$mos_version/x86_64"
+            priority: 10
+
+    centos:
+        -   name: "centos"
+            type: "rpm"
+            uri: "http://localhost/centos/os/x86_64"
+            priority: 5
+
+requirements:
+    centos:
+        -   "package_rpm"

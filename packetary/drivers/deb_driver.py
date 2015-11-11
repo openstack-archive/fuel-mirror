@@ -180,21 +180,19 @@ class DebRepositoryDriver(RepositoryDriverBase):
 
     def fork_repository(self, connection, repository, destination,
                         source=False, locale=False):
-        """Overrides method of superclass."""
         # TODO(download gpk)
         # TODO(sources and locales)
-        if not destination.endswith(os.path.sep):
-            destination += os.path.sep
-
-        clone = copy.copy(repository)
-        clone.url = destination
+        new_repo = copy.copy(repository)
+        new_repo.url = utils.localize_repo_url(destination, repository.url)
         packages_file = utils.get_path_from_url(
-            self._get_url_of_metafile(clone, "Packages")
+            self._get_url_of_metafile(new_repo, "Packages")
         )
         release_file = utils.get_path_from_url(
-            self._get_url_of_metafile(clone, "Release")
+            self._get_url_of_metafile(new_repo, "Release")
         )
-        self.logger.info("clone repository %s to %s", repository, destination)
+        self.logger.info(
+            "clone repository %s to %s", repository, new_repo.url
+        )
         utils.ensure_dir_exist(os.path.dirname(release_file))
 
         release = deb822.Release()
@@ -208,7 +206,7 @@ class DebRepositoryDriver(RepositoryDriverBase):
 
         open(packages_file, "ab").close()
         gzip.open(packages_file + ".gz", "ab").close()
-        return clone
+        return new_repo
 
     def _update_suite_index(self, repository):
         """Updates the Release file in the suite."""
