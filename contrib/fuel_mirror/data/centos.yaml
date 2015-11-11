@@ -1,0 +1,66 @@
+# the URL definition
+centos_baseurl: &centos_baseurl http://mirror.centos.org/centos/6
+mos_baseurl: &mos_baseurl http://mirror.fuel-infra.org/mos-repos/centos/mos$mos_version-centos6-fuel
+
+
+name: "centos"
+        osname: "centos"
+        type: "rpm"
+        baseurl: "http://mirror.centos.org/centos/{centos_version}"
+        repositories:
+            - "os"
+            - "updates"
+sources:
+    -   &centos
+        name: "centos"
+        uri: *centos_baseurl"/os/x86_64"
+        type: "rpm"
+        priority: 500
+
+    -   &centos_updates
+        name: "centos-updates"
+        uri: *centos_baseurl"/updates/x86_64"
+        type: "rpm"
+        priority: 500
+
+    -   &mos
+        name: "mos"
+        uri: *mos_baseurl"/os/x86_64"
+        type: "rpm"
+        priority: 1000
+
+    -   &mos_updates
+        name: "mos-updates"
+        uri: *mos_baseurl"/updates/x86_64"
+        type: "rpm"
+        priority: 1000
+
+    -   &mos_security
+        name: "mos-security"
+        uri: *mos_baseurl"/security/x86_64"
+        type: "rpm"
+        priority: 1000
+
+    -   &mos_holdback
+        name: "mos-holdback"
+        uri: *mos_baseurl"/holdback/x86_64"
+        type: "rpm"
+        priority: 1000
+
+repositories:
+    mos:
+        - *mos
+        - *mos_updates
+        - *mos_security
+        - *mos_holdback
+
+    centos:
+        - *centos
+        - *centos_updates
+
+
+inheritance:
+    mos: centos
+
+osnames:
+    mos: centos

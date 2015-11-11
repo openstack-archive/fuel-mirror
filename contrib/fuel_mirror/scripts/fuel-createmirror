@@ -1,0 +1,77 @@
+#!/bin/bash
+
+echo "This script is DEPRECATED. Please use fuel-mirror utility!"
+
+# This shell script was wraps the fuel-mirror utility to provide backward compatibility
+# with previous version of tool.
+
+usage() {
+cat <<EOF
+Usage: `basename $0` [options]
+
+Create and update local mirrors of MOS and/or Ubuntu.
+
+IMPORTANT!
+If NO parameters specified, this script will:
+- Create/Update both MOS and Ubuntu local mirrors
+- Set them as repositories for existing NEW environments in Fuel UI
+- Set them as DEFAULT repositories for new environments
+
+Options:
+
+  -h| --help          This help screen.
+  -d| --no-default    Don't change default repositories for new environments
+  -a| --no-apply      Don't apply changes to Fuel environments
+  -M| --mos           Create/Update MOS local mirror only
+  -U| --ubuntu        Create/Update Ubuntu local mirror only
+  -p| --password      Fuel Master admin password (defaults to admin)
+
+EOF
+}
+
+# Parse options
+OPTS=`getopt -o hdaMUNp: -l help,no-default,no-apply,mos,ubuntu,password:,dry-run -- "$@"`
+if [ $? != 0 ]; then
+    usage
+    exit 1
+fi
+
+eval set -- "$OPTS"
+
+CMD_OPTS="ubuntu.yaml"
+
+while true ; do
+    case "$1" in
+        -h| --help        ) usage ; exit 0;;
+        -d | --no-default ) OPT_NO_DEFAULT=1; shift;;
+        -a | --no-apply   ) OPT_NO_APPLY=1; shift;;
+        -N | --dry-run    ) EXEC_PREFIX="echo  EXEC  "; shift;;
+        -M | --mos        ) UBUNTU=1; REPOS="$REPOS mos"; shift;;
+        -U | --ubuntu     ) UBUNTU=1; REPOS="$REPOS ubuntu"; shift;;
+        -p | --password   ) CMD_OPTS="$CMD_OPTS --fuel-password=$2"; shift; shift;;
+        --                ) shift; break;;
+        *                 ) break;;
+    esac
+done
+
+if [[ "$@" != "" ]]; then
+    echo "Invalid option -- $@"
+    usage
+    exit 1
+fi
+
+if [[ "$REPOS" != "" ]]; then
+    CMD_OPTS="CMD_OPTS -R $REPOS"
+fi
+
+$EXEC_PREFIX fuel-mirror create ${CMD_OPTS}
+
+if [[ "$OPT_NO_DEFAULT" == "" ]]; then
+    CMD_OPTS="$CMD_OPTS --default"
+fi
+
+if [[ "OPT_NO_APPLY" == "" ]]; then
+    CMD_OPTS="$CMD_OPTS --apply"
+fi
+
+$EXEC_PREFIX fuel-mirror apply ${CMD_OPTS}
