@@ -12,6 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import six
+
 
 class Repository(object):
     """Structure to describe repository object."""
@@ -32,12 +34,12 @@ class Repository(object):
     def __str__(self):
         if isinstance(self.name, tuple):
             return ".".join(self.name)
-        return str(self.name)
+        return six.text_type(self.name)
 
     def __unicode__(self):
         if isinstance(self.name, tuple):
             return u".".join(self.name)
-        return unicode(self.name, "utf8")
+        return six.u(self.name)
 
     def __copy__(self):
         """Creates shallow copy of package."""
