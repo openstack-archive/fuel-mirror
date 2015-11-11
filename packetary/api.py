@@ -160,18 +160,29 @@ class RepositoryApi(object):
             )
         return stat
 
-    def get_unresolved_dependencies(self, urls):
+    def get_unresolved_dependencies(self, origin, main=None):
         """Gets list of unresolved dependencies for repository(es).
 
-        :param urls: The list of repository`s URLs
+        :param origin: The list of repository`s URLs
+        :param main: The main repository(es) URL
         :return: list of unresolved dependencies
         """
         packages = PackagesTree()
         self.controller.load_packages(
-            self._get_repositories(urls),
+            self._get_repositories(origin),
             packages.add
         )
-        return packages.get_unresolved_dependencies()
+
+        if main is not None:
+            base = Index()
+            self.controller.load_packages(
+                self._get_repositories(main),
+                base.add
+            )
+        else:
+            base = None
+
+        return packages.get_unresolved_dependencies(base)
 
     def _get_repositories(self, urls):
         """Gets the set of repositories by url."""
