@@ -1,0 +1,105 @@
+common:
+    threads_num: 10
+    ignore_errors_num: 2
+    retries_num: 3
+    target_dir: "/var/www/nailgun"
+# uncomment if need
+#   http_proxy: null
+#   https_proxy: null
+#   fuel_server: 10.20.0.2
+#   base_url: http://10.20.0.2:8080
+
+versions:
+    centos_version: "6"
+    ubuntu_version: "trusty"
+
+sources:
+    -   name: "mos"
+        osname: "ubuntu"
+        type: "deb"
+        baseurl: "http://mirror.fuel-infra.org/mos-repos/ubuntu/{mos_version}"
+        repositories:
+            - "mos{mos_version} main restricted"
+            - "mos{mos_version}-updates main restricted"
+            - "mos{mos_version}-security main restricted"
+            - "mos{mos_version}-holdback main restricted"
+    -   name: "mos"
+        osname: "centos"
+        type: "yum"
+        baseurl: "http://mirror.fuel-infra.org/mos-repos/centos/mos{mos_version}-centos{centos_version}-fuel"
+        repositories:
+            - "cr"
+            - "holdback"
+            - "os"
+            - "security"
+            - "updates"
+
+    -   name: "ubuntu"
+        osname: "ubuntu"
+        type: "deb"
+        master: "mos"
+        baseurl: "http://archive.ubuntu.com/ubuntu/"
+        repositories:
+            - "{ubuntu_version} main multiverse restricted universe"
+            - "{ubuntu_version}-updates main multiverse restricted universe"
+            - "{ubuntu_version}-security main multiverse restricted universe"
+        bootstrap:
+             - "acpi-support"
+             - "anacron"
+             - "aptitude"
+             - "atop"
+             - "bash-completion"
+             - "bc"
+             - "build-essential"
+             - "cloud-init"
+             - "conntrackd"
+             - "cpu-checker"
+             - "cpufrequtils"
+             - "debconf-utils"
+             - "devscripts"
+             - "fping"
+             - "git"
+             - "grub-pc"
+             - "htop"
+             - "ifenslave"
+             - "iperf"
+             - "iptables-persistent"
+             - "irqbalance"
+             - "language-pack-en"
+             - "linux-firmware-nonfree"
+             - "linux-headers-generic-lts-trusty"
+             - "linux-image-generic-lts-trusty"
+             - "livecd-rootfs"
+             - "memcached"
+             - "monit"
+             - "nginx"
+             - "ntp"
+             - "openssh-server"
+             - "percona-toolkit"
+             - "percona-xtrabackup"
+             - "pm-utils"
+             - "python-lesscpy"
+             - "python-pip"
+             - "puppet"
+             - "rsyslog-gnutls"
+             - "rsyslog-relp"
+             - "screen"
+             - "swift-plugin-s3"
+             - "sysfsutils"
+             - "sysstat"
+             - "telnet"
+             - "tmux"
+             - "traceroute"
+             - "ubuntu-standard"
+             - "vim"
+             - "virt-what"
+             - "xinetd"
+
+    -   name: "centos"
+        osname: "centos"
+        type: "rpm"
+        master: "mos"
+        baseurl: "http://mirror.centos.org/centos/{centos_version}"
+        repositories:
+            - "os"
+            - "updates"
