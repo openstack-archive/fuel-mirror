@@ -102,7 +102,7 @@ set_default_params () {
 
 fetch_upstream () {
   # find corresponding requests
-  if [ -n "$SPEC_PROJECT" ] ; then
+  if [ -n "$SPEC_PROJECT" -a "${GERRIT_TOPIC%/*}" = "spec" ] ; then
       local CORR_GERRIT_PROJECT=$SRC_PROJECT
       [ "$GERRIT_PROJECT" == "$SRC_PROJECT" ] && CORR_GERRIT_PROJECT=$SPEC_PROJECT
       local search_string="topic:${GERRIT_TOPIC} branch:${GERRIT_BRANCH} project:${CORR_GERRIT_PROJECT} -status:abandoned"
