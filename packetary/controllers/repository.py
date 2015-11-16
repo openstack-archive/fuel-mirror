@@ -145,17 +145,17 @@ class RepositoryController(object):
         with self.context.async_section(0) as section:
             for r in repositories:
                 section.execute(
-                    self._clone_repository,
+                    self._fork_repository,
                     r, destination, source, locale, mirros
                 )
         return mirros
 
-    def _clone_repository(self, r, destination, source, locale, mirrors):
+    def _fork_repository(self, r, destination, source, locale, mirrors):
         """Creates clone of repository and stores it in mirrors."""
-        clone = self.driver.clone_repository(
+        new_repository = self.driver.fork_repository(
             self.context.connection, r, destination, source, locale
         )
-        mirrors[r] = clone
+        mirrors[r] = new_repository
 
     def _copy_package(self, target, package, observer):
         """Synchronises remote file to local fs."""
