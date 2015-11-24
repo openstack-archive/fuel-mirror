@@ -71,8 +71,8 @@ set_default_params () {
     fi
     if [ "$GERRIT_CHANGE_STATUS" == "NEW" ] ; then
       REQUEST_NUM="CR-$GERRIT_CHANGE_NUMBER"
-      local _LP_BUG=`echo "$GERRIT_TOPIC" | egrep -o "bug/[0-9]+" | cut -d'/' -f2`
-      [ -z "$_LP_BUG" ] && _LP_BUG=`echo "$GERRIT_MEGGASE" | egrep -i -o "(closes|partial|related)-bug: ?#?[0-9]+" | sort -u | head -1 | awk -F'[: #]' '{print $NF}'`
+      local _LP_BUG=`echo "$GERRIT_TOPIC" | egrep -o "group/[0-9]+" | cut -d'/' -f2`
+      #[ -z "$_LP_BUG" ] && _LP_BUG=`echo "$GERRIT_MEGGASE" | egrep -i -o "(closes|partial|related)-bug: ?#?[0-9]+" | sort -u | head -1 | awk -F'[: #]' '{print $NF}'`
       [ -n "$_LP_BUG" ] && LP_BUG="LP-$_LP_BUG"
     else
       if [ -n "$GERRIT_MESSAGE" ] ; then
