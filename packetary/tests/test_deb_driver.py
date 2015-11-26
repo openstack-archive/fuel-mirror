@@ -20,6 +20,7 @@ import six
 
 
 from packetary.drivers import deb_driver
+from packetary.library.utils import localize_repo_url
 from packetary.tests import base
 from packetary.tests.stubs.generator import gen_package
 from packetary.tests.stubs.generator import gen_repository
@@ -188,26 +189,29 @@ class TestDebDriver(base.TestCase):
         os.path.sep = "/"
         os.path.join = lambda *x: "/".join(x)
         utils.get_path_from_url = lambda x: x
-        repo = gen_repository(name=("trusty", "main"), url="http://localhost")
+        utils.localize_repo_url = localize_repo_url
+        repo = gen_repository(
+            name=("trusty", "main"), url="http://localhost/test/"
+        )
         files = [
             mock.MagicMock(),
             mock.MagicMock()
         ]
         open.side_effect = files
-        clone = self.driver.fork_repository(self.connection, repo, "/root")
-        self.assertEqual(repo.name, clone.name)
-        self.assertEqual(repo.architecture, clone.architecture)
-        self.assertEqual(repo.origin, clone.origin)
-        self.assertEqual("/root/", clone.url)
+        new_repo = self.driver.fork_repository(self.connection, repo, "/root")
+        self.assertEqual(repo.name, new_repo.name)
+        self.assertEqual(repo.architecture, new_repo.architecture)
+        self.assertEqual(repo.origin, new_repo.origin)
+        self.assertEqual("/root/test/", new_repo.url)
         utils.ensure_dir_exist.assert_called_once_with(os.path.dirname())
         open.assert_any_call(
-            "/root/dists/trusty/main/binary-amd64/Release", "wb"
+            "/root/test/dists/trusty/main/binary-amd64/Release", "wb"
         )
         open.assert_any_call(
-            "/root/dists/trusty/main/binary-amd64/Packages", "ab"
+            "/root/test/dists/trusty/main/binary-amd64/Packages", "ab"
         )
         gzip.open.assert_called_once_with(
-            "/root/dists/trusty/main/binary-amd64/Packages.gz", "ab"
+            "/root/test/dists/trusty/main/binary-amd64/Packages.gz", "ab"
         )
 
     @mock.patch.multiple(
