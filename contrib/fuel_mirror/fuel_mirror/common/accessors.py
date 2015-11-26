@@ -50,5 +50,11 @@ def get_fuel_api_accessor(address=None, user=None, password=None):
 
     # import fuelclient.ClientAPI after configuring
     # environment variables
-    from fuelclient import objects
+    try:
+        from fuelclient import objects
+    except ImportError:
+        raise RuntimeError(
+            "python-fuelclient module seems not installed. "
+            "This action requires it to be available."
+        )
     return objects
