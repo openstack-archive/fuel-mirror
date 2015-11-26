@@ -1,14 +1,40 @@
-Source: fuel-createmirror
-Section: admin
-Priority: optional
-Maintainer: Mirantis Product <product@mirantis.com>
-Build-Depends: debhelper (>= 7)
+Source: fuel-mirror
+Section: unknown
+Priority: net
+Maintainer: Mirantis Producta <product@mirantis.com>
+Build-Depends: debhelper (>= 8.0.0), python-setuptools, python-pbr (>= 0.8)
+X-Python-Version: 2.6, 2.7
 Standards-Version: 3.9.2
+Homepage: mirantis.com
 
-Package: fuel-createmirror
+Package: python-fuel-mirror
 Architecture: all
-Depends: ${shlibs:Depends},python,dpkg-dev,openssl,rsync
-Description: CLI script for MOS/upstream mirroring
- **fuel-createmirror -- utility for creating local mirrors of MOS and
- upstream OS repositories
+Depends: python-babel (>= 1.3),
+    python-cliff (>= 1.7.0),
+    python-fuelclient (>= 7.0.0),
+    python-packetary (>= 0.1.0),
+    python-pbr (>= 0.8),
+    python-setuptools,
+    python-six (>= 1.5.2),
+    PyYAML (>= 3.10),
+    pytz
+Description: Fuel-Mirror package
+ .
+
+Package: python-packetary
+Architecture: all
+Depends: createrepo,
+    python-babel (>= 1.3),
+    python-bintrees (>= 2.0.2),
+    python-chardet (>= 2.0.1),
+    python-cliff (>= 1.7.0),
+    python-debian (>= 1.1.23),
+    python-eventlet (>= 0.15),
+    python-lxml (>= 1.1.23),
+    python-pbr (>= 0.8),
+    python-six (>= 1.5.2),
+    python-setuptools,
+    python-stevedore (>= 1.1.0),
+    pytz
+Description: Packetary package
  .
