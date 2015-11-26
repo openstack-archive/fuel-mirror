@@ -1,60 +1,32 @@
 #!/usr/bin/make -f
 
-# FIXME (skulanov)
-# Since we are still building packages with ISO
-# we have to define DEB_VERSION_EPOCH_UPSTREAM explicitly
-DEB_VERSION_EPOCH_UPSTREAM=8.0
-# otherwise this variable correctly defined below
-# include /usr/share/dpkg/pkg-info.mk
+PYTHONS:=$(shell pyversions -vr)
 
-export DH_ALWAYS_EXCLUDE=CVS:.git:specs
+include /usr/share/openstack-pkg-tools/pkgos.make
 
-PACKAGE=$(shell dh_listpackages)
+%:
+	dh $@ --buildsystem=python_distutils --with python2
 
-build:
-	dh_testdir
-
-clean:
-	dh_testdir
-	dh_testroot
-	dh_clean -d
-
-binary-indep: build
-
-binary-arch: build
-	dh_testdir
-	dh_testroot
-	dh_prep
-	dh_installdirs
-
-	dh_installdocs
-	dh_installchangelogs
-
-# Copy the packages's files.
-	mkdir -p debian/$(PACKAGE)/opt/$(PACKAGE)-$(DEB_VERSION_EPOCH_UPSTREAM)
-	cp fuel-createmirror debian/$(PACKAGE)/opt/$(PACKAGE)-$(DEB_VERSION_EPOCH_UPSTREAM)
-	cp deb-mirror debian/$(PACKAGE)/opt/$(PACKAGE)-$(DEB_VERSION_EPOCH_UPSTREAM)
-	cp -r util debian/$(PACKAGE)/opt/$(PACKAGE)-$(DEB_VERSION_EPOCH_UPSTREAM)
-	cp -r config debian/$(PACKAGE)/opt/$(PACKAGE)-$(DEB_VERSION_EPOCH_UPSTREAM)
-	cp LICENSE debian/$(PACKAGE)/opt/$(PACKAGE)-$(DEB_VERSION_EPOCH_UPSTREAM)
-	cp README.md debian/$(PACKAGE)/opt/$(PACKAGE)-$(DEB_VERSION_EPOCH_UPSTREAM)
-
-#
-# If you need to move files around in debian/$(PACKAGE) or do some
-# binary patching, do it here
-#
+override_dh_clean:
+	rm -rf  build
+	dh_clean -O--buildsystem=python_distutils
 
 
-# This has been known to break on some wacky binaries.
-#	dh_strip
-	dh_compress
-#	dh_fixperms
-	dh_makeshlibs
-	dh_installdeb
-	-dh_shlibdeps
-	dh_gencontrol
-	dh_md5sums
-	dh_builddeb
+override_dh_auto_install:
+	set -e ; for pyvers in $(PYTHONS); do \
+		python$$pyvers setup.py install --install-layout=deb \
+			--root $(CURDIR)/debian/python-packetary; \
+	done
+	set -e ; cd contrib/fuel_mirror/; \
+	for pyvers in $(PYTHONS); do \
+		python$$pyvers ./setup.py install --install-layout=deb \
+			--root $(CURDIR)/debian/python-fuel-mirror; \
+	done
 
-binary: binary-indep binary-arch
-.PHONY: build clean binary-indep binary-arch binary
+override_dh_installcatalogs:
+override_dh_installemacsen override_dh_installifupdown:
+override_dh_installinfo override_dh_installmenu override_dh_installmime:
+override_dh_installmodules override_dh_installlogcheck:
+override_dh_installpam override_dh_installppp override_dh_installudev override_dh_installwm:
+override_dh_installxfonts override_dh_gconf override_dh_icons override_dh_perl override_dh_usrlocal:
+override_dh_installgsettings:
