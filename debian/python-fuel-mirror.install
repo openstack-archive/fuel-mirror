@@ -1,0 +1,2 @@
+contrib/fuel_mirror/etc/config.yaml /etc/fuel-mirror
+contrib/fuel_mirror/scripts/fuel-createmirror /usr/bin/
