@@ -28,7 +28,7 @@ main () {
       # $message $author $email $cdate $commitsha $lastgitlog
       get_last_commit_info ${_srcpath}
 
-      TAR_NAME="${srcpackagename}_${version}.orig.tar.gz"
+      TAR_NAME="${srcpackagename}_${version#*:}.orig.tar.gz"
       if [ "$IS_OPENSTACK" == "true" ] ; then
           # Get version number from the latest git tag for openstack packages
           local release_tag=$(git -C $_srcpath describe --abbrev=0)
