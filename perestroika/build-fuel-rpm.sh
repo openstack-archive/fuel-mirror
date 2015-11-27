@@ -27,6 +27,8 @@ main () {
     ## Add changelog section if it doesn't exist
     [ `cat ${specfile} | grep -c '^%changelog'` -eq 0 ] && echo "%changelog" >> ${specfile}
     local _rev=`git -C $_srcpath rev-list --no-merges origin/${SOURCE_BRANCH} | wc -l`
+    # if gitshasrc is not defined (we are not using fetch_upstream), let's do it
+    [ -n "${gitshasrc}" ] && local gitshasrc=$(git -C $_srcpath log -1 --pretty="%h")
     [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && _rev=$(( $_rev + 1 ))
     local release="1.mos${_rev}"
     [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && release="${release}.git.${gitshasrc}"
