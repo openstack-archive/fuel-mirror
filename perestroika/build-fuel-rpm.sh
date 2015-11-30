@@ -75,7 +75,13 @@ main () {
     local REQUEST=$REQUEST_NUM
     [ -n "$LP_BUG" ] && REQUEST=$LP_BUG
 
-    EXTRAREPO="repo1,http://${REMOTE_REPO_HOST}/${RPM_OS_REPO_PATH}/x86_64"
+    # if EXTRAREPO is defined by user we need to "concatinate" it with MOS mirror
+    if [ -n "${EXTRAREPO}" ]; then
+        EXTRAREPO="${EXTRAREPO}|repo1,http://${REMOTE_REPO_HOST}/${RPM_OS_REPO_PATH}/x86_64"
+    else
+        EXTRAREPO="repo1,http://${REMOTE_REPO_HOST}/${RPM_OS_REPO_PATH}/x86_64"
+    fi
+
     [ "$IS_UPDATES" == 'true' ] && \
       EXTRAREPO="${EXTRAREPO}|repo2,http://${REMOTE_REPO_HOST}/${RPM_PROPOSED_REPO_PATH}/x86_64"
     [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && [ "$IS_UPDATES" == "false" ] && \
