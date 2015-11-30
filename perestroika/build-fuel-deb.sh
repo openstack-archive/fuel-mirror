@@ -72,7 +72,13 @@ main () {
     [ -n "$LP_BUG" ] && REQUEST=$LP_BUG
 
     COMPONENTS="main restricted"
-    EXTRAREPO="http://${REMOTE_REPO_HOST}/${DEB_REPO_PATH} ${DEB_DIST_NAME} ${COMPONENTS}"
+    # if EXTRAREPO is defined by user we need to "concatinate" it with MOS mirror
+    if [ -n "${EXTRAREPO}" ]; then
+        EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${DEB_REPO_PATH} ${DEB_DIST_NAME} ${COMPONENTS}"
+    else
+        EXTRAREPO="http://${REMOTE_REPO_HOST}/${DEB_REPO_PATH} ${DEB_DIST_NAME} ${COMPONENTS}"
+    fi
+
     [ "$IS_UPDATES" == 'true' ] \
         && EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${DEB_REPO_PATH} ${DEB_PROPOSED_DIST_NAME} ${COMPONENTS}"
     [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && [ "$IS_UPDATES" == "false" ] \
