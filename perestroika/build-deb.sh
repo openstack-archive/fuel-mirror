@@ -4,7 +4,8 @@ set -o xtrace
 set -o errexit
 
 [ -f ".packages-defaults" ] && source .packages-defaults
-source build-functions.sh
+BINDIR=$(dirname `readlink -e $0`)
+source "${BINDIR}"/build-functions.sh
 
 main () {
   set_default_params
@@ -120,7 +121,7 @@ main () {
 
   pushd $BUILDDIR &>/dev/null
   echo "BUILD_SUCCEEDED=false" > ${WRKDIR}/buildresult.params
-  bash -ex ${WRKDIR}/docker-builder/build-deb-package.sh
+  bash -ex ${BINDIR}/docker-builder/build-deb-package.sh
   local exitstatus=`cat buildresult/exitstatus.sbuild || echo 1`
   rm -f buildresult/exitstatus.sbuild
   [ -f "buildresult/buildlog.sbuild" ] && mv buildresult/buildlog.sbuild ${WRKDIR}/buildlog.txt

@@ -4,7 +4,8 @@ set -o xtrace
 set -o errexit
 
 [ -f ".packages-defaults" ] && source .packages-defaults
-source build-functions.sh
+BINDIR=$(dirname `readlink -e $0`)
+source "${BINDIR}"/build-functions.sh
 
 main () {
   set_default_params
@@ -127,7 +128,7 @@ This package provides the %{-n*} kernel modules
 
   pushd $BUILDDIR &>/dev/null
   echo "BUILD_SUCCEEDED=false" > ${WRKDIR}/buildresult.params
-  bash -x ${WRKDIR}/docker-builder/build-rpm-package.sh
+  bash -x ${BINDIR}/docker-builder/build-rpm-package.sh
   local exitstatus=`cat build/exitstatus.mock || echo 1`
   rm -f build/exitstatus.mock build/state.log
   [ -f "build/build.log" ] && mv build/build.log ${WRKDIR}/buildlog.txt
