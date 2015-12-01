@@ -135,12 +135,15 @@ main() {
       # Get release
       local EXISTBINRELEASE=${EXISTBINDATA#*-}
       ## FixMe: Improve packages removing
-      # Remove existing packages from repo (for new change requests only)
-      [ "${GERRIT_CHANGE_STATUS}" == "NEW" ] && \
-          find ${LOCAL_REPO_PATH} -name "${BINNAME}-${EXISTBINVERSION}-${EXISTBINRELEASE}.${EXISTBINARCH}*" -exec rm -f {} \;
+      # Remove existing packages from repo (for new change requests and downgrades)
+      if [ "${GERRIT_CHANGE_STATUS}" == "NEW" -o "$IS_DOWNGRADE" == "true" ] ;  then
+          find ${LOCAL_REPO_PATH} -name "${BINNAME}-${EXISTBINVERSION}-${EXISTBINRELEASE}.${EXISTBINARCH}*" \
+              -exec rm -f {} \;
+          unset EXISTBINVERSION
+      fi
       # Compare versions of new and existring packages
       local SKIPPACKAGE=0
-      if [ ! -z "${EXISTBINVERSION}" ] && [ "${GERRIT_CHANGE_STATUS}" != "NEW" ]; then
+      if [ ! -z "${EXISTBINVERSION}" ] ; then
           ############################################################
           ## Comparing versions before including package to the repo
           ##
