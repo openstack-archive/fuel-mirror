@@ -139,9 +139,9 @@ main() {
       listfilter ${DEB_DIST_NAME} "Package (==${SRC_NAME})" | sort -u | head -n 1)
   [ "${OLD_VERSION}" == "" ] && OLD_VERSION=none
 
-  # Remove existing packages for requests-on-review
+  # Remove existing packages for requests-on-review and downgrades
   # TODO: Get rid of removing. Just increase version properly
-  if [ "${GERRIT_CHANGE_STATUS}" = "NEW" ] ; then
+  if [ "${GERRIT_CHANGE_STATUS}" = "NEW" -o "$IS_DOWNGRADE" == "true" ] ; then
       reprepro ${REPREPRO_OPTS} removesrc ${DEB_DIST_NAME} ${SRC_NAME} ${OLD_VERSION} || :
   fi
   # Add .deb binaries
