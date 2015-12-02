@@ -1,0 +1,13 @@
+Verified+2: Jenkins
+Code-Review+1: Vladimir Kozhukalov <vkozhukalov@mirantis.com>
+Code-Review+1: Dmitry Burmistrov <dburmistrov@mirantis.com>
+Code-Review+1: Vitaly Parakhin <vparakhin@mirantis.com>
+Code-Review+2: Sergey Kulanov <skulanov@mirantis.com>
+Workflow+1: Sergey Kulanov <skulanov@mirantis.com>
+Code-Review+1: Ivan Udovichenko <iudovichenko@mirantis.com>
+Code-Review+1: Alexey Shtokolov <ashtokolov@mirantis.com>
+Submitted-by: Jenkins
+Submitted-at: Wed, 02 Dec 2015 14:48:19 +0000
+Reviewed-on: https://review.openstack.org/250485
+Project: openstack/fuel-mirror
+Branch: refs/heads/master
