@@ -36,6 +36,3 @@ RUN rm -f /etc/apt/sources.list.d/proposed.list && \
 
 COPY ./04tmpfs /etc/schroot/setup.d/04tmpfs
 RUN chmod +x /etc/schroot/setup.d/04tmpfs
-
-COPY ./precise-amd64-sbuild /etc/schroot/chroot.d/precise-amd64-sbuild
-COPY ./trusty-amd64-sbuild /etc/schroot/chroot.d/trusty-amd64-sbuild
