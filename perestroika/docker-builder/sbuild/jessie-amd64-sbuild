@@ -1,0 +1,8 @@
+[jessie-amd64-sbuild]
+type=directory
+description=Debian jessie/amd64 build environment
+directory=/srv/images/jessie-amd64
+groups=root,sbuild
+root-groups=root,sbuild
+profile=sbuild
+union-type=aufs
