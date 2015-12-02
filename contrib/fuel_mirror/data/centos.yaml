@@ -1,6 +1,3 @@
-centos_baseurl: &centos_baseurl
-mos_baseurl: &mos_baseurl
-
 fuel_release_match:
    version: $openstack_version
    operating_system: CentOS
