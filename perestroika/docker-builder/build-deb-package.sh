@@ -2,8 +2,19 @@
 . $(dirname $(readlink -f $0))/config
 CONTAINERNAME=sbuild:latest
 CACHEPATH=/var/cache/docker-builder/sbuild
+
+BIN=$(dirname $(readlink -e $0))
+
 [ -z "$DIST" ] && DIST=trusty
 
+if [ ! -f "${BIN}/sbuild/${DIST}-amd64-sbuild" ] ; then
+    echo "Unknown dist version: ${DIST}"
+    exit 1
+fi
+
+DIST_CONFIG="$(cat ${BIN}/sbuild/${DIST}-amd64-sbuild)"
+
+# Add extra repositories
 if [ -n "$EXTRAREPO" ] ; then
     EXTRACMD=""
     OLDIFS="$IFS"
@@ -15,6 +26,7 @@ if [ -n "$EXTRAREPO" ] ; then
     done
     IFS="$OLDIFS"
 fi
+
 dscfile=$(find . -maxdepth 1 -name \*.dsc | head -1)
 debianfolder=$(find . -wholename "*debian/changelog*" | head -1 | sed 's|^./||; s|debian/changelog||')
 
@@ -27,8 +39,12 @@ fi
 
 docker run ${DNSPARAM} --privileged --rm -v ${CACHEPATH}:/srv/images:ro \
     -v $(pwd):/srv/source ${CONTAINERNAME} \
-    bash -c "( sed -i '/debian\/rules/d' /usr/bin/sbuild
-
+    bash -c "rm -rf /etc/schroot/chroot.d
+             mkdir -p /srv/images/chroot.d
+             ln -s /srv/images/chroot.d /etc/schroot/chroot.d
+             [ ! -f /etc/schroot/chroot.d/${DIST}-amd64-sbuild ] \
+                 && echo \"$DIST_CONFIG\" > /etc/schroot/chroot.d/${DIST}-amd64-sbuild
+             ( sed -i '/debian\/rules/d' /usr/bin/sbuild
              DEB_BUILD_OPTIONS=nocheck /usr/bin/sbuild -d ${DIST} --nolog \
                  --source --force-orig-source \
                  $EXTRACMD \

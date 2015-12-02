@@ -171,9 +171,11 @@ main() {
   [ "${OLD_VERSION}" != "${NEW_VERSION}" ] \
       && reprepro ${REPREPRO_OPTS} removesrc ${DEB_DIST_NAME} ${SRC_NAME} ${OLD_VERSION}
 
-  # Fix Codename field
   local release_file="${DISTDIR}/${DEB_DIST_NAME}/Release"
-  sed "s|^Codename:.*$|Codename: ${DEB_BASE_DIST_NAME}|" -i ${release_file}
+
+  # Fix Codename field for ubuntu based repositories
+  [ -z "$DEBIAN_REPO" ] \
+      && sed "s|^Codename:.*$|Codename: ${DEB_BASE_DIST_NAME}|" -i ${release_file}
 
   # Resign Release file
   rm -f ${release_file}.gpg
