@@ -9,7 +9,7 @@
 
 set -ex
 
-BIN="${0%/*}"
+BIN=$(dirname `readlink -e $0`)
 
 source "${BIN}/config"
 
