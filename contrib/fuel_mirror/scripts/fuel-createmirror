@@ -39,6 +39,7 @@ fi
 eval set -- "$OPTS"
 
 CMD_OPTS="--pattern=ubuntu"
+REPO_GROUPS=""
 
 while true ; do
     case "$1" in
@@ -46,8 +47,8 @@ while true ; do
         -d | --no-default ) OPT_NO_DEFAULT=1; shift;;
         -a | --no-apply   ) OPT_NO_APPLY=1; shift;;
         -N | --dry-run    ) EXEC_PREFIX="echo  EXEC  "; shift;;
-        -M | --mos        ) GROUPS="$GROUPS mos"; shift;;
-        -U | --ubuntu     ) GROUPS="$GROUPS ubuntu"; shift;;
+        -M | --mos        ) REPO_GROUPS="$REPO_GROUPS mos"; shift;;
+        -U | --ubuntu     ) REPO_GROUPS="$REPO_GROUPS ubuntu"; shift;;
         -p | --password   ) CMD_OPTS="$CMD_OPTS --fuel-password=$2"; shift; shift;;
         --                ) shift; break;;
         *                 ) break;;
@@ -60,11 +61,11 @@ if [[ "$@" != "" ]]; then
     exit 1
 fi
 
-if [[ "$GROUPS" == "" ]]; then
-    GROUPS="mos ubuntu"
+if [[ "$REPO_GROUPS" == "" ]]; then
+    REPO_GROUPS="mos ubuntu"
 fi
 
-CMD_OPTS="CMD_OPTS --group $GROUPS"
+CMD_OPTS="$CMD_OPTS --group $REPO_GROUPS"
 
 $EXEC_PREFIX fuel-mirror create ${CMD_OPTS}
 
@@ -72,7 +73,7 @@ if [[ "$OPT_NO_DEFAULT" == "" ]]; then
     CMD_OPTS="$CMD_OPTS --default"
 fi
 
-if [[ "OPT_NO_APPLY" == "" ]]; then
+if [[ "$OPT_NO_APPLY" == "" ]]; then
     CMD_OPTS="$CMD_OPTS --apply"
 fi
 
