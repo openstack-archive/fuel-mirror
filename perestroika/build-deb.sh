@@ -39,10 +39,8 @@ main () {
           local convert_version_py="$(dirname $(readlink -e $0))/convert-version.py"
           version=$(python ${convert_version_py} --tag ${release_tag})
           local TAR_NAME="${srcpackagename}_${version}.orig.tar.gz"
-          # Get revision number as commit count for src+spec projects
-          local _src_commit_count=`git -C $_srcpath rev-list --no-merges origin/${SOURCE_BRANCH} | wc -l`
-          local _spec_commit_count=`git -C $_specpath rev-list --no-merges origin/${SPEC_BRANCH} | wc -l`
-          local _rev=$(( $_src_commit_count + $_spec_commit_count ))
+          # Get revision number as commit count from tag to head of source branch
+          local _rev=$(git -C $_srcpath rev-list --no-merges ${release_tag}..origin/${SOURCE_BRANCH} | wc -l)
           [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && _rev=$(( $_rev + 1 ))
           local release="1~u14.04+mos${_rev}"
           [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && release="${release}+git.${gitshasrc}.${gitshaspec}"
