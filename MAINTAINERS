@@ -52,8 +52,3 @@ maintainers:
     - name:   Sergey Kulanov
       email:  skulanov@mirantis.com
       IRC:    SergK
-
-- util/:
-    - name:   Vitaly Parakhin
-      email:  vparakhin@mirantis.com
-      IRC:    brain461
