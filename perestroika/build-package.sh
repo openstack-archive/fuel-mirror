@@ -127,7 +127,9 @@ case "$BUILD_TARGET" in
               update_buildroot
             fi
           fi
-          cd "${BUILD_SOURCE}" && DIST="${BUILD_TARGET}"; "${WORKING_DIR}"/docker-builder/build-deb-package.sh
+          cd "${BUILD_SOURCE}"
+          DIST="${BUILD_TARGET}" bash -ex "${WORKING_DIR}"/docker-builder/build-deb-package.sh
+          local exitstatus=`cat buildresult/exitstatus.sbuild || echo 1`
           if [[ "${OUTPUT_DIR}" != "" ]]; then
             mkdir -p "${OUTPUT_DIR}"
             mv buildresult/* "${OUTPUT_DIR}"
@@ -139,13 +141,15 @@ case "$BUILD_TARGET" in
             build_docker_image
             create_buildroot
           else
-            if [[ ! -d /var/cache/docker-builder/mock/cache/*-"${BUILD_TARGET}"-x86_64 ]]; then
+            if [[ ! -d /var/cache/docker-builder/mock/cache/epel-7-x86_64 ]]; then
               create_buildroot
             else
               update_buildroot
             fi
           fi
-          cd "${BUILD_SOURCE}" && DIST="${BUILD_TARGET}"; "${WORKING_DIR}"/docker-builder/build-rpm-package.sh
+          cd "${BUILD_SOURCE}"
+          DIST="${BUILD_TARGET}" bash -ex "${WORKING_DIR}"/docker-builder/build-rpm-package.sh
+          local exitstatus=`cat build/exitstatus.mock || echo 1`
           if [[ "${OUTPUT_DIR}" != "" ]]; then
             mkdir -p "${OUTPUT_DIR}"
             mv build/* "${OUTPUT_DIR}"
@@ -154,6 +158,8 @@ case "$BUILD_TARGET" in
         ;;
         *) die "Unknown build target specified. Currently 'trusty' and 'centos7' are supported"
 esac
+
+exit "${exitstatus}"
 }
 
 main "${@}"
