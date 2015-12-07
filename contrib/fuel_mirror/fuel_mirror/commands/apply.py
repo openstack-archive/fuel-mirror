@@ -46,7 +46,7 @@ class ApplyCommand(BaseCommand):
 
     def take_action(self, parsed_args):
         data = self.load_data(parsed_args)
-        base_url = self.app.config["base_url"]
+        base_url = self.app.config["base_repos_url"]
         localized_repos = []
         for _, repos in self.get_groups(parsed_args, data):
             for repo_data in repos:

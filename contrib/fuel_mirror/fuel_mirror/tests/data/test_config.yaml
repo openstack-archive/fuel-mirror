@@ -4,3 +4,4 @@ retries_num: 3
 http_proxy: "http://localhost"
 https_proxy: "https://localhost"
 target_dir: "/var/www/"
+base_repos_url: "http://{MASTER_IP}:8080/"

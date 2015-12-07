@@ -24,9 +24,6 @@ from fuel_mirror.common import accessors
 from fuel_mirror.common import utils
 
 
-_FUEL_DEFAULT_HTTP_PORT = 8080
-
-
 class Application(app.App):
     """Main cliff application class.
 
@@ -89,11 +86,8 @@ class Application(app.App):
             self.options.fuel_password,
             fuel_default["password"]
         )
-        self.config.setdefault(
-            "base_url", "http://{0}:{1}".format(
-                fuel_server.split(":", 1)[0],
-                _FUEL_DEFAULT_HTTP_PORT
-            )
+        self.config["base_repos_url"] = self.config["base_repos_url"].format(
+            MASTER_IP=fuel_server.split(":", 1)[0]
         )
         self.fuel = accessors.get_fuel_api_accessor(
             fuel_server,
