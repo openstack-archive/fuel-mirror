@@ -171,6 +171,29 @@ class TestRepositoryApi(base.TestCase):
             (x.name for x in r)
         )
 
+    def test_get_unresolved_with_main(self):
+        controller = CallbacksAdapter()
+        pkg1 = generator.gen_package(
+            name="test1", requires=[
+                generator.gen_relation("test2"),
+                generator.gen_relation("test3")
+            ]
+        )
+        pkg2 = generator.gen_package(
+            name="test2", requires=[generator.gen_relation("test4")]
+        )
+        controller.load_packages.side_effect = [
+            pkg1, pkg2
+        ]
+        api = RepositoryApi(controller)
+        r = api.get_unresolved_dependencies("file:///repo1", "file:///repo2")
+        controller.load_repositories.assert_any_call("file:///repo1")
+        controller.load_repositories.assert_any_call("file:///repo2")
+        self.assertItemsEqual(
+            ["test3"],
+            (x.name for x in r)
+        )
+
     def test_parse_requirements(self):
         requirements = RepositoryApi._parse_requirements(
             ["p1 le 2 | p2 | p3 ge 2"]
