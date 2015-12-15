@@ -71,24 +71,50 @@ class Application(app.App):
         """Initialises common options."""
         with open(self.options.config, "r") as stream:
             self.config = yaml.load(stream)
+
+        self._initialize_fuel_accessor()
+        self._initialize_repo_manager()
+
+    def _initialize_repo_manager(self):
+        self.repo_manager_accessor = accessors.get_packetary_accessor(
+            threads_num=int(self.config.get('threads_num', 0)),
+            retries_num=int(self.config.get('retries_num', 0)),
+            ignore_errors_num=int(self.config.get('ignore_errors_num', 0)),
+            http_proxy=self.config.get('http_proxy'),
+            https_proxy=self.config.get('https_proxy'),
+        )
+
+    def _initialize_fuel_accessor(self):
         fuel_default = utils.get_fuel_settings()
 
         fuel_server = utils.first(
             self.options.fuel_server,
             self.config.get("fuel_server"),
-            fuel_default["server"]
+            fuel_default.get("server")
         )
         fuel_user = utils.first(
             self.options.fuel_user,
-            fuel_default["user"]
+            fuel_default.get("user")
         )
         fuel_password = utils.first(
             self.options.fuel_password,
-            fuel_default["password"]
+            fuel_default.get("password")
         )
+
+        if not fuel_server:
+            for option in ("mos_version", "openstack_version"):
+                if not self.config.setdefault(option, ''):
+                    self.LOG.warning(
+                        "The option '{0}' is not defined."
+                        "Please specify the option 'fuel-server' or {0}."
+                        .format(option)
+                    )
+            return
+
         self.config["base_url"] = self.config["base_url"].format(
             FUEL_SERVER_IP=fuel_server.split(":", 1)[0]
         )
+
         self.fuel = accessors.get_fuel_api_accessor(
             fuel_server,
             fuel_user,
@@ -100,14 +126,6 @@ class Application(app.App):
         )
         self.config.setdefault(
             'openstack_version', fuel_ver['openstack_version']
-        )
-
-        self.repo_manager_accessor = accessors.get_packetary_accessor(
-            threads_num=int(self.config.get('threads_num', 0)),
-            retries_num=int(self.config.get('retries_num', 0)),
-            ignore_errors_num=int(self.config.get('ignore_errors_num', 0)),
-            http_proxy=self.config.get('http_proxy'),
-            https_proxy=self.config.get('https_proxy'),
         )
 
 

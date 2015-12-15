@@ -68,7 +68,7 @@ def debug(argv=None):
     """Helper for debugging Create command."""
     from fuel_mirror.app import debug
 
-    debug("create", CreateCommand, argv)
+    return debug("create", CreateCommand, argv)
 
 
 if __name__ == "__main__":
