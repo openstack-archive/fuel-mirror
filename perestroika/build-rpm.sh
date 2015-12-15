@@ -49,7 +49,7 @@ This package provides the %{-n*} kernel modules
       # Get revision number as commit count for src+spec projects
       local _rev=$(git -C $_srcpath rev-list --no-merges ${version}..origin/${SOURCE_BRANCH} | wc -l)
       [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && _rev=$(( $_rev + 1 ))
-      local release="mos8.0.${_rev}"
+      local release="mos${_rev}"
       [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && release="${release}.git.${gitshasrc}.${gitshaspec}"
       local TAR_NAME=${PACKAGENAME}-${version}.tar.gz
       # Update version and changelog
@@ -83,6 +83,7 @@ This package provides the %{-n*} kernel modules
      # TODO: Support unpacked source tree
      # Packed sources (.spec + .gz + stuff)
      # Exclude tests folder
+     sed -r 's/~mos\.?8.0./~mos/' -i $specfile
      cp -R ${_srcpath}/* $BUILDDIR
      [ -d "${BUILDDIR}/tests" ] && rm -rf ${BUILDDIR}/tests
   fi
