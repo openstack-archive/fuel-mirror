@@ -45,6 +45,9 @@ class ApplyCommand(BaseCommand):
         return parser
 
     def take_action(self, parsed_args):
+        if self.app.fuel is None:
+            raise ValueError("Please specify the fuel-server option.")
+
         data = self.load_data(parsed_args)
         base_url = self.app.config["base_url"]
         localized_repos = []
@@ -151,7 +154,7 @@ def debug(argv=None):
     """Helper for debugging Apply command."""
     from fuel_mirror.app import debug
 
-    debug("apply", ApplyCommand, argv)
+    return debug("apply", ApplyCommand, argv)
 
 
 if __name__ == "__main__":

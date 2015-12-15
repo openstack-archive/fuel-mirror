@@ -78,11 +78,6 @@ def first(*args):
 def get_fuel_settings():
     """Gets the fuel settings from astute container, if it is available."""
 
-    _DEFAULT_SETTINGS = {
-        "server": "10.20.0.2",
-        "user": None,
-        "password": None,
-    }
     try:
         with open("/etc/fuel/astute.yaml", "r") as fd:
             settings = yaml.load(fd)
@@ -92,5 +87,4 @@ def get_fuel_settings():
             "password": settings.get("FUEL_ACCESS", {}).get("password")
         }
     except (OSError, IOError):
-        pass
-    return _DEFAULT_SETTINGS
+        return {}
