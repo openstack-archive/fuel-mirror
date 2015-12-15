@@ -83,6 +83,7 @@ This package provides the %{-n*} kernel modules
      # TODO: Support unpacked source tree
      # Packed sources (.spec + .gz + stuff)
      # Exclude tests folder
+     sed -r 's/~mos\.?8.0./~mos/' -i $specfile
      cp -R ${_srcpath}/* $BUILDDIR
      [ -d "${BUILDDIR}/tests" ] && rm -rf ${BUILDDIR}/tests
   fi
