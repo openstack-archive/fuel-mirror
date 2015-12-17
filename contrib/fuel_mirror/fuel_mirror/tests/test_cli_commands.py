@@ -43,7 +43,7 @@ CENTOS_PATH = os.path.join(
 
 @mock.patch.multiple(
     "fuel_mirror.app",
-    accessors=mock.DEFAULT,
+    accessors=mock.DEFAULT
 )
 class TestCliCommands(base.TestCase):
     common_argv = [
@@ -314,4 +314,38 @@ class TestCliCommands(base.TestCase):
                     ]}}}
                 }
             }
+        )
+
+    @mock.patch("fuel_mirror.app.utils.get_fuel_settings")
+    def test_apply_fail_if_no_fuel_address(self, m_get_settings, accessors):
+        m_get_settings.return_value = {}
+        with self.assertRaisesRegexp(
+                ValueError, "Please specify the fuel-server option"):
+            apply.debug(
+                ["--config", CONFIG_PATH, "-G", "mos", "-I", UBUNTU_PATH]
+            )
+        self.assertFalse(accessors.get_fuel_api_accessor.called)
+
+    @mock.patch("fuel_mirror.app.utils.get_fuel_settings")
+    def test_create_without_fuel_address(self, m_get_settings, accessors):
+        m_get_settings.return_value = {}
+        packetary = accessors.get_packetary_accessor()
+        create.debug(
+            ["--config", CONFIG_PATH, "-G", "mos", "-I", UBUNTU_PATH]
+        )
+        self.assertFalse(accessors.get_fuel_api_accessor.called)
+        accessors.get_packetary_accessor.assert_called_with(
+            threads_num=1,
+            ignore_errors_num=2,
+            retries_num=3,
+            http_proxy="http://localhost",
+            https_proxy="https://localhost",
+        )
+        packetary.assert_called_with("deb", "x86_64")
+        api = packetary()
+        api.clone_repositories.assert_called_once_with(
+            ['http://localhost/mos mos main restricted'],
+            '/var/www/',
+            None,
+            None
         )

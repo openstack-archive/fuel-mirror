@@ -97,10 +97,6 @@ class TestUtils(base.TestCase):
         )
 
         self.assertEqual(
-            {
-                "server": "10.20.0.2",
-                "user": None,
-                "password": None,
-            },
+            {},
             utils.get_fuel_settings()
         )
