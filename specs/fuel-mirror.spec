@@ -1,5 +1,5 @@
 %define name fuel-mirror
-%{!?version: %define version 8.0.0}
+%{!?version: %define version 9.0.0}
 %{!?release: %define release 1}
 
 Name: %{name}
@@ -28,7 +28,6 @@ Requires:    PyYAML >= 3.10
 # Workaroud for babel bug
 Requires:    pytz
 
-Obsoletes: fuel-createmirror
 
 %description
 Provides two commands fuel-mirror and fuel-createmirror.
