@@ -26,7 +26,13 @@ docker run ${DNSPARAM} --privileged --rm -v ${CACHEPATH}:/srv/mock:ro \
     bash -x -c "mkdir -p /srv/tmpfs/cache
         mount -t tmpfs overlay /srv/tmpfs/cache
         mount -t aufs -o br=/srv/tmpfs/cache/:/srv/mock/cache none /var/cache/mock/
+        mkdir -p /var/cache/mock/configs
+        cp /etc/mock/logging.ini /var/cache/mock/configs/
+        rm -rf /etc/mock
+        ln -s /var/cache/mock/configs /etc/mock
         $EXTRACMD
+        echo 'Current config file:'
+        cat /etc/mock/centos-${DIST_VERSION}-x86_64.cfg
         su - abuild -c 'mock -r centos-${DIST_VERSION}-x86_64 --verbose --update'
         chown -R abuild.mock /home/abuild
         [[ \$(ls /home/abuild/rpmbuild/*.src.rpm | wc -l) -eq 0 ]] \
