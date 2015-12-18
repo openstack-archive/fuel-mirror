@@ -42,7 +42,8 @@ main () {
           # Get revision number as commit count from tag to head of source branch
           local _rev=$(git -C $_srcpath rev-list --no-merges ${release_tag}..origin/${SOURCE_BRANCH} | wc -l)
           [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && _rev=$(( $_rev + 1 ))
-          local release="1~u14.04+mos${_rev}"
+          local release=$(head -1 ${_debianpath}/debian/changelog | awk -F'[()]' '{print $2}' | cut -d'-' -f2 | sed -r 's|[0-9]+$||')
+          local release="${release}${_rev}"
           [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && release="${release}+git.${gitshasrc}.${gitshaspec}"
           local fullver=${epochnumber}${version}-${release}
           # Update version and changelog
