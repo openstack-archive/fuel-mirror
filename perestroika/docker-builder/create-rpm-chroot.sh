@@ -25,8 +25,19 @@ if [ "${DIST_VERSION}" != 6 ] && [ "${DIST_VERSION}" != 7 ]; then
   echo "Unknown dist version: ${DIST_VERSION}"
   exit 1
 fi
-
+source ${BIN}/mockbuild/centos${DIST_VERSION}.conf
+CONFIG_CONTENT_BASE64=$(echo "${CONFIG_CONTENT}" | base64 -w0)
 docker run ${DNSPARAM} --privileged --rm -v ${CACHEPATH}/cache:/var/cache/mock ${CONTAINERNAME} \
-    bash -c "chown -R abuild:mock /var/cache/mock
+    bash -c "mkdir -p /var/cache/mock/configs
+             cp /etc/mock/logging.ini /var/cache/mock/configs/
+             rm -rf /etc/mock
+             ln -s /var/cache/mock/configs /etc/mock
+             rm -rf /var/cache/mock/epel-${DIST_VERSION}-x86_64
+             rm -f /etc/mock/centos-${DIST_VERSION}-x86_64.cfg
+             echo \"${CONFIG_CONTENT_BASE64}\" \
+                 | base64 -d > /etc/mock/centos-${DIST_VERSION}-x86_64.cfg
+             echo 'Current config file:'
+             cat /etc/mock/centos-${DIST_VERSION}-x86_64.cfg
+             chown -R abuild:mock /var/cache/mock
              chmod g+s /var/cache/mock
              su - abuild -c 'mock -r centos-${DIST_VERSION}-x86_64 -v --init'"
