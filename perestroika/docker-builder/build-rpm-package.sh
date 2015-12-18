@@ -14,7 +14,7 @@ if [ -n "$EXTRAREPO" ] ; then
      IFS="$OLDIFS"
      reponame=${repo%%,*}
      repourl=${repo##*,}
-     EXTRACMD="$EXTRACMD -e \"$ i[${reponame}]\nname=${reponame}\nbaseurl=${repourl}\ngpgcheck=0\nenabled=1\nskip_if_unavailable=1\""
+     EXTRACMD="$EXTRACMD -e \"/^\[base\]/a[${reponame}]\nname=${reponame}\nbaseurl=${repourl}\ngpgcheck=0\nenabled=1\nskip_if_unavailable=1\""
      IFS='|'
    done
    IFS="$OLDIFS"
