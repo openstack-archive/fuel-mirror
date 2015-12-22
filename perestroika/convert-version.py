@@ -28,6 +28,11 @@ def main():
     params, other_params = parser.parse_known_args()
 
     pip_ver = params.tag
+
+    print convert_version(pip_ver)
+
+
+def convert_version(pip_ver):
     # drop dashed part from version string because
     # it represents a patch level of given version
     pip_ver = pip_ver.split('-')[0]
@@ -66,7 +71,8 @@ def main():
     while (len(pkg_ver_part) < 3):
         pkg_ver_part.append('0')
 
-    print('.'.join(pkg_ver_part) + pkg_alpha + '.'.join(pkg_rev_part))
+    return ('.'.join(pkg_ver_part) + pkg_alpha + '.'.join(pkg_rev_part))
+
 
 if __name__ == "__main__":
         main()
