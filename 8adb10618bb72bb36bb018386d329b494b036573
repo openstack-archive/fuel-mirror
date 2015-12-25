@@ -1,0 +1,9 @@
+Code-Review+2: Igor Kalnitsky <ikalnitsky@mirantis.com>
+Code-Review+1: Aleksey Zvyagintsev <azvyagintsev@mirantis.com>
+Workflow+1: Igor Kalnitsky <ikalnitsky@mirantis.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Fri, 25 Dec 2015 14:05:13 +0000
+Reviewed-on: https://review.openstack.org/261512
+Project: openstack/fuel-mirror
+Branch: refs/heads/stable/8.0
