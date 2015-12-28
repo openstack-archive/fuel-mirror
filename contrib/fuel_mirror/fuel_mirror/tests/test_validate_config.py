@@ -17,17 +17,22 @@
 import os.path
 import yaml
 
+from fuel_mirror.schemas.input_data_schema import SCHEMA
 from fuel_mirror.tests import base
+from jsonschema import validate
+from jsonschema import ValidationError
 
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "data")
 
 
 class TestValidateConfigs(base.TestCase):
+
     def test_validate_data_files(self):
         for f in os.listdir(DATA_DIR):
             with open(os.path.join(DATA_DIR, f), "r") as fd:
                 data = yaml.load(fd)
-                # TODO(add input data validation scheme)
+                self.assertRaises(ValidationError, validate, {}, SCHEMA)
+                self.assertNotRaises(ValidationError, validate, data, SCHEMA)
                 self.assertIn("groups", data)
                 self.assertIn("fuel_release_match", data)

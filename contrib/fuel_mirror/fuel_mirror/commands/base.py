@@ -18,6 +18,9 @@ import os.path
 from string import Template
 
 from cliff import command
+from fuel_mirror.schemas.input_data_schema import SCHEMA
+from jsonschema import validate
+from jsonschema import ValidationError
 import yaml
 
 
@@ -65,6 +68,26 @@ class BaseCommand(command.Command):
             self.app.config['pattern_dir'], pattern + ".yaml"
         )
 
+    @staticmethod
+    def validate_data(data, schema):
+        """Validate the input data using jsonschema validation.
+
+        :param data: the input data
+        :param schema: jsonschema for validate input data
+        """
+        try:
+            validate(data, schema)
+        except ValidationError as ex:
+            if len(ex.path) > 0:
+                detail = ("Invalid input for field/attribute %(path)s."
+                          " Value: %(value)s. %(message)s") % {
+                    'path': ex.path.pop(), 'value': ex.instance,
+                    'message': ex.message
+                }
+            else:
+                detail = ex.message
+            raise ValidationError(detail)
+
     def load_data(self, parsed_args):
         """Load the input data.
 
@@ -78,10 +101,12 @@ class BaseCommand(command.Command):
 
         # TODO(add input data validation scheme)
         with open(input_file, "r") as fd:
-            return yaml.load(Template(fd.read()).safe_substitute(
+            data = yaml.load(Template(fd.read()).safe_substitute(
                 mos_version=self.app.config["mos_version"],
                 openstack_version=self.app.config["openstack_version"],
             ))
+            self.validate_data(data, SCHEMA)
+            return data
 
     @classmethod
     def get_groups(cls, parsed_args, data):
