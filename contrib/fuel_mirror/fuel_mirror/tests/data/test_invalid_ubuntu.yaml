@@ -1,0 +1,9 @@
+fuel_release_match:
+   operating_system: Ubuntu
+
+inheritance:
+    ubuntu: mos
+
+requirements:
+    ubuntu:
+        - "package_deb"
