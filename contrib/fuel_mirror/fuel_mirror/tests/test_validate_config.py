@@ -18,16 +18,25 @@ import os.path
 import yaml
 
 from fuel_mirror.tests import base
+from jsonschema import validate, ValidationError
+from fuel_mirror.schemas.validate_schema import SCHEMA
 
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "data")
 
 
 class TestValidateConfigs(base.TestCase):
+
+    def assertNotRaises(self, exception, method, *args, **kwargs):
+        try:
+            method(*args, **kwargs)
+        except exception as e:
+            self.fail("Unexpected error: {0}".format(e))
+
     def test_validate_data_files(self):
         for f in os.listdir(DATA_DIR):
             with open(os.path.join(DATA_DIR, f), "r") as fd:
                 data = yaml.load(fd)
-                # TODO(add input data validation scheme)
+                self.assertNotRaises(ValidationError, validate, data, SCHEMA)
                 self.assertIn("groups", data)
                 self.assertIn("fuel_release_match", data)
