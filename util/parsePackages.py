@@ -6,7 +6,7 @@ import re
 import sys
 
 # Regex to parse
-regex=re.compile("^(?P<param>[a-z0-9]+): (?P<value>.*)$", re.IGNORECASE)
+regex = re.compile("^(?P<param>[a-z0-9]+): (?P<value>.*)$", re.IGNORECASE)
 
 for pkgfile in sys.argv[1:]:
     if pkgfile.endswith(".gz"):
@@ -19,16 +19,18 @@ for pkgfile in sys.argv[1:]:
         file = open(pkgfile)
 
     # Current package
-    pkg={}
+    pkg = {}
 
     for line in file:
         # If we have a blank line - it's means that we're on package separator
-        # Print the information about current package and clear current package info
+        # Print the information about current package and clear current
+        # package info
         if line == "\n":
             sys.stdout.write(pkg["filename"] + "\n")
             if "md5sum" in pkg:
-                sys.stderr.write("MD5 " + pkg["md5sum"] + " " + pkg["filename"] + "\n")
-            pkg={}
+                sys.stderr.write("MD5 " + pkg["md5sum"] +
+                                 " " + pkg["filename"] + "\n")
+            pkg = {}
 
         m = regex.match(line)
         if m:

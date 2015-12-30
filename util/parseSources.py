@@ -2,12 +2,13 @@
 # This script parses contents of given 'Source' files, and creates rsync
 # command line to synchronize mirror
 
+from __future__ import print_function
 import re
 import sys
 
 # Regex to parse
-regex=re.compile("^(?P<param>[a-zA-Z0-9_-]+):\s?(?P<value>.*)$")
-files_regex=re.compile("(?P<md5>[a-f0-9]{32}) [0-9]+ (?P<filename>.*)")
+regex = re.compile("^(?P<param>[a-zA-Z0-9_-]+):\s?(?P<value>.*)$")
+files_regex = re.compile("(?P<md5>[a-f0-9]{32}) [0-9]+ (?P<filename>.*)")
 
 for pkgfile in sys.argv[1:]:
     if pkgfile.endswith(".gz"):
@@ -19,17 +20,17 @@ for pkgfile in sys.argv[1:]:
     else:
         file = open(pkgfile)
 
-    pkg={}
-    cur_param=""
+    pkg = {}
+    cur_param = ""
 
     for line in file:
         if line == "\n":
             #print("----------------------------------------------------")
-            basedir=pkg['directory']
-            files=files_regex.findall(pkg['files'])
+            basedir = pkg['directory']
+            files = files_regex.findall(pkg['files'])
             for md5, file in files:
-                print basedir + "/" + file
-            pkg={}
+                print(basedir + "/" + file)
+            pkg = {}
             continue
 
         m = regex.match(line)
@@ -40,5 +41,5 @@ for pkgfile in sys.argv[1:]:
             # We got a multiliner continuation
             pkg[cur_param] += line.lstrip()
         else:
-            print "IMMPOSSIBIRUUUU!!!!"
+            print("IMMPOSSIBIRUUUU!!!!")
             sys.exit(999)

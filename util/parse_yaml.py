@@ -7,6 +7,7 @@ import yaml
 
 prefix = sys.argv[1]
 
+
 def serialize(value, name):
     if value is None:
         print('{0}=""'.format(name))
