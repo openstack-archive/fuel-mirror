@@ -477,6 +477,7 @@ export FUEL_VERSION
 if [[ "$DOCKER_MODE" = "true" ]]; then
         ( docker ps -a | grep fuel-createmirror ) && docker rm -f fuel-createmirror 
         # docker pull ubuntu:latest
+        ( docker images ubuntu | grep -q latest ) || ( wget http://mirror.fuel-infra.org/docker/ubuntu.trusty.tar.xz -O /tmp/ubuntu.trusty.tar.xz && docker load -i /tmp/ubuntu.trusty.tar.xz && rm -f /tmp/ubuntu.trusty.tar.xz )
         docker -D run -d --name=fuel-createmirror --net=host -a stdout -a stderr -t \
                -e UBUNTU_RELEASE=$UBUNTU_RELEASE -e UBUNTU_NETBOOT_FLAVOR=$UBUNTU_NETBOOT_FLAVOR \
                -e UBUNTU_INSTALLER_KERNEL_VERSION=$UBUNTU_INSTALLER_KERNEL_VERSION -e UBUNTU_KERNEL_FLAVOR=$UBUNTU_KERNEL_FLAVOR \
