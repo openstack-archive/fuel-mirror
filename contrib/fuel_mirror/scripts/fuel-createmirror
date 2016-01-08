@@ -74,7 +74,6 @@ if [[ "$OPT_NO_DEFAULT" == "" ]]; then
 fi
 
 if [[ "$OPT_NO_APPLY" == "" ]]; then
-    CMD_OPTS="$CMD_OPTS --apply"
+    $EXEC_PREFIX fuel-mirror apply ${CMD_OPTS}
 fi
 
-$EXEC_PREFIX fuel-mirror apply ${CMD_OPTS}
