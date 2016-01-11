@@ -101,7 +101,6 @@ class BaseCommand(command.Command):
         else:
             input_file = parsed_args.input_file
 
-        # TODO(add input data validation scheme)
         with open(input_file, "r") as fd:
             data = yaml.load(Template(fd.read()).safe_substitute(
                 mos_version=self.app.config["mos_version"],

@@ -9,4 +9,4 @@ six>=1.5.2
 PyYAML>=3.10
 packetary>=0.1.0
 python-fuelclient>=7.0.0
-jsonschema>=2.5.1
+jsonschema>=2.3.0
