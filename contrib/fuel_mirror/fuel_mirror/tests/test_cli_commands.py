@@ -146,7 +146,7 @@ class TestCliCommands(base.TestCase):
         packetary.assert_called_with("rpm", "x86_64")
         api = packetary()
         api.clone_repositories.assert_called_once_with(
-            ['http://localhost/mos1'],
+            ['http://localhost/mos1/x86_64'],
             '/var/www/',
             None, None
         )
@@ -166,9 +166,9 @@ class TestCliCommands(base.TestCase):
         packetary.assert_called_with("rpm", "x86_64")
         api = packetary()
         api.clone_repositories.assert_called_once_with(
-            ['http://localhost/centos/os'],
+            ['http://localhost/centos/os/x86_64'],
             '/var/www/',
-            ['http://localhost/mos1'],
+            ['http://localhost/mos1/x86_64'],
             ["package_rpm"]
         )
 
