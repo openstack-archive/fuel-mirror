@@ -65,6 +65,6 @@ class TestYumUrlBuilder(base.TestCase):
 
     def test_get_repo_url(self):
         self.assertEqual(
-            "http://localhost/os",
+            "http://localhost/os/x86_64",
             self.builder.get_repo_url(self.repo_data)
         )

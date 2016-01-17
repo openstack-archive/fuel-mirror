@@ -5,37 +5,37 @@ fuel_release_match:
 repos:
     -   &centos
         name: "centos"
-        uri: "http://mirror.centos.org/centos/6/os/x86_64"
+        uri: "http://vault.centos.org/7.1.1503/os/x86_64/"
         type: "rpm"
         priority: null
 
     -   &centos_updates
         name: "centos-updates"
-        uri: "http://mirror.centos.org/centos/6/updates/x86_64"
+        uri: "http://vault.centos.org/7.1.1503/updates/x86_64/"
         type: "rpm"
         priority: null
 
     -   &mos
         name: "mos"
-        uri: "http://mirror.fuel-infra.org/mos-repos/centos/mos$mos_version-centos6-fuel/os/x86_64"
+        uri: "http://mirror.fuel-infra.org/mos-repos/centos/mos$mos_version-centos7-fuel/os/x86_64/"
         type: "rpm"
         priority: null
 
     -   &mos_updates
         name: "mos-updates"
-        uri: "http://mirror.fuel-infra.org/mos-repos/centos/mos$mos_version-centos6-fuel/updates/x86_64"
+        uri: "http://mirror.fuel-infra.org/mos-repos/centos/mos$mos_version-centos7-fuel/updates/x86_64/"
         type: "rpm"
         priority: null
 
     -   &mos_security
         name: "mos-security"
-        uri: "http://mirror.fuel-infra.org/mos-repos/centos/mos$mos_version-centos6-fuel/security/x86_64"
+        uri: "http://mirror.fuel-infra.org/mos-repos/centos/mos$mos_version-centos7-fuel/security/x86_64/"
         type: "rpm"
         priority: null
 
     -   &mos_holdback
         name: "mos-holdback"
-        uri: "http://mirror.fuel-infra.org/mos-repos/centos/mos$mos_version-centos6-fuel/holdback/x86_64"
+        uri: "http://mirror.fuel-infra.org/mos-repos/centos/mos$mos_version-centos7-fuel/holdback/x86_64/"
         type: "rpm"
         priority: null
 

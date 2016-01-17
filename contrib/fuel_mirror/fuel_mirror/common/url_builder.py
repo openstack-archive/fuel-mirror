@@ -55,18 +55,5 @@ class YumRepoUrlBuilder(RepoUrlBuilder):
     """URL builder for Yum repository(es)."""
 
     @classmethod
-    def split_url(cls, url, maxsplit=2):
-        """Splits url to baseurl, reponame adn architecture.
-
-        :param url: the repository`s URL
-        :param maxsplit: the number of expected components
-        :return the components of url
-        """
-        # TODO(need generic url building algorithm)
-        # there is used assumption that url has following format
-        # $baseurl/$reponame/$repoarch
-        return url.rstrip("/").rsplit("/", maxsplit)
-
-    @classmethod
     def get_repo_url(cls, repo_data):
-        return cls.split_url(repo_data["uri"], 1)[0]
+        return repo_data["uri"]
