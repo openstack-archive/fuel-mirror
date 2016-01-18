@@ -23,4 +23,11 @@ except ImportError:
 
 
 class TestCase(unittest.TestCase):
+
     """Test case base class for all unit tests."""
+
+    def assertNotRaises(self, exception, method, *args, **kwargs):
+        try:
+            method(*args, **kwargs)
+        except exception as e:
+            self.fail("Unexpected error: {0}".format(e))

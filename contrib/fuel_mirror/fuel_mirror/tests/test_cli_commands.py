@@ -20,6 +20,8 @@ import mock
 import os.path
 import subprocess
 
+from jsonschema import ValidationError
+
 # The cmd2 does not work with python3.5
 # because it tries to get access to the property mswindows,
 # that was removed in 3.5
@@ -40,6 +42,10 @@ UBUNTU_PATH = os.path.join(
 
 CENTOS_PATH = os.path.join(
     os.path.dirname(__file__), "data", "test_centos.yaml"
+)
+
+INVALID_DATA_PATH = os.path.join(
+    os.path.dirname(__file__), "data", "test_invalid_ubuntu.yaml"
 )
 
 
@@ -350,4 +356,11 @@ class TestCliCommands(base.TestCase):
             '/var/www/',
             None,
             None
+        )
+
+    @mock.patch("fuel_mirror.app.utils.get_fuel_settings")
+    def test_create_with_invalid_data(self, m_get_settings, accessors):
+        self.assertRaises(
+            ValidationError, create.debug, ["--config", CONFIG_PATH, "-G",
+                                            "mos", "-I", INVALID_DATA_PATH]
         )
