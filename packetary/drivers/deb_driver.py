@@ -138,7 +138,8 @@ class DebRepositoryDriver(RepositoryDriverBase):
                     requires=self._get_relations(
                         dpkg, "depends", "pre-depends", "recommends"
                     ),
-                    obsoletes=self._get_relations(dpkg, "replaces"),
+                    # The deb does not have obsoletes section
+                    obsoletes=[],
                     provides=self._get_relations(dpkg, "provides"),
                 ))
             except KeyError as e:

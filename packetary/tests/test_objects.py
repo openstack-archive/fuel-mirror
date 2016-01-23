@@ -175,22 +175,33 @@ class TestVersionRange(TestObjectBase):
 
     def test_have_intersection(self):
         cases = [
+            (("eq", 2), ("eq", 2)),
+            (("eq", 2), ("lt", 3)),
+            (("eq", 2), ("gt", 1)),
             (("lt", 2), ("gt", 1)),
-            (("lt", 3), ("lt", 4)),
-            (("gt", 3), ("gt", 4)),
-            (("eq", 1), ("eq", 1)),
-            (("ge", 1), ("le", 1)),
-            (("eq", 1), ("lt", 2)),
-            ((None, None), ("le", 10)),
+            (("lt", 2), ("lt", 3)),
+            (("lt", 2), ("lt", 2)),
+            (("lt", 2), ("le", 2)),
+            (("gt", 2), ("gt", 1)),
+            (("gt", 2), ("lt", 3)),
+            (("gt", 2), ("ge", 2)),
+            (("gt", 2), ("gt", 2)),
+            (("ge", 2), ("le", 2)),
+            ((None, None), ("eq", 2)),
         ]
         self.__check_intersection(self.assertTrue, cases)
 
     def test_does_not_have_intersection(self):
         cases = [
-            (("lt", 2), ("gt", 2)),
-            (("ge", 2), ("lt", 2)),
+            (("eq", 2), ("eq", 1)),
+            (("eq", 2), ("lt", 2)),
+            (("eq", 2), ("gt", 2)),
+            (("eq", 2), ("gt", 3)),
+            (("eq", 2), ("lt", 1)),
+            (("lt", 2), ("ge", 2)),
+            (("lt", 2), ("gt", 3)),
             (("gt", 2), ("le", 2)),
-            (("gt", 1), ("lt", 1)),
+            (("gt", 2), ("lt", 1)),
         ]
         self.__check_intersection(self.assertFalse, cases)
 

@@ -169,7 +169,7 @@ class TestIndex(base.TestCase):
             p2, index.find("provides1", objects.VersionRange("ge", 2))
         )
         self.assertIsNone(
-            index.find("provides1", objects.VersionRange("lt", 2))
+            index.find("provides1", objects.VersionRange("gt", 2))
         )
 
     def test_len(self):

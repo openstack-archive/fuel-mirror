@@ -36,6 +36,9 @@ class VersionRange(object):
         self.op = op
         self.edge = edge
 
+    def __contains__(self, point):
+        return getattr(operator, self.op)(point, self.edge)
+
     def __hash__(self):
         return hash((self.op, self.edge))
 
@@ -57,7 +60,12 @@ class VersionRange(object):
         return u"any"
 
     def has_intersection(self, other):
-        """Checks that 2 ranges has intersection."""
+        """Checks that 2 ranges has intersection.
+
+        :param other: the candidate to check
+        :return: True if intersection exists, otherwise False
+        :raise TypeError: when other does not instance of VersionRange
+        """
 
         if not isinstance(other, VersionRange):
             raise TypeError(
@@ -68,28 +76,16 @@ class VersionRange(object):
         if self.op is None or other.op is None:
             return True
 
-        my_op = getattr(operator, self.op)
-        other_op = getattr(operator, other.op)
         if self.op[0] == other.op[0]:
-            if self.op[0] == 'l':
-                if self.edge < other.edge:
-                    return my_op(self.edge, other.edge)
-                return other_op(other.edge, self.edge)
-            elif self.op[0] == 'g':
-                if self.edge > other.edge:
-                    return my_op(self.edge, other.edge)
-                return other_op(other.edge, self.edge)
-
-        if self.op == 'eq':
-            return other_op(self.edge, other.edge)
-
-        if other.op == 'eq':
-            return my_op(other.edge, self.edge)
-
-        return (
-            my_op(other.edge, self.edge) and
-            other_op(self.edge, other.edge)
-        )
+            if self.op == 'eq':
+                return self.edge == other.edge
+            # the intersection is -inf or +inf
+            return True
+        if self.edge == other.edge:
+            # need to cover case < a and >= a
+            return self.edge in other and other.edge in self
+        # all other cases
+        return self.edge in other or other.edge in self
 
 
 class PackageRelation(object):
