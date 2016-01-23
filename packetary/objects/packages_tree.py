@@ -76,15 +76,15 @@ class PackagesTree(Index):
             self.__get_unresolved_dependencies(main, requirements)
 
         stack = list()
-        stack.append((None, requirements))
+        stack.append(requirements)
 
         # add all mandatory packages
         for pkg in self.mandatory_packages:
-            stack.append((pkg, pkg.requires))
+            resolved.add(pkg)
+            stack.append(pkg.requires)
 
         while len(stack) > 0:
-            pkg, required = stack.pop()
-            resolved.add(pkg)
+            required = stack.pop()
             for require in required:
                 for rel in require:
                     if rel not in unresolved:
@@ -92,22 +92,17 @@ class PackagesTree(Index):
                             break
                         # use all packages that meets depends
                         candidates = self.find_all(rel.name, rel.version)
-                        found = False
                         for cand in candidates:
-                            if cand == pkg:
-                                continue
-                            found = True
                             if cand not in resolved:
-                                stack.append((cand, cand.requires))
-
-                        if found:
+                                resolved.add(cand)
+                                stack.append(cand.requires)
+                        if len(candidates) > 0:
                             break
                 else:
                     unresolved.add(require)
                     msg = "Unresolved depends: {0}".format(require)
                     warnings.warn(UnresolvedWarning(msg))
 
-        resolved.remove(None)
         return resolved
 
     @staticmethod
