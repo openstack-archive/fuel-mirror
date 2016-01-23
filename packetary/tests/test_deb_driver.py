@@ -140,9 +140,9 @@ class TestDebDriver(base.TestCase):
             ["file (any)"],
             (str(x) for x in package.provides)
         )
-        self.assertItemsEqual(
-            ["test-old (any)"],
-            (str(x) for x in package.obsoletes)
+        self.assertEqual(
+            [],
+            package.obsoletes
         )
 
     @mock.patch.multiple(
