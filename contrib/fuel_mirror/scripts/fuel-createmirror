@@ -25,12 +25,13 @@ Options:
   -M| --mos           Create/Update MOS local mirror only
   -U| --ubuntu        Create/Update Ubuntu local mirror only
   -p| --password      Fuel Master admin password (defaults to admin)
+  -v| --verbose       Add detailed output
 
 EOF
 }
 
 # Parse options
-OPTS=`getopt -o hdaMUNp: -l help,no-default,no-apply,mos,ubuntu,password:,dry-run -- "$@"`
+OPTS=`getopt -o hdaMUNp: -l help,no-default,no-apply,mos,ubuntu,password:,dry-run,verbose -- "$@"`
 if [ $? != 0 ]; then
     usage
     exit 1
@@ -50,6 +51,7 @@ while true ; do
         -M | --mos        ) REPO_GROUPS="$REPO_GROUPS mos"; shift;;
         -U | --ubuntu     ) REPO_GROUPS="$REPO_GROUPS ubuntu"; shift;;
         -p | --password   ) CMD_OPTS="$CMD_OPTS --fuel-password=$2"; shift; shift;;
+        -v | --verbose    ) CMD_OPTS="$CMD_OPTS --verbose"; shift;;
         --                ) shift; break;;
         *                 ) break;;
     esac
@@ -74,7 +76,5 @@ if [[ "$OPT_NO_DEFAULT" == "" ]]; then
 fi
 
 if [[ "$OPT_NO_APPLY" == "" ]]; then
-    CMD_OPTS="$CMD_OPTS --apply"
+    $EXEC_PREFIX fuel-mirror apply ${CMD_OPTS}
 fi
-
-$EXEC_PREFIX fuel-mirror apply ${CMD_OPTS}
