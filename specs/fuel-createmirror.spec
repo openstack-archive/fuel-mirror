@@ -67,8 +67,13 @@ fi
 %config /opt/%{name}-%{version}/config/
 /opt/%{name}-%{version}/LICENSE
 /opt/%{name}-%{version}/README.md
+/opt/%{name}-%{version}/test-requirements.txt
+/opt/%{name}-%{version}/tox.ini
 
 %changelog
+* Mon Jan 25 2016 sotpuschennikov <sotpuschennikov@mirantis.com>
+- Fix missed files tox.ini and test-requirements.txt
+
 * Thu Aug 13 2015 vparakhin <vparakhin@mirantis.com>
 - Switch MOS DEB repos to new format, update configs from fuel-main
 
