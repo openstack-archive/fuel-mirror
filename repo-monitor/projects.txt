@@ -1,0 +1,3 @@
+ironic-api|ironic-common|ironic-conductor|ironic-doc|python-ironic openstack/ironic
+cinder-api|cinder-backup|cinder-common|cinder-doc|cinder-scheduler|cinder-volume|python-cinder|openstack-cinder openstack/cinder
+openstack-nova-api openstack/nova
