@@ -36,7 +36,7 @@ main () {
           # Deal with PyPi versions like 2015.1.0rc1
           # It breaks version comparison
           # Change it to 2015.1.0~rc1
-          local convert_version_py="$(dirname $(readlink -e $0))/convert-version.py"
+          local convert_version_py="$(dirname $(readlink -e $0))/convert_version.py"
           version=$(python ${convert_version_py} --tag ${release_tag})
           local TAR_NAME="${srcpackagename}_${version}.orig.tar.gz"
           # Get revision number as commit count from tag to head of source branch
