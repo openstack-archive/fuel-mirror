@@ -40,9 +40,25 @@ class RangeError(urlerror.URLError):
 
 
 class RetryableRequest(urllib.Request):
+    max_delay = 5
     offset = 0
     retries_left = 1
+    retries_delay = 0
     start_time = 0
+
+    def can_retry(self):
+        """Checks that retry can be retried.
+
+        :return: True if retryable, otherwise False
+        """
+        if self.retries_left > 0:
+            coef = max(self.max_delay - self.retries_left, 1)
+            timeout = self.retries_delay * coef
+            time.sleep(min(timeout, self.max_delay))
+            self.retries_left -= 1
+            return True
+            # pass response to next handler as is.
+        return False
 
 
 class ResumableResponse(StreamWrapper):
@@ -83,7 +99,11 @@ class RetryHandler(urllib.BaseHandler):
 
     @staticmethod
     def http_request(request):
-        """Initialises http request."""
+        """Initialises http request.
+
+        :param request: the instance of RetryableRequest
+        :return: the request
+        """
         logger.debug("start request: %s", request.get_full_url())
         if request.offset > 0:
             request.add_header('Range', 'bytes=%d-' % request.offset)
@@ -94,33 +114,43 @@ class RetryHandler(urllib.BaseHandler):
         """Wraps response in a ResumableResponse.
 
         Checks that partial request completed successfully.
+        :param request: the instance of RetryableRequest
+        :param response: the response object
+        :return: ResumableResponse if success otherwise same response
         """
+        code, msg = response.getcode(), response.msg
         # the server should response partial content if range is specified
+        if request.offset > 0 and code != 206:
+            raise RangeError(msg)
+
+        if code >= 400:
+            logger.error(
+                "request failed: %s - %d(%s), retries left - %d.",
+                request.get_full_url(), code, msg, request.retries_left
+            )
+            if is_retryable_http_error(code) and request.can_retry():
+                response = self.parent.open(request)
+            # pass response to next handler as is.
+            return response
+
         logger.debug(
-            "finish request: %s - %d (%s), duration - %d ms.",
+            "request completed: %s - %d (%s), duration - %d ms.",
             request.get_full_url(), response.getcode(), response.msg,
             int((time.time() - request.start_time) * 1000)
         )
-        if request.offset > 0 and response.getcode() != 206:
-            raise RangeError("Server does not support ranges.")
-        return ResumableResponse(request, response, self.parent)
 
-    def http_error(self, req, fp, code, msg, hdrs):
-        """Checks error code and retries request if it is allowed."""
-        logger.error(
-            "fail request: %s - %d(%s), retries left - %d.",
-            req.get_full_url(), code, msg, req.retries_left
-        )
-        if req.retries_left > 0 and is_retryable_http_error(code):
-            req.retries_left -= 1
-            return self.parent.open(req)
+        return ResumableResponse(request, response, self.parent)
 
     https_request = http_request
     https_response = http_response
 
 
 def is_retryable_http_error(code):
-    """Checks that http error can be retried."""
+    """Checks that http error can be retried.
+
+    :param code: the HTTP_CODE
+    :return: True if request can be retried otherwise False
+    """
     return code == http_client.NOT_FOUND or \
         code >= http_client.INTERNAL_SERVER_ERROR
 
@@ -128,12 +158,14 @@ def is_retryable_http_error(code):
 class ConnectionsManager(object):
     """The connections manager."""
 
-    def __init__(self, proxy=None, secure_proxy=None, retries_num=0):
+    def __init__(self, proxy=None, secure_proxy=None,
+                 retries_num=0, retries_delay=0):
         """Initialises.
 
         :param proxy: the url of proxy for http-connections
         :param secure_proxy: the url of proxy for https-connections
         :param retries_num: the number of allowed retries
+        :param retries_delay: the timeout between retries (in seconds)
         """
         if proxy:
             proxies = {
@@ -144,6 +176,7 @@ class ConnectionsManager(object):
             proxies = None
 
         self.retries_num = retries_num
+        self.retries_delay = retries_delay
         self.opener = urllib.build_opener(
             RetryHandler(),
             urllib.ProxyHandler(proxies)
@@ -163,6 +196,7 @@ class ConnectionsManager(object):
 
         request = RetryableRequest(url)
         request.retries_left = self.retries_num
+        request.retries_delay = self.retries_delay
         request.offset = offset
         return request
 
@@ -181,9 +215,8 @@ class ConnectionsManager(object):
             except (RangeError, urlerror.HTTPError):
                 raise
             except RETRYABLE_ERRORS as e:
-                if request.retries_left <= 0:
+                if not request.can_retry():
                     raise
-                request.retries_left -= 1
                 logger.exception(
                     "Failed to open url - %s: %s. retries left - %d.",
                     url, six.text_type(e), request.retries_left
