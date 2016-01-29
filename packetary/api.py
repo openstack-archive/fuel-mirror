@@ -37,7 +37,7 @@ class Configuration(object):
 
     def __init__(self, http_proxy=None, https_proxy=None,
                  retries_num=0, threads_num=0,
-                 ignore_errors_num=0):
+                 ignore_errors_num=0, retries_delay=0):
         """Initialises.
 
         :param http_proxy: the url of proxy for connections over http,
@@ -45,6 +45,7 @@ class Configuration(object):
         :param https_proxy: the url of proxy for connections over https,
                             no-proxy will be used if it is not specified
         :param retries_num: the number of retries on errors
+        :param retries_delay: the timeout between retries (in seconds)
         :param threads_num: the max number of active threads
         :param ignore_errors_num: the number of errors that may occurs
                 before stop processing
@@ -54,6 +55,7 @@ class Configuration(object):
         self.https_proxy = https_proxy
         self.ignore_errors_num = ignore_errors_num
         self.retries_num = retries_num
+        self.retries_delay = retries_delay
         self.threads_num = threads_num
 
 
@@ -68,7 +70,8 @@ class Context(object):
         self._connection = ConnectionsManager(
             proxy=config.http_proxy,
             secure_proxy=config.https_proxy,
-            retries_num=config.retries_num
+            retries_num=config.retries_num,
+            retries_delay=config.retries_delay
         )
         self._threads_num = config.threads_num
         self._ignore_errors_num = config.ignore_errors_num
