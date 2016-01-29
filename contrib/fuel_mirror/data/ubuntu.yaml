@@ -69,6 +69,7 @@ packages: &packages
      - "anacron"
      - "aptitude"
      - "atop"
+     - "acct"
      - "bash-completion"
      - "bc"
      - "build-essential"
