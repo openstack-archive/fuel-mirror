@@ -225,6 +225,7 @@ class TestContext(base.TestCase):
             threads_num=2,
             ignore_errors_num=3,
             retries_num=5,
+            retry_interval=5,
             http_proxy="http://localhost",
             https_proxy="https://localhost"
         )
@@ -235,7 +236,8 @@ class TestContext(base.TestCase):
         conn_manager.assert_called_once_with(
             proxy="http://localhost",
             secure_proxy="https://localhost",
-            retries_num=5
+            retries_num=5,
+            retry_interval=5
         )
 
         self.assertIs(
