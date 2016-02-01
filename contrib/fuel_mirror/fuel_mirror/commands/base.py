@@ -17,14 +17,13 @@
 #    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os.path
-from string import Template
 
 from cliff import command
 from jsonschema import validate
 from jsonschema import ValidationError
 import six
-import yaml
 
+from fuel_mirror.common.utils import load_input_data
 from fuel_mirror.schemas.input_data_schema import SCHEMA
 
 
@@ -104,13 +103,13 @@ class BaseCommand(command.Command):
         else:
             input_file = parsed_args.input_file
 
-        with open(input_file, "r") as fd:
-            data = yaml.load(Template(fd.read()).safe_substitute(
-                mos_version=self.app.config["mos_version"],
-                openstack_version=self.app.config["openstack_version"],
-            ))
-            self.validate_data(data, SCHEMA)
-            return data
+        data = load_input_data(
+            input_file,
+            mos_version=self.app.config["mos_version"],
+            openstack_version=self.app.config["openstack_version"]
+        )
+        self.validate_data(data, SCHEMA)
+        return data
 
     @classmethod
     def get_groups(cls, parsed_args, data):

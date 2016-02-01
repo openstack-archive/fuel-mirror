@@ -15,6 +15,7 @@
 #    You should have received a copy of the GNU General Public License along
 #    with this program; if not, write to the Free Software Foundation, Inc.,
 #    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+from string import Template
 
 import six
 import yaml
@@ -92,3 +93,16 @@ def get_fuel_settings():
         }
     except (OSError, IOError):
         return {}
+
+
+def load_input_data(input_file, **kwargs):
+    """Load yaml file and parse it to dict with replacement by kwargs.
+
+    :param input_file: name of file to parse fuel mirror template
+    :param kwargs: arguments to substitute template
+    :return: processed from yaml file dict.
+    """
+    with open(input_file, "r") as fd:
+        templ = Template(fd.read()).safe_substitute(**kwargs)
+        yamled = yaml.load(templ)
+        return yamled

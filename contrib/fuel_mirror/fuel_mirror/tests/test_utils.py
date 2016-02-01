@@ -21,6 +21,7 @@ import six
 
 from fuel_mirror.common import utils
 from fuel_mirror.tests import base
+from fuel_mirror.tests.test_cli_commands import UBUNTU_PATH
 
 
 class DictAsObj(object):
@@ -101,4 +102,12 @@ class TestUtils(base.TestCase):
         self.assertEqual(
             {},
             utils.get_fuel_settings()
+        )
+
+    def test_load_input_data(self):
+        data = utils.load_input_data(UBUNTU_PATH, mos_version='-mos-version')
+
+        self.assertEqual(
+            data['groups']['mos'][0]['suite'],
+            'mos-mos-version'
         )
