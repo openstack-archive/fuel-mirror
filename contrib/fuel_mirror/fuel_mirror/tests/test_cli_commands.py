@@ -40,6 +40,72 @@ CENTOS_PATH = os.path.join(
     os.path.dirname(__file__), "data", "test_centos.yaml"
 )
 
+def mirror_repos():
+    return [
+        {
+            'priority': 1000,
+            'name': 'mos-mirror',
+            'suite': 'mos1',
+            'section': 'main restricted',
+            'type': 'deb',
+            'uri': 'http://mirror.com:8080/mos'
+        },
+        {
+            'priority': 500,
+            'name': 'ubuntu-mirror',
+            'suite': 'trusty',
+            'section': 'main multiverse restricted universe',
+            'type': 'deb',
+            'uri': 'http://mirror.com:8080/ubuntu'
+        }
+    ]
+
+# TODO(akostriko) lists_merge we are using is not stable so we have to use
+# different local repos in cases with merge and without it.
+# We pass sorted by priority list, but in lists_merge we sort it by key.
+# As we are aiming to use existing repos as primary source - it is not issue.
+def local_repos_asc():
+    return [
+        {
+            'priority': 500,
+            'name': 'ubuntu',
+            'suite': 'trusty',
+            'section': 'main multiverse restricted universe',
+            'type': 'deb',
+            'uri': 'http://10.25.0.10:8080/ubuntu'
+        },
+        {
+            'priority': 1000,
+            'name': 'mos',
+            'suite': 'mos1',
+            'section': 'main restricted',
+            'type': 'deb',
+            'uri': 'http://10.25.0.10:8080/mos'
+        }
+    ]
+
+#
+def local_repos_desc():
+    return [
+
+        {
+            'priority': 1000,
+            'name': 'mos',
+            'suite': 'mos1',
+            'section': 'main restricted',
+            'type': 'deb',
+            'uri': 'http://10.25.0.10:8080/mos'
+        },
+        {
+            'priority': 500,
+            'name': 'ubuntu',
+            'suite': 'trusty',
+            'section': 'main multiverse restricted universe',
+            'type': 'deb',
+            'uri': 'http://10.25.0.10:8080/ubuntu'
+        },
+    ]
+
 
 @mock.patch.multiple(
     "fuel_mirror.app",
@@ -64,12 +130,14 @@ class TestCliCommands(base.TestCase):
             "openstack_version": "2"
         }
 
-    def _create_fuel_release(self, fuel_mock, osname):
+    def _create_fuel_release(self, fuel_mock, osname, repos=None):
+        if not repos:
+            repos = []
         release = mock.MagicMock(data={
             "name": "test release",
             "operating_system": osname,
             "attributes_metadata": {
-                "editable": {"repo_setup": {"repos": {"value": []}}}
+                "editable": {"repo_setup": {"repos": {"value": repos}}}
             }
         })
 
@@ -77,13 +145,15 @@ class TestCliCommands(base.TestCase):
         fuel_mock.Release.get_all.return_value = [release]
         return release
 
-    def _create_fuel_env(self, fuel_mock):
+    def _create_fuel_env(self, fuel_mock, repos=None):
+        if not repos:
+            repos = []
         env = mock.MagicMock(data={
             "name": "test",
             "release_id": 1
         })
         env.get_settings_data.return_value = {
-            "editable": {"repo_setup": {"repos": {"value": []}}}
+            "editable": {"repo_setup": {"repos": {"value": repos}}}
         }
         fuel_mock.Environment.get_by_ids.return_value = [env]
         fuel_mock.Environment.get_all.return_value = [env]
@@ -186,25 +256,57 @@ class TestCliCommands(base.TestCase):
         )
         fuel.FuelVersion.get_all_data.assert_called_once_with()
         env.set_settings_data.assert_called_with(
-            {'editable': {'repo_setup': {'repos': {'value': [
-                {
-                    'priority': 1000,
-                    'name': 'mos',
-                    'suite': 'mos1',
-                    'section': 'main restricted',
-                    'type': 'deb',
-                    'uri': 'http://10.25.0.10:8080/mos'
-                },
-                {
-                    'priority': 500,
-                    'name': 'ubuntu',
-                    'suite': 'trusty',
-                    'section': 'main multiverse restricted universe',
-                    'type': 'deb',
-                    'uri': 'http://10.25.0.10:8080/ubuntu'
-                }
-            ]}}}}
+            {'editable':
+                 {'repo_setup':
+                      {'repos': {'value': local_repos_desc()}}
+                 }
+            }
         )
+
+    def test_with_existing_mirrors(self, accessors):
+        fuel = accessors.get_fuel_api_accessor()
+        self._setup_fuel_versions(fuel)
+        env = self._create_fuel_env(fuel, repos=mirror_repos())
+        self._create_fuel_release(fuel, "Ubuntu", repos=mirror_repos())
+        self.start_cmd(
+            apply, ['--group', 'mos', 'ubuntu', '--env', '1'],
+            UBUNTU_PATH
+        )
+        accessors.get_fuel_api_accessor.assert_called_with(
+            "10.25.0.10", "test", "test1"
+        )
+        fuel.FuelVersion.get_all_data.assert_called_once_with()
+        env.set_settings_data.assert_called_with(
+            {'editable':
+                 {'repo_setup':
+                      {'repos':
+                           {'value': mirror_repos() + local_repos_desc()}
+                      }
+                 }
+            }
+        )
+
+    def test_replace_existing_mirrors_with_local(self, accessors):
+        fuel = accessors.get_fuel_api_accessor()
+        self._setup_fuel_versions(fuel)
+        env = self._create_fuel_env(fuel, repos=mirror_repos())
+        self._create_fuel_release(fuel, "Ubuntu", repos=mirror_repos())
+        self.start_cmd(
+            apply, ['--group', 'mos', 'ubuntu', '--env', '1', '--replace'],
+            UBUNTU_PATH
+        )
+        accessors.get_fuel_api_accessor.assert_called_with(
+            "10.25.0.10", "test", "test1"
+        )
+        fuel.FuelVersion.get_all_data.assert_called_once_with()
+        env.set_settings_data.assert_called_with(
+            {
+                'editable': {
+                    'repo_setup': {'repos': {'value': local_repos_asc()}}
+                }
+            }
+        )
+
 
     def test_apply_for_centos_based_env(self, accessors):
         fuel = accessors.get_fuel_api_accessor()
