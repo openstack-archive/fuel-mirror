@@ -18,6 +18,9 @@
 
 import pbr.version
 
-
-__version__ = pbr.version.VersionInfo(
-    'fuel_mirror').version_string()
+try:
+    __version__ = pbr.version.VersionInfo(
+        'fuel_mirror').version_string()
+except Exception as e:
+    print("ERROR", e)
+    __version__ = "0.0.0-test"

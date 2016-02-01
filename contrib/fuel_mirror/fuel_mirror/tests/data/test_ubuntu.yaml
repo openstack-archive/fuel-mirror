@@ -16,6 +16,7 @@ groups:
     ubuntu:
         -   name: "ubuntu"
             type: "deb"
+            main: true
             uri: "http://localhost/ubuntu"
             suite: "trusty"
             section: "main multiverse restricted universe"
