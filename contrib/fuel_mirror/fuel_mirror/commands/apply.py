@@ -38,6 +38,13 @@ class ApplyCommand(BaseCommand):
             help="Set as default repository."
         )
         parser.add_argument(
+            "--replace",
+            dest="replace",
+            action="store_true",
+            default=False,
+            help="Replace default repos with generated mirrors."
+        )
+        parser.add_argument(
             "-e", "--env",
             dest="env", nargs="+",
             help="Fuel environment ID to update, "
@@ -52,6 +59,9 @@ class ApplyCommand(BaseCommand):
 
         data = self.load_data(parsed_args)
         base_url = self.app.config["base_url"]
+        release_match = data["fuel_release_match"]
+        replace_repos = parsed_args.replace
+
         localized_repos = []
         for _, repos in self.get_groups(parsed_args, data):
             for repo_data in repos:
@@ -61,16 +71,29 @@ class ApplyCommand(BaseCommand):
                 )
                 localized_repos.append(new_data)
 
-        release_match = data["fuel_release_match"]
-        self.update_clusters(parsed_args.env, localized_repos, release_match)
+        localized_repos.sort(key=lambda x: not x.pop('main', False))
+
+        self.update_clusters(
+            parsed_args.env,
+            localized_repos,
+            release_match,
+            replace_repos=replace_repos)
+
         if parsed_args.set_default:
-            self.update_default_repos(localized_repos, release_match)
+            self.update_release_repos(
+                localized_repos,
+                release_match,
+                replace_repos=replace_repos)
 
         self.app.stdout.write(
             "Operations have been completed successfully.\n"
         )
 
-    def update_clusters(self, ids, repositories, release_match):
+    def update_clusters(self,
+                        ids,
+                        repositories,
+                        release_match,
+                        replace_repos=False):
         """Applies repositories for existing clusters.
 
         :param ids: the cluster ids.
@@ -94,8 +117,9 @@ class ApplyCommand(BaseCommand):
 
             modified = self._update_repository_settings(
                 cluster.get_settings_data(),
-                repositories
-            )
+                repositories,
+                replace_repos=replace_repos)
+
             if modified:
                 self.app.LOG.info(
                     "Try to update the Cluster '%s'",
@@ -107,21 +131,25 @@ class ApplyCommand(BaseCommand):
                 )
                 cluster.set_settings_data(modified)
 
-    def update_default_repos(self, repositories, release_match):
+    def update_release_repos(self,
+                             repositories,
+                             release_match,
+                             replace_repos=False):
         """Applies repositories for existing default settings.
 
         :param repositories: the meta information of repositories
         :param release_match: The pattern to check Fuel Release
         """
-        self.app.stdout.write("Updating the default repositories...\n")
+        self.app.stdout.write("Updating the release repositories...\n")
         releases = six.moves.filter(
             lambda x: is_subdict(release_match, x.data),
             self.app.fuel.Release.get_all()
         )
         for release in releases:
             if self._update_repository_settings(
-                release.data["attributes_metadata"], repositories
-            ):
+                    release.data["attributes_metadata"],
+                    repositories,
+                    replace_repos=replace_repos):
                 self.app.LOG.info(
                     "Try to update the Release '%s'",
                     release.data['name']
@@ -136,7 +164,10 @@ class ApplyCommand(BaseCommand):
                     release.data
                 )
 
-    def _update_repository_settings(self, settings, repositories):
+    def _update_repository_settings(self,
+                                    settings,
+                                    repositories,
+                                    replace_repos=False):
         """Updates repository settings.
 
         :param settings: the target settings
@@ -144,11 +175,19 @@ class ApplyCommand(BaseCommand):
         """
         editable = settings["editable"]
         if 'repo_setup' not in editable:
-            self.app.LOG.info('Attributes is read-only.')
+            self.app.LOG.info('Attributes are read-only.')
             return
 
         repos_attr = editable["repo_setup"]["repos"]
-        lists_merge(repos_attr['value'], repositories, "name")
+        if replace_repos:
+            repos_attr = {'value': repositories}
+        else:
+            lists_merge(repos_attr['value'], repositories, "name")
+        # if main_repo:
+        #     repo_values = repos_attr['value']
+        #     repo_values.sort(key=lambda x: x['name'] != main_repo)
+        #     repos_attr['value'] = repo_values
+
         return {"editable": {"repo_setup": {"repos": repos_attr}}}
 
 
