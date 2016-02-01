@@ -6,8 +6,12 @@ fuel_release_match:
    version: $openstack_version
    operating_system: Ubuntu
 
+# Main is a required parameter which defines what repository will be used
+# for images creation and that mirror should contain all packages for minimal
+# system creation.
 repos:
     -   &ubuntu
+        main: true
         name: "ubuntu"
         uri: *ubuntu_baseurl
         suite: "trusty"
@@ -63,7 +67,8 @@ repos:
         type: "deb"
         priority: 1000
 
-
+# Packages are required to build bootstrap images for a system.
+# The mirror should contiain such packages in addition to local mirror.
 packages: &packages
      - "acpi-support"
      - "anacron"

@@ -15,6 +15,7 @@
 #    You should have received a copy of the GNU General Public License along
 #    with this program; if not, write to the Free Software Foundation, Inc.,
 #    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+from string import Template
 
 import six
 import yaml
@@ -92,3 +93,8 @@ def get_fuel_settings():
         }
     except (OSError, IOError):
         return {}
+
+
+def parse_mirror_config_file(input_file, **kwargs):
+    with open(input_file, "r") as fd:
+        return yaml.load(Template(fd.read()).safe_substitute(**kwargs))
