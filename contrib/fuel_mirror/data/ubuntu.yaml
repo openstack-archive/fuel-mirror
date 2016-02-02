@@ -88,6 +88,8 @@ packages: &packages
      - "iptables-persistent"
      - "irqbalance"
      - "language-pack-en"
+     - "libapache2-mod-fastcgi"
+     - "libnss3-tools"
      - "linux-firmware-nonfree"
      - "linux-headers-generic-lts-trusty"
      - "linux-image-generic-lts-trusty"
