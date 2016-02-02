@@ -1,0 +1,9 @@
+Code-Review+2: Bulat Gaifullin <bgaifullin@mirantis.com>
+Code-Review+2: Vitaly Parakhin <vparakhin@mirantis.com>
+Workflow+1: Vitaly Parakhin <vparakhin@mirantis.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Tue, 02 Feb 2016 08:27:00 +0000
+Reviewed-on: https://review.openstack.org/274963
+Project: openstack/fuel-mirror
+Branch: refs/heads/master
