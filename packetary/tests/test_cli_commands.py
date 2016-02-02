@@ -48,6 +48,7 @@ class TestCliCommands(base.TestCase):
         "--ignore-errors-num=3",
         "--threads-num=8",
         "--retries-num=10",
+        "--retry-interval=1",
         "--http-proxy=http://proxy",
         "--https-proxy=https://proxy"
     ]
@@ -84,7 +85,8 @@ class TestCliCommands(base.TestCase):
         ConnectionsManager.assert_called_once_with(
             proxy="http://proxy",
             secure_proxy="https://proxy",
-            retries_num=10
+            retries_num=10,
+            retry_interval=1
         )
 
     def test_clone_cmd(self, stdout, RepositoryController, **kwargs):

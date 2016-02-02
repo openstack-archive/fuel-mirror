@@ -98,6 +98,29 @@ class TestConnectionManager(base.TestCase):
             "/test/file", "I/O error", 0
         )
 
+    @mock.patch.multiple(
+        "packetary.library.connections.urllib.HTTPHandler",
+        http_request=mock.DEFAULT,
+        http_open=mock.DEFAULT
+    )
+    def test_retries_on_50x(self, logger, http_open, http_request):
+        request = connections.RetryableRequest("http:///localhost/file1.txt")
+        request.retries_left = 1
+        http_request.return_value = request
+        response_mock = mock.MagicMock(code=501, msg="not found")
+        response_mock.getcode.return_value = response_mock.code
+        http_open.return_value = response_mock
+        manager = connections.ConnectionsManager(retries_num=2)
+        with self.assertRaises(connections.urlerror.HTTPError) as trapper:
+            manager.open_stream("http:///localhost/file1.txt")
+        self.assertEqual(501, trapper.exception.code)
+        self.assertEqual(2, http_request.call_count)
+        for retry_num in six.moves.range(1):
+            logger.error.assert_any_call(
+                "request failed: %s - %d(%s), retries left - %d.",
+                mock.ANY, 501, mock.ANY, retry_num
+            )
+
     @mock.patch("packetary.library.connections.urllib.build_opener")
     def test_raise_other_errors(self, *_):
         manager = connections.ConnectionsManager()
@@ -108,6 +131,23 @@ class TestConnectionManager(base.TestCase):
             manager.open_stream("/test/file")
 
         self.assertEqual(1, manager.opener.open.call_count)
+
+    @mock.patch("packetary.library.connections.urllib.build_opener")
+    @mock.patch("packetary.library.connections.time")
+    def test_progressive_delay_between_request(self, time_mock, *_):
+        manager = connections.ConnectionsManager(
+            retries_num=6, retry_interval=1
+        )
+        manager.opener.open.side_effect = IOError("I/O Error")
+
+        with self.assertRaises(IOError):
+            manager.open_stream("/test/file")
+
+        self.assertEqual(7, manager.opener.open.call_count)
+        self.assertEqual(
+            [1, 1, 2, 3, 4, 5],
+            [x[0][0] for x in time_mock.sleep.call_args_list]
+        )
 
     @mock.patch("packetary.library.connections.urllib.build_opener")
     @mock.patch("packetary.library.connections.ensure_dir_exist")
@@ -198,7 +238,7 @@ class TestRetryHandler(base.TestCase):
         r = self.handler.http_response(request, response)
         self.assertIsInstance(r, connections.ResumableResponse)
         logger.debug.assert_called_with(
-            "finish request: %s - %d (%s), duration - %d ms.",
+            "request completed: %s - %d (%s), duration - %d ms.",
             "/file/test", 200, "test", 10
         )
 
@@ -214,20 +254,18 @@ class TestRetryHandler(base.TestCase):
         response.getcode.return_value = 206
         self.handler.http_response(request, response)
 
-    def test_error(self, logger):
-        request = mock.MagicMock()
+    def test_handle_error(self, logger):
+        request = mock.MagicMock(retries_left=1, retry_interval=0, offset=0)
+        request.get_retry_interval.return_value = 0
         request.get_full_url.return_value = "/test"
-        request.retries_left = 1
-        self.handler.http_error(
-            request, mock.MagicMock(), 500, "error", mock.MagicMock()
-        )
+        response_mock = mock.MagicMock(code=500, msg="error")
+        response_mock.getcode.return_value = response_mock.code
+        self.handler.http_response(request, response_mock)
         logger.error.assert_called_with(
-            "fail request: %s - %d(%s), retries left - %d.",
-            "/test", 500, "error", 1
+            "request failed: %s - %d(%s), retries left - %d.",
+            "/test", 500, "error", 0
         )
-        self.handler.http_error(
-            request, mock.MagicMock(), 404, "error", mock.MagicMock()
-        )
+        self.handler.http_response(request, response_mock)
         self.handler.parent.open.assert_called_once_with(request)
 
 
