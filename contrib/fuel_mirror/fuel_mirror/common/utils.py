@@ -11,6 +11,7 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+from string import Template
 
 import six
 import yaml
@@ -88,3 +89,14 @@ def get_fuel_settings():
         }
     except (OSError, IOError):
         return {}
+
+
+def load_input_data(input_file, **kwargs):
+    """Load yaml file and parse it to dict with replacement by kwargs.
+
+    :param input_file: name of file to parse fuel mirror template
+    :param kwargs: arguments to substitute template
+    :return: processed from yaml file dict.
+    """
+    with open(input_file, "r") as fd:
+        return yaml.load(Template(fd.read()).safe_substitute(**kwargs))

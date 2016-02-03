@@ -15,10 +15,10 @@
 #    under the License.
 
 import os.path
-from string import Template
 
 from cliff import command
-import yaml
+
+from fuel_mirror.common.utils import load_input_data
 
 
 class BaseCommand(command.Command):
@@ -77,11 +77,12 @@ class BaseCommand(command.Command):
             input_file = parsed_args.input_file
 
         # TODO(add input data validation scheme)
-        with open(input_file, "r") as fd:
-            return yaml.load(Template(fd.read()).safe_substitute(
-                mos_version=self.app.config["mos_version"],
-                openstack_version=self.app.config["openstack_version"],
-            ))
+        data = load_input_data(
+            input_file,
+            mos_version=self.app.config["mos_version"],
+            openstack_version=self.app.config["openstack_version"]
+        )
+        return data
 
     @classmethod
     def get_groups(cls, parsed_args, data):

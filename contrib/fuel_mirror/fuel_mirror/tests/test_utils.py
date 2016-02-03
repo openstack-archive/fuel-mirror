@@ -100,3 +100,13 @@ class TestUtils(base.TestCase):
             {},
             utils.get_fuel_settings()
         )
+
+    @mock.patch("fuel_mirror.common.utils.yaml")
+    @mock.patch("fuel_mirror.common.utils.open")
+    def test_load_input_data(self, open_mock, yaml_mock):
+        data = "$param1: $param2"
+        open_mock().__enter__().read.return_value = data
+        v = utils.load_input_data("data.yaml", param1="key", param2="value")
+        open_mock.assert_called_with("data.yaml", "r")
+        yaml_mock.load.assert_called_once_with("key: value")
+        self.assertIs(yaml_mock.load(), v)
