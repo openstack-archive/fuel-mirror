@@ -58,7 +58,7 @@ This package provides the %{-n*} kernel modules
       sed -i "s|Source0:.*$|Source0: ${TAR_NAME}|" $specfile
       # Prepare source tarball
       pushd $_srcpath &>/dev/null
-      if [ "$PACKAGENAME" == "murano-apps" ]; then
+      if [ "$PACKAGENAME" == "openstack-macros" ]; then
           # Do not perform `setup.py sdist` for murano-apps package
           tar -czf ${BUILDDIR}/$TAR_NAME $EXCLUDES .
       else

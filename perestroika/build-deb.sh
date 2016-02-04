@@ -60,7 +60,7 @@ main () {
           done
           # Prepare source tarball
           pushd $_srcpath &>/dev/null
-          if [ "$PACKAGENAME" == "murano-apps" -o "$PACKAGENAME" == "rally" ]; then
+          if [ "$PACKAGENAME" == "rally" ]; then
               # Do not perform `setup.py sdist` for murano-apps and rally packages
               tar -czf ${BUILDDIR}/$TAR_NAME $EXCLUDES .
           else
