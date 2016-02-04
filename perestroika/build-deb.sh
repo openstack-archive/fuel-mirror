@@ -60,8 +60,8 @@ main () {
           done
           # Prepare source tarball
           pushd $_srcpath &>/dev/null
-          if [ "$PACKAGENAME" == "murano-apps" -o "$PACKAGENAME" == "rally" ]; then
-              # Do not perform `setup.py sdist` for murano-apps and rally packages
+          if [ "$PACKAGENAME" == "rally" ]; then
+              # Do not perform `setup.py sdist` rally packages
               tar -czf ${BUILDDIR}/$TAR_NAME $EXCLUDES .
           else
               python setup.py --version  # this will download pbr if it's not available
