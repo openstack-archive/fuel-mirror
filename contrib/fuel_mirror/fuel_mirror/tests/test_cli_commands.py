@@ -345,6 +345,78 @@ class TestCliCommands(base.TestCase):
             }
         )
 
+    def test_replace_release_mirrors(self, accessors):
+        fuel = accessors.get_fuel_api_accessor()
+        self._setup_fuel_versions(fuel)
+        env = self._create_fuel_env(fuel, repos=mirror_repos())
+        release = \
+            self._create_fuel_release(fuel, "Ubuntu", repos=mirror_repos())
+        self.start_cmd(
+            apply, ['--group', 'mos', 'ubuntu', '--default'],
+            UBUNTU_PATH
+        )
+        accessors.get_fuel_api_accessor.assert_called_with(
+            "10.25.0.10", "test", "test1"
+        )
+        fuel.FuelVersion.get_all_data.assert_called_once_with()
+        env.set_settings_data.assert_called_with(
+            {
+                'editable': {
+                    'repo_setup': {
+                        'repos': {'value': mirror_repos() + local_repos()}
+                    }
+                }
+            }
+        )
+        release.connection.put_request.assert_called_once_with(
+            release.instance_api_path.format(),
+            {
+                'name': "test release",
+                'operating_system': 'Ubuntu',
+                'attributes_metadata': {
+                    'editable': {'repo_setup': {'repos': {
+                        'value': mirror_repos() + local_repos()
+                    }}}
+                }
+            }
+        )
+
+    def test_replace_release_mirrors_with_local(self, accessors):
+        fuel = accessors.get_fuel_api_accessor()
+        self._setup_fuel_versions(fuel)
+        env = self._create_fuel_env(fuel, repos=mirror_repos())
+        release = \
+            self._create_fuel_release(fuel, "Ubuntu", repos=mirror_repos())
+        self.start_cmd(
+            apply, ['--group', 'mos', 'ubuntu', '--default', '--replace'],
+            UBUNTU_PATH
+        )
+        accessors.get_fuel_api_accessor.assert_called_with(
+            "10.25.0.10", "test", "test1"
+        )
+        fuel.FuelVersion.get_all_data.assert_called_once_with()
+        env.set_settings_data.assert_called_with(
+            {
+                'editable': {
+                    'repo_setup': {
+                        'repos': {'value': local_repos(reverse=False)}
+                    }
+                }
+            }
+        )
+        release.connection.put_request.assert_called_once_with(
+            release.instance_api_path.format(),
+            {
+                'name': "test release",
+                'operating_system': 'Ubuntu',
+                'attributes_metadata': {
+                    'editable': {'repo_setup': {'repos': {
+                        'value': local_repos(reverse=False)
+                    }}}
+                }
+            }
+        )
+
     def test_apply_for_centos_release(self, accessors):
         fuel = accessors.get_fuel_api_accessor()
         self._setup_fuel_versions(fuel)
