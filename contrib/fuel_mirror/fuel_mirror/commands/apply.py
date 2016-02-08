@@ -146,10 +146,12 @@ class ApplyCommand(BaseCommand):
             self.app.fuel.Release.get_all()
         )
         for release in releases:
-            if self._update_repository_settings(
-                    release.data["attributes_metadata"],
-                    repositories,
-                    replace_repos=replace_repos):
+            modified = self._update_repository_settings(
+                release.data["attributes_metadata"],
+                repositories,
+                replace_repos=replace_repos)
+            if modified:
+                release.data["attributes_metadata"] = modified
                 self.app.LOG.info(
                     "Try to update the Release '%s'",
                     release.data['name']
@@ -180,11 +182,14 @@ class ApplyCommand(BaseCommand):
 
         repos_attr = editable["repo_setup"]["repos"]
         if replace_repos:
-            repos_attr = {'value': repositories}
+            repos_attr['value'] = repositories
         else:
             lists_merge(repos_attr['value'], repositories, "name")
 
-        return {"editable": {"repo_setup": {"repos": repos_attr}}}
+        # NOTE(akostrikov) That assignment is only for informational purpose.
+        settings["editable"]["repo_setup"]["repos"] = repos_attr
+
+        return settings
 
 
 def debug(argv=None):
