@@ -104,6 +104,8 @@ packages: &packages
      - "memcached"
      - "monit"
      - "msmtp-mta"
+     - "multipath-tools"
+     - "multipath-tools-boot"
      - "nginx"
      - "ntp"
      - "openssh-server"
