@@ -1,5 +1,6 @@
 %define name fuel-mirror
 %{!?version: %define version 9.0.0}
+%{!?fuel_release: %define fuel_release 9.0}
 %{!?release: %define release 1}
 
 Name: %{name}
@@ -77,10 +78,20 @@ cd %{_builddir}/%{name}-%{version} && python setup.py install --single-version-e
 cd %{_builddir}/%{name}-%{version}/contrib/fuel_mirror && python setup.py install --single-version-externally-managed -O1 --root=$RPM_BUILD_ROOT --record=%{_builddir}/%{name}-%{version}/contrib/fuel_mirror/INSTALLED_FILES
 
 mkdir -p %{buildroot}/etc/%{name}
+mkdir -p %{buildroot}/etc/pki/fuel-gpg/
+mkdir -p %{buildroot}/etc/yum/vars/
+mkdir -p %{buildroot}/etc/yum.repos.d/
 mkdir -p %{buildroot}/usr/bin
 mkdir -p %{buildroot}/usr/share/%{name}
 install -m 755 %{_builddir}/%{name}-%{version}/contrib/fuel_mirror/scripts/fuel-createmirror %{buildroot}/usr/bin/fuel-createmirror
 install -m 755 %{_builddir}/%{name}-%{version}/contrib/fuel_mirror/etc/config.yaml %{buildroot}/etc/%{name}/config.yaml
+echo "%{fuel_release}" > %{buildroot}/etc/yum/vars/fuelver
+# copy GPG key
+install -m 644 %{_builddir}/%{name}-%{version}/contrib/fuel_repo/RPM-GPG-KEY-mos %{buildroot}/etc/pki/fuel-gpg/
+# copy yum repos and mirror lists to /etc/yum.repos.d
+for file in %{_builddir}/%{name}-%{version}/contrib/fuel_repo/*.repo contrib/fuel_repo/mos-mirrors* ; do
+    install -m 644 "$file" %{buildroot}/etc/yum.repos.d
+done
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -93,3 +104,22 @@ rm -rf $RPM_BUILD_ROOT
 
 %files -n python-packetary -f %{_builddir}/%{name}-%{version}/INSTALLED_FILES
 %defattr(-,root,root)
+
+%package -n fuel-repository
+
+Summary:   Fuel online repositories package
+Version:   %{version}
+Release:   %{release}
+License:   GPLv2
+BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
+URL:       http://github.com/Mirantis
+
+%description -n fuel-repository
+This packages provides Yum configuration for Fuel online repositories.
+
+%files -n fuel-repository
+%defattr(-,root,root)
+%config(noreplace) %attr(0644,root,root) /etc/yum/vars/fuelver
+%config(noreplace) %attr(0644,root,root) /etc/yum.repos.d/*
+%dir /etc/pki/fuel-gpg
+/etc/pki/fuel-gpg/*
