@@ -86,13 +86,13 @@ main () {
           DEBFULLNAME=$author DEBEMAIL=$email dch -c ${_debianpath}/debian/changelog -a "$commitsha $message"
           # Prepare source tarball
           # Exclude debian and tests dir
-          mv ${_srcpath}/debian ${_srcpath}/renameforexcludedebian
-          [ -d "${_srcpath}/tests" ] && mv ${_srcpath}/tests ${_srcpath}/renameforexcludetests
-          pushd ${_srcpath} &>/dev/null
-          tar -czf "${BUILDDIR}/${TAR_NAME}" $EXCLUDES --exclude=renameforexcludedebian --exclude=renameforexcludetests *
-          popd &>/dev/null
-          mv ${_srcpath}/renameforexcludedebian ${_srcpath}/debian
-          [ -d "${_srcpath}/renameforexcludetests" ] && mv ${_srcpath}/renameforexcludetests ${_srcpath}/tests
+          cat > ${_srcpath}/.gitattributes <<-EOF
+			/debian export-ignore
+			/tests export-ignore
+			/.gitignore export-ignore
+			/.gitreview export-ignore
+			EOF
+          git -C ${_srcpath} archive --format tar.gz --worktree-attributes -o ${BUILDDIR}/${TAR_NAME} HEAD
       fi
       mkdir -p ${BUILDDIR}/$srcpackagename
       cp -R ${_debianpath}/debian ${BUILDDIR}/${srcpackagename}/
