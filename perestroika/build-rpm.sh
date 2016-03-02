@@ -48,9 +48,10 @@ This package provides the %{-n*} kernel modules
 
       # Get revision number as commit count for src+spec projects
       local _rev=$(git -C $_srcpath rev-list --no-merges ${version}..origin/${SOURCE_BRANCH} | wc -l)
-      [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && _rev=$(( $_rev + 1 ))
+      [ "$GERRIT_CHANGE_STATUS" == "NEW" ] \
+          && [ ${GERRIT_PROJECT} == "${SRC_PROJECT}" ] \
+          && _rev=$(( $_rev + 1 ))
       local release="mos${_rev}"
-      [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && release="${release}.git.${gitshasrc}.${gitshaspec}"
       local TAR_NAME=${PACKAGENAME}-${version}.tar.gz
       # Update version and changelog
       sed -i "s|Version:.*$|Version: ${version}|" $specfile
