@@ -47,7 +47,7 @@ This package provides the %{-n*} kernel modules
       version=$(python ${convert_version_py} --tag ${release_tag})
 
       # Get revision number as commit count for src+spec projects
-      local _rev=$(git -C $_srcpath rev-list --no-merges ${version}..origin/${SOURCE_BRANCH} | wc -l)
+      local _rev=$(git -C $_srcpath rev-list --no-merges ${release_tag}..origin/${SOURCE_BRANCH} | wc -l)
       [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && _rev=$(( $_rev + 1 ))
       local release="mos${_rev}"
       [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && release="${release}.git.${gitshasrc}.${gitshaspec}"
