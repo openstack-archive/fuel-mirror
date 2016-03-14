@@ -23,6 +23,10 @@ main() {
   [ $(ls -1 ${TMP_DIR}/ | wc -l) -eq 0 ] && error "Can't download packages"
 
   ## Prepare repository
+  if [ -n "${CUSTOM_REPO_ID}" ] ; then
+      unset LP_BUG
+      REQUEST_NUM=${CUSTOM_REPO_ID}
+  fi
   local URL_PREFIX=''
   if [ "${GERRIT_CHANGE_STATUS}" == "NEW" ] ; then
       REPO_BASE_PATH=${REPO_BASE_PATH}/${REPO_REQUEST_PATH_PREFIX}
