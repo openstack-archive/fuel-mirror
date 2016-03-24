@@ -19,6 +19,13 @@ info () {
   echo
 }
 
+
+warning () {
+  echo
+  echo -e "WARNING: $*"
+  echo
+}
+
 check-gpg() {
   local RESULT=0
   [ -z "$SIGKEYID" ] && echo "WARNING: No secret keys given" && RESULT=1
