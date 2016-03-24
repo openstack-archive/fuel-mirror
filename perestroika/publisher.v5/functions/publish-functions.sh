@@ -6,6 +6,7 @@
 WRK_DIR=`pwd`
 TMP_DIR=${WRK_DIR}/.tmpdir
 
+
 error () {
   echo
   echo -e "ERROR: $*"
@@ -18,6 +19,19 @@ info () {
   echo -e "INFO: $*"
   echo
 }
+
+
+warning () {
+  echo
+  echo -e "WARNING: $*"
+  echo
+}
+
+recreate_tmp_dir () {
+    [ -d "${TMP_DIR}" ] && rm -rf "${TMP_DIR}"
+    mkdir -p "${TMP_DIR}"
+}
+
 
 check-gpg() {
   local RESULT=0
