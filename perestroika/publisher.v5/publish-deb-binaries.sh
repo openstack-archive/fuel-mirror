@@ -4,13 +4,120 @@
 source $(dirname $(readlink -e $0))/functions/publish-functions.sh
 source $(dirname $(readlink -e $0))/functions/locking.sh
 
+# Used global envvars
+# ======================================================
+#
+#
+# Mixed from publish-functions.sh
+# ------------------------------------------------------
+#
+# TMP_DIR                   path to temporary directory
+# WRK_DIR                   path to current working directory
+#
+#
+# Input parameters for downloading package(s) from given jenkins-worker
+# ------------------------------------------------------
+#
+# SSH_OPTS                  ssh options for rsync (could be empty)
+# SSH_USER                  user who have ssh access to the worker (could be empty)
+# BUILD_HOST                fqdn/ip of worker
+# PKG_PATH                  path to package which should be download
+#
+#
+# Patchset-related parameters
+# ------------------------------------------------------
+# LP_BUG                    string representing ref. to bug on launchpad
+#                           used for grouping packages related to
+#                           the same bug into one repository (3)
+# GERRIT_CHANGE_STATUS      status of patchset, actually only "NEW" matters
+# GERRIT_PATCHSET_REVISION  revision of patchset, used only in rendering
+#                           final artifact (deb.publish.setenvfile)
+# REQUEST_NUM               identifier of request CR-12345 (3)
+#
+#
+# Security-related parameters
+# ------------------------------------------------------
+# SIGKEYID           user used for signing release files
+# PROJECT_NAME       project name used for look up key file
+# PROJECT_VERSION    project name used for look up key file
+#
+#
+# Repository paths and urls configuration
+# repo path ::= "(1)/[(2)(3)]/(4)"
+# repo url  ::= "http://(0)/[(2)(3)]/(4) (distribution) (component)"
+# ------------------------------------------------------
+# REPO_BASE_PATH            (1) first part of repo path
+# REPO_REQUEST_PATH_PREFIX  (2) second part of repo path (optional)
+# CUSTOM_REPO_ID            (3) third part - highest priority override (optional)
+# *LP_BUG                   (3) third part - LP bug (optional)
+# *REQUEST_NUM              (3) third part - used when no LP bug provided (optional)
+# DEB_REPO_PATH             (4) fourth part of repo path
+#
+# REMOTE_REPO_HOST          (0) fqdn of server where to publish built packages
+# ORIGIN                    origin
+# PRODUCT_VERSION           version of product
+# DIST                      Name of OS distributive (trusty, for ex.)
+#
+#
+# Distributions naming
+# It's possible to provide overrides which should be used
+# as names for proposed, secutity, updates and holdback distributions
+# DEB_DIST_NAME will be used if no overrides given
+# ------------------------------------------------------
+# DEB_DIST_NAME             name of "main" distributions repo (for ex. mos8.0)
+# DEB_PROPOSED_DIST_NAME    name of "proposed" distributions repo (for ex. mos8.0-proposed) (optional)
+# DEB_UPDATES_DIST_NAME     name of "updates" distributions repo (for ex. mos8.0-updates) (optional)
+# DEB_SECURITY_DIST_NAME    name of "security" distributions repo (for ex. mos8.0-security) (optional)
+# DEB_HOLDBACK_DIST_NAME    name of "holdback" distributions repo (for ex. mos8.0-holdback) (optional)
+#
+#
+# Component parameters
+# It's possible to provide overrides which should be used
+# as names for proposed, secutity, updates and holdback components
+# DEB_DIST_NAME will be used if no overrides given
+# ------------------------------------------------------
+# DEB_COMPONENT             name of "main" component (optional)
+# DEB_PROPOSED_COMPONENT    name of "proposed" component (optional)
+# DEB_UPDATES_COMPONENT     name of "updates" component (optional)
+# DEB_SECURITY_COMPONENT    name of "security" component (optional)
+# DEB_HOLDBACK_COMPONENT    name of "holdback" component (optional)
+#
+#
+# Directives for using different kinds of workflows which
+# define output repos/component name for packages
+# (will be applied directive with highest priority)
+# ------------------------------------------------------
+# IS_UPDATES         p1. updates workflow -> publish to proposed repo
+# IS_HOLDBACK        p2. holdback workflow -> publish to holdback repo (USE WITH CARE!)
+# IS_SECURITY        p3. security workflow -> publish to security repo
+# IS_RESTRICTED      force to set component name "restricted" (USE WITH CARE!)
+# IS_DOWNGRADE       downgrade package: remove ONE previously published version of this package
+
+
 main() {
+
+    # Preparations
+    # ==================================================
+
+    # Check if it's possible to sign packages
+    # --------------------------------------------------
+
     local SIGN_STRING=""
     check-gpg && SIGN_STRING="true"
 
-    ## Download sources from worker
+    # Reinitialize temp directory
+    # --------------------------------------------------
+
     [ -d $TMP_DIR ] && rm -rf $TMP_DIR
     mkdir -p $TMP_DIR
+
+    # Download package from worker
+    # ==================================================
+
+    # fixme: Looks like we have a bug here and user and host should be separated.
+    #        We didn't shoot-in-the leg IRL because we don't pass this param
+    #        Prop. sol: [ -z "${SSH_USER}" ] && SSH_USER="${SSH_USER}@"
+
     rsync -avPzt \
         -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${SSH_OPTS}" \
         ${SSH_USER}${BUILD_HOST}:${PKG_PATH}/ ${TMP_DIR}/ || error "Can't download packages"
@@ -22,13 +129,26 @@ main() {
     #        debsign -pgpg --re-sign -k${SIGKEYID} ${_dscfile}
     #    done
 
-    # Create all repositories
+    # Initialization of repository
+    # Here we create repo which will be filled next
+    # ==================================================
 
-    # Paths
+
+    # Crunch for using custom namespace for publishing packages
+    # When CUSTOM_REPO_ID is given, then:
+    # - packages are not grouped by bug
+    # - CUSTOM_REPO_ID is used instead of request serial number
     if [ -n "${CUSTOM_REPO_ID}" ] ; then
         unset LP_BUG
         REQUEST_NUM=${CUSTOM_REPO_ID}
     fi
+
+    # Configuring paths and namespaces:
+    # - only newly created patchsets have prefixes
+    # - if LP_BUG is given then it replaces REQUEST_NUM ("Grouping" feature)
+    # ---------------------------------------------------
+
+
     local URL_PREFIX=""
     if [ "${GERRIT_CHANGE_STATUS}" = "NEW" ] ; then
         REPO_BASE_PATH=${REPO_BASE_PATH}/${REPO_REQUEST_PATH_PREFIX}
@@ -54,6 +174,14 @@ main() {
             job_lock ${CONFIGDIR}.lock wait 3600
                 for dist_name in ${DEB_DIST_NAME} ${DEB_PROPOSED_DIST_NAME} ${DEB_UPDATES_DIST_NAME} \
                              ${DEB_SECURITY_DIST_NAME} ${DEB_HOLDBACK_DIST_NAME} ; do
+
+                # Filling distributions configuretion file (this file is used by reprepro)
+                # It's not cleaned at beginning, because publisher didn't clean
+                # it in it's previous versions.
+                # This behavior looks like a bug. But fixing it could result in
+                # unexpected behavior and should be tested with care.
+                # --------------------------------------
+
                     cat >> ${CONFIGDIR}/distributions <<- EOF
                         Origin: ${ORIGIN}
                         Label: ${DEB_DIST_NAME}
@@ -70,12 +198,20 @@ main() {
                     reprepro --basedir ${LOCAL_REPO_PATH} --dbdir ${DBDIR} \
                         --outdir ${OUTDIR} --distdir ${DISTDIR} --confdir ${CONFIGDIR} \
                         export ${dist_name}
-                    # Fix Codename field
+
+                # Fix Codename field
+                # This is done because reprepro is created for deb but used for ubuntu
+                # it's ok, that codename is set as DEB_DIST_NAME and not as dist_name
+                # --------------------------------------
+
                     local release_file="${DISTDIR}/${dist_name}/Release"
                     sed "s|^Codename:.*$|Codename: ${DEB_DIST_NAME}|" \
                         -i ${release_file}
                     rm -f ${release_file}.gpg
-                    # ReSign Release file
+
+                # Signing changed release file
+                # --------------------------------------
+
                     [ -n "${SIGN_STRING}" ] \
                         && gpg --sign --local-user ${SIGKEYID} -ba \
                         -o ${release_file}.gpg ${release_file}
@@ -83,6 +219,14 @@ main() {
             job_lock ${CONFIGDIR}.lock unset
         fi
     done
+
+    # Defining distribution name and component
+    # Here we determine where to put new packages
+    # ==================================================
+
+    # Fill in all the defaults
+    # when some parameters are not given then fallback to main distribution/component
+    # --------------------------------------------------
 
     DEB_BASE_DIST_NAME=${DEB_DIST_NAME}
 
@@ -95,20 +239,46 @@ main() {
     [ -z "${DEB_SECURITY_COMPONENT}" ] && DEB_SECURITY_COMPONENT=${DEB_COMPONENT}
     [ -z "${DEB_HOLDBACK_COMPONENT}" ] && DEB_HOLDBACK_COMPONENT=${DEB_COMPONENT}
 
+    # Processing different kinds of input directives "IS_XXX"
+    # --------------------------------------------------
+
+
+    # Updates workflow:
+    # all built packages should be put into proposed distribution repository
+    # after tests and acceptance they are published to updates by other tools
+    # --------------------------------------------------
+
     if [ "${IS_UPDATES}" = 'true' ] ; then
         DEB_DIST_NAME=${DEB_PROPOSED_DIST_NAME}
         DEB_COMPONENT=${DEB_PROPOSED_COMPONENT}
     fi
+
+    # Holdback workflow:
+    # all built packages should be put into holdback distribution repository
+    # this wotkflow should be used in esceeptional cases
+    # --------------------------------------------------
+
     if [ "${IS_HOLDBACK}" = 'true' ] ; then
         DEB_DIST_NAME=${DEB_HOLDBACK_DIST_NAME}
         DEB_COMPONENT=${DEB_HOLDBACK_COMPONENT}
     fi
+
+    # Security workflow:
+    # all built packages should be put into security distribution repository
+    # this is short-circuit for delivering security updates beside long updates workflow
+    # --------------------------------------------------
+
     if [ "${IS_SECURITY}" = 'true' ] ; then
         DEB_DIST_NAME=${DEB_SECURITY_DIST_NAME}
         DEB_COMPONENT=${DEB_SECURITY_COMPONENT}
     fi
 
     [ -z "${DEB_COMPONENT}" ] && local DEB_COMPONENT=main
+
+    # Restricted components:
+    # forcefully change component to restricted
+    # --------------------------------------------------
+
     [ "${IS_RESTRICTED}" = 'true' ] && DEB_COMPONENT=restricted
 
     local LOCAL_REPO_PATH=${REPO_BASE_PATH}/${DEB_REPO_PATH}
@@ -120,7 +290,12 @@ main() {
         --outdir ${OUTDIR} --distdir ${DISTDIR} --confdir ${CONFIGDIR}"
     local REPREPRO_COMP_OPTS="${REPREPRO_OPTS} --component ${DEB_COMPONENT}"
 
-    # Parse incoming files
+    # Filling of repository with new files
+    # ==================================================
+
+    # Aggregate list of files for further processing
+    # --------------------------------------------------
+
     local BINDEBLIST=""
     local BINDEBNAMES=""
     local BINUDEBLIST=""
@@ -137,17 +312,39 @@ main() {
 
     job_lock ${CONFIGDIR}.lock wait 3600
 
+        # Get source name - this name represents sources from which package(s) was built
+        # ----------------------------------------------
+
         local SRC_NAME=$(awk '/^Source:/ {print $2}' ${BINSRCLIST})
+
+        # Get queued version of package related to the SRC_NAME
+        # because publisher doesn't support masspublishing,
+        # it's ok, that we get one variable from list
+        # ----------------------------------------------
+
         local NEW_VERSION=$(awk '/^Version:/ {print $2}' ${BINSRCLIST} | head -n 1)
+
+        # Get currently published version of package related to the SRC_NAME
+        # note: we hold only one version of each package
+        # ----------------------------------------------
+
+
         local OLD_VERSION=$(reprepro ${REPREPRO_OPTS} --list-format '${version}\n' \
             listfilter ${DEB_DIST_NAME} "Package (==${SRC_NAME})" | sort -u | head -n 1)
         [ "${OLD_VERSION}" == "" ] && OLD_VERSION=none
 
         # Remove existing packages for requests-on-review and downgrades
+        # when there is previous version
+        # ----------------------------------------------
+
         # TODO: Get rid of removing. Just increase version properly
         if [ "${GERRIT_CHANGE_STATUS}" = "NEW" -o "$IS_DOWNGRADE" == "true" ] ; then
             reprepro ${REPREPRO_OPTS} removesrc ${DEB_DIST_NAME} ${SRC_NAME} ${OLD_VERSION} || :
         fi
+
+        # Collecting all binaries
+        # ----------------------------------------------
+
         # Add .deb binaries
         if [ "${BINDEBLIST}" != "" ]; then
             reprepro ${REPREPRO_COMP_OPTS} includedeb ${DEB_DIST_NAME} ${BINDEBLIST} \
@@ -168,20 +365,43 @@ main() {
                 || error "Can't include packages"
         fi
         # Cleanup files from previous version
+        # When packages are replaced, there could stay some artifacts
+        # from previously published version, so it's required to clean them.
+        #
+        # note: this step is done after adding new packages, and not before,
+        #       because there is some logic inside reprepro which performs
+        #       some useful checks
+        #
+        # note: looks like this case is useful for upgrades only, because
+        #       in other cases everything is removed by first pass
+        # ----------------------------------------------
+
+
         [ "${OLD_VERSION}" != "${NEW_VERSION}" ] \
             && reprepro ${REPREPRO_OPTS} removesrc ${DEB_DIST_NAME} ${SRC_NAME} ${OLD_VERSION}
 
         # Fix Codename field
+        # This is done because reprepro is created for deb but used for ubuntu
+        # it's ok, that codename is set as DEB_DIST_NAME and not as dist_name
+        # ----------------------------------------------
+
         local release_file="${DISTDIR}/${DEB_DIST_NAME}/Release"
         sed "s|^Codename:.*$|Codename: ${DEB_BASE_DIST_NAME}|" -i ${release_file}
 
-        # Resign Release file
+        # Signing changed release file
+        # fixme: why we do it in other way than in the beginning of the file?
+        # ----------------------------------------------
+
         rm -f ${release_file}.gpg
         local pub_key_file="${LOCAL_REPO_PATH}/public/archive-${PROJECT_NAME}${PROJECT_VERSION}.key"
         if [ -n "${SIGN_STRING}" ] ; then
             gpg --sign --local-user ${SIGKEYID} -ba -o ${release_file}.gpg ${release_file}
             [ ! -f "${pub_key_file}" ] && touch ${pub_key_file}
             gpg -o ${pub_key_file}.tmp --armor --export ${SIGKEYID}
+
+            # Replace pub_key_file only if it's changed
+            # ------------------------------------------
+
             if diff -q ${pub_key_file} ${pub_key_file}.tmp &>/dev/null ; then
                 rm ${pub_key_file}.tmp
             else
@@ -194,7 +414,14 @@ main() {
         sync-repo ${OUTDIR} ${DEB_REPO_PATH} ${REPO_REQUEST_PATH_PREFIX} ${REQUEST_NUM} ${LP_BUG}
     job_lock ${CONFIGDIR}.lock unset
 
+    # Filling report file and export results
+    # ==================================================
+
     rm -f ${WRK_DIR}/deb.publish.setenvfile
+
+    # Report:
+    # --------------------------------------------------
+
     cat > ${WRK_DIR}/deb.publish.setenvfile<<-EOF
         DEB_PUBLISH_SUCCEEDED=true
         DEB_DISTRO=${DIST}
@@ -205,6 +432,9 @@ main() {
         DEB_CHANGE_REVISION=${GERRIT_PATCHSET_REVISION}
         LP_BUG=${LP_BUG}
         EOF
+
+    # --------------------------------------------------
+
 }
 
 main "$@"
