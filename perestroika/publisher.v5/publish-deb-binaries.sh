@@ -110,8 +110,8 @@ main() {
     # Reinitialize temp directory
     # --------------------------------------------------
 
-    [ -d $TMP_DIR ] && rm -rf $TMP_DIR
-    mkdir -p $TMP_DIR
+    recreate_tmp_dir
+
 
     # Download package from worker
     # ==================================================

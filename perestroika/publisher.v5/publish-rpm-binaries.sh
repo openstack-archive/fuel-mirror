@@ -1,8 +1,10 @@
 #!/bin/bash -ex
 
+SCRIPT_DIR="$(dirname $(readlink -e $0))"
+
 [ -f ".publisher-defaults-rpm" ] && source .publisher-defaults-rpm
-source $(dirname $(readlink -e $0))/functions/publish-functions.sh
-source $(dirname $(readlink -e $0))/functions/locking.sh
+source "${SCRIPT_DIR}/functions/publish-functions.sh"
+source "${SCRIPT_DIR}/functions/locking.sh"
 
 [ -z "${DEFAULTCOMPSXML}" ] && DEFAULTCOMPSXML=http://mirror.fuel-infra.org/fwm/6.0/centos/os/x86_64/comps.xml
 
@@ -75,6 +77,30 @@ source $(dirname $(readlink -e $0))/functions/locking.sh
 # REPO_REQUEST_PATH_PREFIX
 # DEFAULTCOMPSXML
 # REPO_BASE_PATH
+
+
+_sign_rpm() {
+    # ``rpmsign`` is interactive command and couldn't be called in direct way,
+    # so here used ``expect`` for entering passphrase
+    # params:
+    # $1 -> sigkeyid
+    # $2 -> path to binary to resign
+    # --------------------------------------------------
+
+    LANG=C expect <<EOL
+spawn rpmsign --define "%__gpg_check_password_cmd /bin/true" --define "%_signature gpg" --define "%_gpg_name $1" --resign $2
+expect -exact "Enter pass phrase:"
+send -- "Doesn't matter\r"
+expect eof
+lassign [wait] pid spawnid os_error_flag value
+puts "exit status: \$value"
+exit \$value
+EOL
+    exit $?
+}
+
+
+
 main() {
 
     # Preparations
@@ -91,11 +117,11 @@ main() {
         fi
     fi
 
+
     # Reinitialize temp directory
     # --------------------------------------------------
 
-    [ -d ${TMP_DIR} ] && rm -rf ${TMP_DIR}
-    mkdir -p ${TMP_DIR}
+    recreate_tmp_dir
 
 
     # Download package from worker
@@ -332,12 +358,16 @@ main() {
                 # When we have deal with the same package, we could skip it and don't publish
                 # --------------------------------------
 
-                CMPVER=$(python <(cat <<-HERE
-                from rpmUtils import miscutils
-                print miscutils.compareEVR(("${EXISTBINEPOCH}", "${EXISTBINVERSION}", "${EXISTBINRELEASE}"),
-                      ("${NEWBINEPOCH}", "${NEWBINVERSION}", "${NEWBINRELEASE}"))
-                HERE
-                ))
+                local CMPVER="$(                        \
+                    A_EPOCH="${EXISTBINEPOCH}"          \
+                    A_VERSION="${EXISTBINVERSION}"      \
+                    A_RELEASE="${EXISTBINRELEASE}"      \
+                    B_EPOCH="${NEWBINEPOCH}"            \
+                    B_VERSION="${NEWBINVERSION}"        \
+                    B_RELEASE="${NEWBINRELEASE}"        \
+                    python "${SCRIPT_DIR}/cmp_evr.py"   \
+                )"
+
                 # Results:
                 #  1 - EXISTBIN is newer than NEWBIN
                 #  0 - EXISTBIN and NEWBIN have the same version
@@ -363,17 +393,8 @@ main() {
             # ------------------------------------------
 
             if [ -n "${SIGKEYID}" ] ; then
-            # rpmsign requires pass phrase. use `expect` to skip it
-            LANG=C expect <<EOL
-spawn rpmsign --define "%__gpg_check_password_cmd /bin/true" --define "%_signature gpg" --define "%_gpg_name ${SIGKEYID}" --resign ${binary}
-expect -exact "Enter pass phrase:"
-send -- "Doesn't matter\r"
-expect eof
-lassign [wait] pid spawnid os_error_flag value
-puts "exit status: \$value"
-exit \$value
-    EOL
-            [ $? -ne 0 ] && error "Something went wrong. Can't sign package ${binary#*/}"
+                _sign_rpm "${SIGKEYID}" "${binary}"
+                [ $? -ne 0 ] && error "Something went wrong. Can't sign package ${binary#*/}"
             fi
 
             # fixme: why did we signed package if we don't want to include it into repo?
