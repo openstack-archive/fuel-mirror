@@ -155,21 +155,27 @@ main() {
     # - if LP_BUG is given then it replaces REQUEST_NUM ("Grouping" feature)
     # ---------------------------------------------------
 
+    local URL_PREFIX=
+    local LOCAL_REPO_PATH=
 
-    local URL_PREFIX=""
     if [ "${GERRIT_CHANGE_STATUS}" = "NEW" ] ; then
-        REPO_BASE_PATH=${REPO_BASE_PATH}/${REPO_REQUEST_PATH_PREFIX}
-        URL_PREFIX=${REPO_REQUEST_PATH_PREFIX}
+
         if [ -n "${LP_BUG}" ] ; then
-            REPO_BASE_PATH=${REPO_BASE_PATH}${LP_BUG}
-            URL_PREFIX=${URL_PREFIX}${LP_BUG}/
+            LOCAL_REPO_PATH="${REPO_BASE_PATH}/${REPO_REQUEST_PATH_PREFIX}${LP_BUG}/${DEB_REPO_PATH}"
+            URL_PREFIX="${REPO_REQUEST_PATH_PREFIX}${LP_BUG}/"
         else
-            REPO_BASE_PATH=${REPO_BASE_PATH}${REQUEST_NUM}
-            URL_PREFIX=${URL_PREFIX}${REQUEST_NUM}/
+            LOCAL_REPO_PATH="${REPO_BASE_PATH}/${REPO_REQUEST_PATH_PREFIX}${REQUEST_NUM}/${DEB_REPO_PATH}"
+            URL_PREFIX="${REPO_REQUEST_PATH_PREFIX}${REQUEST_NUM}/"
         fi
+
+    else
+
+        LOCAL_REPO_PATH="${REPO_BASE_PATH}/${REPO_REQUEST_PATH_PREFIX}/${DEB_REPO_PATH}"
+        URL_PREFIX=""
+
     fi
 
-    local LOCAL_REPO_PATH=${REPO_BASE_PATH}/${DEB_REPO_PATH}
+
     local DBDIR="+b/db"
     local CONFIGDIR="${LOCAL_REPO_PATH}/conf"
     local DISTDIR="${LOCAL_REPO_PATH}/public/dists/"
@@ -249,8 +255,6 @@ main() {
     # when some parameters are not given then fallback to main distribution/component
     # --------------------------------------------------
 
-    DEB_BASE_DIST_NAME=${DEB_DIST_NAME}
-
     [ -z "${DEB_UPDATES_DIST_NAME}" ] && DEB_UPDATES_DIST_NAME="${DEB_DIST_NAME}"
     [ -z "${DEB_PROPOSED_DIST_NAME}" ] && DEB_PROPOSED_DIST_NAME="${DEB_DIST_NAME}"
     [ -z "${DEB_SECURITY_DIST_NAME}" ] && DEB_SECURITY_DIST_NAME="${DEB_DIST_NAME}"
@@ -260,6 +264,14 @@ main() {
     [ -z "${DEB_PROPOSED_COMPONENT}" ] && DEB_PROPOSED_COMPONENT="${DEB_COMPONENT}"
     [ -z "${DEB_SECURITY_COMPONENT}" ] && DEB_SECURITY_COMPONENT="${DEB_COMPONENT}"
     [ -z "${DEB_HOLDBACK_COMPONENT}" ] && DEB_HOLDBACK_COMPONENT="${DEB_COMPONENT}"
+
+
+    # By default publish into main distribution
+    # --------------------------------------------------
+
+    local LOCAL_DEB_DIST_NAME="${DEB_DIST_NAME}"
+    local LOCAL_DEB_COMPONENT="${DEB_COMPONENT:-main}"
+
 
     # Processing different kinds of input directives "IS_XXX"
     # --------------------------------------------------
@@ -307,7 +319,6 @@ main() {
         LOCAL_DEB_COMPONENT="restricted"
     fi
 
-    local LOCAL_REPO_PATH=${REPO_BASE_PATH}/${DEB_REPO_PATH}
     local CONFIGDIR="${LOCAL_REPO_PATH}/conf"
     local DBDIR="+b/db"
     local DISTDIR="${LOCAL_REPO_PATH}/public/dists/"
@@ -414,11 +425,11 @@ main() {
 
             reprepro ${REPREPRO_COMP_OPTS}              \
                      --architecture source              \
-                     remove ${LOCAL_DEB_DIST_NAME} ${SRC_NAME} \
+                     remove ${DEB_DIST_NAME} ${SRC_NAME} \
             || true
 
             reprepro ${REPREPRO_COMP_OPTS}              \
-                     includedsc ${LOCAL_DEB_DIST_NAME} ${BINSRCLIST} \
+                     includedsc ${DEB_DIST_NAME} ${BINSRCLIST} \
             || error "Can't include packages"
 
         fi
@@ -438,17 +449,17 @@ main() {
         if [ "${OLD_VERSION}" != "${NEW_VERSION}" ] ; then
 
             reprepro ${REPREPRO_OPTS}                   \
-                     removesrc "${DEB_DIST_NAME}" "${SRC_NAME}" "${OLD_VERSION}"
+                     removesrc "${LOCAL_DEB_DIST_NAME}" "${SRC_NAME}" "${OLD_VERSION}"
         fi
 
         # Fix Codename field
         # This is done because reprepro is created for deb but used for ubuntu
-        # it's ok, that codename is set as DEB_DIST_NAME and not as dist_name
+        # it's ok, that codename is set as DEB_DIST_NAME and not as LOCAL_DEB_DIST_NAME
         # ----------------------------------------------
 
-        local release_file="${DISTDIR}/${DEB_DIST_NAME}/Release"
+        local release_file="${DISTDIR}/${LOCAL_DEB_DIST_NAME}/Release"
 
-        sed "s|^Codename:.*$|Codename: ${DEB_BASE_DIST_NAME}|" -i ${release_file}
+        sed "s|^Codename:.*$|Codename: ${DEB_DIST_NAME}|" -i ${release_file}
 
 
         # Signing changed release file
@@ -487,7 +498,7 @@ main() {
             rm -f "${pub_key_file}"
         fi
 
-        sync-repo ${OUTDIR} ${DEB_REPO_PATH} ${REPO_REQUEST_PATH_PREFIX} ${REQUEST_NUM} ${LP_BUG}
+        sync-repo "${OUTDIR}" "${DEB_REPO_PATH}" "${REPO_REQUEST_PATH_PREFIX}" "${REQUEST_NUM}" "${LP_BUG}"
 
     job_lock "${CONFIGDIR}.lock" unset
 
@@ -495,7 +506,7 @@ main() {
     # Filling report file and export results
     # ==================================================
 
-    local DEB_REPO_URL="\"http://${REMOTE_REPO_HOST}/${URL_PREFIX}${DEB_REPO_PATH} ${DEB_DIST_NAME} ${DEB_COMPONENT}\""
+    local DEB_REPO_URL="\"http://${REMOTE_REPO_HOST}/${URL_PREFIX}${DEB_REPO_PATH} ${LOCAL_DEB_DIST_NAME} ${LOCAL_DEB_COMPONENT}\""
     local DEB_BINARIES="$(                              \
         cat ${BINSRCLIST}                               \
         | grep ^Binary                                  \
@@ -504,7 +515,6 @@ main() {
 
     local rep_file="${WRK_DIR}/deb.publish.setenvfile"
     rm -f "${rep_file}"
-
 
     # Report:
     # --------------------------------------------------
@@ -523,7 +533,6 @@ main() {
     echo "LP_BUG=${LP_BUG}"                 >> "${rep_file}"
 
     # --------------------------------------------------
-
 }
 
 main "$@"

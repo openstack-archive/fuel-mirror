@@ -157,18 +157,20 @@ main() {
     # - if LP_BUG is given then it replaces REQUEST_NUM ("Grouping" feature)
     # ---------------------------------------------------
 
-    local URL_PREFIX=''
+    local LOCAL_REPO_BASE_PATH=
+    local URL_PREFIX=
 
     if [ "${GERRIT_CHANGE_STATUS}" == "NEW" ] ; then
-        REPO_BASE_PATH=${REPO_BASE_PATH}/${REPO_REQUEST_PATH_PREFIX}
-        URL_PREFIX=${REPO_REQUEST_PATH_PREFIX}
         if [ -n "${LP_BUG}" ] ; then
-            REPO_BASE_PATH=${REPO_BASE_PATH}${LP_BUG}
-            URL_PREFIX=${URL_PREFIX}${LP_BUG}/
+            LOCAL_REPO_BASE_PATH="${REPO_BASE_PATH}/${REPO_REQUEST_PATH_PREFIX}${LP_BUG}"
+            URL_PREFIX="${REPO_REQUEST_PATH_PREFIX}${LP_BUG}/"
         else
-            REPO_BASE_PATH=${REPO_BASE_PATH}${REQUEST_NUM}
-            URL_PREFIX=${URL_PREFIX}${REQUEST_NUM}/
+            LOCAL_REPO_BASE_PATH="${REPO_BASE_PATH}/${REPO_REQUEST_PATH_PREFIX}${REQUEST_NUM}"
+            URL_PREFIX="${REPO_REQUEST_PATH_PREFIX}${REQUEST_NUM}/"
         fi
+    else
+        LOCAL_REPO_BASE_PATH="${REPO_BASE_PATH}"
+        URL_PREFIX=""
     fi
 
 
@@ -177,13 +179,13 @@ main() {
 
 
     for repo_path in ${RPM_OS_REPO_PATH} ${RPM_PROPOSED_REPO_PATH} ${RPM_UPDATES_REPO_PATH} ${RPM_SECURITY_REPO_PATH} ${RPM_HOLDBACK_REPO_PATH} ; do
-        local LOCAL_REPO_PATH=${REPO_BASE_PATH}/${repo_path}
-        if [ ! -d "${LOCAL_REPO_PATH}" ] ; then
-            mkdir -p ${LOCAL_REPO_PATH}/{x86_64/Packages,Source/SPackages,x86_64/repodata}
-            job_lock ${LOCAL_REPO_PATH}.lock wait 3600
-                createrepo --pretty --database --update -o ${LOCAL_REPO_PATH}/x86_64/ ${LOCAL_REPO_PATH}/x86_64
-                createrepo --pretty --database --update -o ${LOCAL_REPO_PATH}/Source/ ${LOCAL_REPO_PATH}/Source
-            job_lock ${LOCAL_REPO_PATH}.lock unset
+        local _full_repo_path="${LOCAL_REPO_BASE_PATH}/${repo_path}"
+        if [ ! -d "${_full_repo_path}" ] ; then
+            mkdir -p ${_full_repo_path}/{x86_64/Packages,Source/SPackages,x86_64/repodata}
+            job_lock ${_full_repo_path}.lock wait 3600
+                createrepo --pretty --database --update -o ${_full_repo_path}/x86_64/ ${_full_repo_path}/x86_64
+                createrepo --pretty --database --update -o ${_full_repo_path}/Source/ ${_full_repo_path}/Source
+            job_lock ${_full_repo_path}.lock unset
         fi
     done
 
@@ -196,12 +198,16 @@ main() {
     # when some parameters are not given then fallback to "main" path
     # --------------------------------------------------
 
-    [ -z "${RPM_UPDATES_REPO_PATH}" ] && RPM_UPDATES_REPO_PATH=${RPM_OS_REPO_PATH}
-    [ -z "${RPM_PROPOSED_REPO_PATH}" ] && RPM_PROPOSED_REPO_PATH=${RPM_OS_REPO_PATH}
-    [ -z "${RPM_SECURITY_REPO_PATH}" ] && RPM_SECURITY_REPO_PATH=${RPM_OS_REPO_PATH}
-    [ -z "${RPM_HOLDBACK_REPO_PATH}" ] && RPM_HOLDBACK_REPO_PATH=${RPM_OS_REPO_PATH}
+    [ -z "${RPM_UPDATES_REPO_PATH}" ] && RPM_UPDATES_REPO_PATH="${RPM_OS_REPO_PATH}"
+    [ -z "${RPM_PROPOSED_REPO_PATH}" ] && RPM_PROPOSED_REPO_PATH="${RPM_OS_REPO_PATH}"
+    [ -z "${RPM_SECURITY_REPO_PATH}" ] && RPM_SECURITY_REPO_PATH="${RPM_OS_REPO_PATH}"
+    [ -z "${RPM_HOLDBACK_REPO_PATH}" ] && RPM_HOLDBACK_REPO_PATH="${RPM_OS_REPO_PATH}"
 
-    RPM_REPO_PATH=${RPM_OS_REPO_PATH}
+
+    # By default publish into main repository
+    # --------------------------------------------------
+
+    LOCAL_RPM_REPO_PATH="${RPM_OS_REPO_PATH}"
 
 
     # Processing different kinds of input directives "IS_XXX"
@@ -213,24 +219,30 @@ main() {
     # after tests and acceptance they are published to updates by other tools
     # --------------------------------------------------
 
-
-    [ "${IS_UPDATES}" == 'true' ] && RPM_REPO_PATH=${RPM_PROPOSED_REPO_PATH}
+    if [ "${IS_UPDATES}" = 'true' ] ; then
+        LOCAL_RPM_REPO_PATH="${RPM_PROPOSED_REPO_PATH}"
+    fi
 
     # Holdback workflow:
     # all built packages should be put into holdback repository
     # this wotkflow should be used in esceeptional cases
     # --------------------------------------------------
 
-    [ "${IS_HOLDBACK}" == 'true' ] && RPM_REPO_PATH=${RPM_HOLDBACK_REPO_PATH}
+    if [ "${IS_HOLDBACK}" == 'true' ] ; then
+        LOCAL_RPM_REPO_PATH="${RPM_HOLDBACK_REPO_PATH}"
+    fi
+
 
     # Security workflow:
     # all built packages should be put into security repository
     # this is short-circuit for delivering security updates beside long updates workflow
     # --------------------------------------------------
+    if [ "${IS_SECURITY}" == 'true' ] ; then
+        LOCAL_RPM_REPO_PATH="${RPM_SECURITY_REPO_PATH}"
+    fi
 
-    [ "${IS_SECURITY}" == 'true' ] && RPM_REPO_PATH=${RPM_SECURITY_REPO_PATH}
+    local LOCAL_REPO_PATH="${LOCAL_REPO_BASE_PATH}/${LOCAL_RPM_REPO_PATH}"
 
-    local LOCAL_REPO_PATH=${REPO_BASE_PATH}/${RPM_REPO_PATH}
 
     # Filling of repository with new files
     # ==================================================
@@ -292,11 +304,11 @@ main() {
             local _repoid_proposed=$(mktemp -u XXXXXXXX)
             local _repoid_holdback=$(mktemp -u XXXXXXXX)
             local _repoid_security=$(mktemp -u XXXXXXXX)
-            local repoquery_cmd="repoquery --repofrompath=${_repoid_os},file://${REPO_BASE_PATH}/${RPM_OS_REPO_PATH}/${PACKAGEFOLDER%/*} --repoid=${_repoid_os}"
-            local repoquery_cmd="${repoquery_cmd} --repofrompath=${_repoid_updates},file://${REPO_BASE_PATH}/${RPM_UPDATES_REPO_PATH}/${PACKAGEFOLDER%/*} --repoid=${_repoid_updates}"
-            local repoquery_cmd="${repoquery_cmd} --repofrompath=${_repoid_proposed},file://${REPO_BASE_PATH}/${RPM_PROPOSED_REPO_PATH}/${PACKAGEFOLDER%/*} --repoid=${_repoid_proposed}"
-            local repoquery_cmd="${repoquery_cmd} --repofrompath=${_repoid_holdback},file://${REPO_BASE_PATH}/${RPM_HOLDBACK_REPO_PATH}/${PACKAGEFOLDER%/*} --repoid=${_repoid_holdback}"
-            local repoquery_cmd="${repoquery_cmd} --repofrompath=${_repoid_security},file://${REPO_BASE_PATH}/${RPM_SECURITY_REPO_PATH}/${PACKAGEFOLDER%/*} --repoid=${_repoid_security}"
+            local repoquery_cmd="repoquery --repofrompath=${_repoid_os},file://${LOCAL_REPO_BASE_PATH}/${RPM_OS_REPO_PATH}/${PACKAGEFOLDER%/*} --repoid=${_repoid_os}"
+            local repoquery_cmd="${repoquery_cmd} --repofrompath=${_repoid_updates},file://${LOCAL_REPO_BASE_PATH}/${RPM_UPDATES_REPO_PATH}/${PACKAGEFOLDER%/*} --repoid=${_repoid_updates}"
+            local repoquery_cmd="${repoquery_cmd} --repofrompath=${_repoid_proposed},file://${LOCAL_REPO_BASE_PATH}/${RPM_PROPOSED_REPO_PATH}/${PACKAGEFOLDER%/*} --repoid=${_repoid_proposed}"
+            local repoquery_cmd="${repoquery_cmd} --repofrompath=${_repoid_holdback},file://${LOCAL_REPO_BASE_PATH}/${RPM_HOLDBACK_REPO_PATH}/${PACKAGEFOLDER%/*} --repoid=${_repoid_holdback}"
+            local repoquery_cmd="${repoquery_cmd} --repofrompath=${_repoid_security},file://${LOCAL_REPO_BASE_PATH}/${RPM_SECURITY_REPO_PATH}/${PACKAGEFOLDER%/*} --repoid=${_repoid_security}"
             [ "${binary:(-7)}" == "src.rpm" ] && repoquery_cmd="${repoquery_cmd} --archlist=src"
             local EXISTBINDATA=$(${repoquery_cmd} ${BINNAME} 2>/dev/null)
 
