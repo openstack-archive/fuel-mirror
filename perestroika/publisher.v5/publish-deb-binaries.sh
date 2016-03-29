@@ -1,8 +1,10 @@
 #!/bin/bash -ex
 
+SCRIPT_DIR="$(dirname $(readlink -e $0))"
+
 [ -f ".publisher-defaults-deb" ] && source .publisher-defaults-deb
-source $(dirname $(readlink -e $0))/functions/publish-functions.sh
-source $(dirname $(readlink -e $0))/functions/locking.sh
+source "${SCRIPT_DIR}/functions/publish-functions.sh"
+source "${SCRIPT_DIR}/functions/locking.sh"
 
 # Used global envvars
 # ======================================================
@@ -118,9 +120,13 @@ main() {
     #        We didn't shoot-in-the leg IRL because we don't pass this param
     #        Prop. sol: [ -z "${SSH_USER}" ] && SSH_USER="${SSH_USER}@"
 
-    rsync -avPzt \
-        -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${SSH_OPTS}" \
-        ${SSH_USER}${BUILD_HOST}:${PKG_PATH}/ ${TMP_DIR}/ || error "Can't download packages"
+    rsync -avPzt                                        \
+          -e "ssh -o StrictHostKeyChecking=no           \
+                  -o UserKnownHostsFile=/dev/null       \
+                  ${SSH_OPTS}"                          \
+          "${SSH_USER}${BUILD_HOST}:${PKG_PATH}/"       \
+          "${TMP_DIR}/"                                 \
+    || error "Can't download packages"
 
     ## Resign source package
     ## FixMe: disabled for discussion: does it really need to sign
@@ -128,6 +134,7 @@ main() {
     #    for _dscfile in $(find ${TMP_DIR} -name "*.dsc") ; do
     #        debsign -pgpg --re-sign -k${SIGKEYID} ${_dscfile}
     #    done
+
 
     # Initialization of repository
     # Here we create repo which will be filled next
@@ -140,7 +147,7 @@ main() {
     # - CUSTOM_REPO_ID is used instead of request serial number
     if [ -n "${CUSTOM_REPO_ID}" ] ; then
         unset LP_BUG
-        REQUEST_NUM=${CUSTOM_REPO_ID}
+        REQUEST_NUM="${CUSTOM_REPO_ID}"
     fi
 
     # Configuring paths and namespaces:
@@ -169,10 +176,15 @@ main() {
     local OUTDIR="+b/public/"
 
     if [ ! -d "${CONFIGDIR}" ] ; then
-        mkdir -p ${CONFIGDIR}
-        job_lock ${CONFIGDIR}.lock wait 3600
-            for dist_name in ${DEB_DIST_NAME} ${DEB_PROPOSED_DIST_NAME} ${DEB_UPDATES_DIST_NAME} \
-                             ${DEB_SECURITY_DIST_NAME} ${DEB_HOLDBACK_DIST_NAME} ; do
+        mkdir -p "${CONFIGDIR}"
+
+        job_lock "${CONFIGDIR}.lock" wait 3600
+
+            for dist_name in "${DEB_DIST_NAME}"          \
+                             "${DEB_PROPOSED_DIST_NAME}" \
+                             "${DEB_UPDATES_DIST_NAME}"  \
+                             "${DEB_SECURITY_DIST_NAME}" \
+                             "${DEB_HOLDBACK_DIST_NAME}" ; do
 
                 # Filling distributions configuretion file (this file is used by reprepro)
                 # It's not cleaned at beginning, because publisher didn't clean
@@ -181,39 +193,47 @@ main() {
                 # unexpected behavior and should be tested with care.
                 # --------------------------------------
 
-                    cat >> ${CONFIGDIR}/distributions <<- EOF
-                        Origin: ${ORIGIN}
-                        Label: ${DEB_DIST_NAME}
-                        Suite: ${dist_name}
-                        Codename: ${dist_name}
-                        Version: ${PRODUCT_VERSION}
-                        Architectures: amd64 i386 source
-                        Components: main restricted
-                        UDebComponents: main restricted
-                        Contents: . .gz .bz2
+                echo "Origin: ${ORIGIN}"                  >> "${CONFIGDIR}/distributions"
+                echo "Label: ${DEB_DIST_NAME}"            >> "${CONFIGDIR}/distributions"
+                echo "Suite: ${dist_name}"                >> "${CONFIGDIR}/distributions"
+                echo "Codename: ${dist_name}"             >> "${CONFIGDIR}/distributions"
+                echo "Version: ${PRODUCT_VERSION}"        >> "${CONFIGDIR}/distributions"
+                echo "Architectures: amd64 i386 source"   >> "${CONFIGDIR}/distributions"
+                echo "Components: main restricted"        >> "${CONFIGDIR}/distributions"
+                echo "UDebComponents: main restricted"    >> "${CONFIGDIR}/distributions"
+                echo "Contents: . .gz .bz2"               >> "${CONFIGDIR}/distributions"
+                echo ""                                   >> "${CONFIGDIR}/distributions"
 
-                        EOF
-
-                    reprepro --basedir ${LOCAL_REPO_PATH} --dbdir ${DBDIR} \
-                        --outdir ${OUTDIR} --distdir ${DISTDIR} --confdir ${CONFIGDIR} \
-                        export ${dist_name}
+                reprepro --basedir ${LOCAL_REPO_PATH} \
+                         --dbdir ${DBDIR} \
+                         --outdir ${OUTDIR} \
+                         --distdir ${DISTDIR} \
+                         --confdir ${CONFIGDIR} \
+                         export ${dist_name}
 
                 # Fix Codename field
                 # This is done because reprepro is created for deb but used for ubuntu
                 # it's ok, that codename is set as DEB_DIST_NAME and not as dist_name
                 # --------------------------------------
 
-                    local release_file="${DISTDIR}/${dist_name}/Release"
-                    sed "s|^Codename:.*$|Codename: ${DEB_DIST_NAME}|" \
-                        -i ${release_file}
-                    rm -f ${release_file}.gpg
+                local release_file="${DISTDIR}/${dist_name}/Release"
+
+                sed "s|^Codename:.*$|Codename: ${DEB_DIST_NAME}|" -i "${release_file}"
+
+                rm -f "${release_file}.gpg"
 
                 # Signing changed release file
                 # --------------------------------------
 
-                    [ -n "${SIGN_STRING}" ] \
-                        && gpg --sign --local-user ${SIGKEYID} -ba \
-                        -o ${release_file}.gpg ${release_file}
+                if [ -n "${SIGN_STRING}" ] ; then
+
+                    gpg --sign                          \
+                        --local-user "${SIGKEYID}"      \
+                        -ba                             \
+                        -o "${release_file}.gpg" "${release_file}"
+
+                fi
+
             done
 
         job_lock "${CONFIGDIR}.lock" unset
@@ -231,14 +251,15 @@ main() {
 
     DEB_BASE_DIST_NAME=${DEB_DIST_NAME}
 
-    [ -z "${DEB_UPDATES_DIST_NAME}" ] && DEB_UPDATES_DIST_NAME=${DEB_DIST_NAME}
-    [ -z "${DEB_PROPOSED_DIST_NAME}" ] && DEB_PROPOSED_DIST_NAME=${DEB_DIST_NAME}
-    [ -z "${DEB_SECURITY_DIST_NAME}" ] && DEB_SECURITY_DIST_NAME=${DEB_DIST_NAME}
-    [ -z "${DEB_HOLDBACK_DIST_NAME}" ] && DEB_HOLDBACK_DIST_NAME=${DEB_DIST_NAME}
-    [ -z "${DEB_UPDATES_COMPONENT}" ] && DEB_UPDATES_COMPONENT=${DEB_COMPONENT}
-    [ -z "${DEB_PROPOSED_COMPONENT}" ] && DEB_PROPOSED_COMPONENT=${DEB_COMPONENT}
-    [ -z "${DEB_SECURITY_COMPONENT}" ] && DEB_SECURITY_COMPONENT=${DEB_COMPONENT}
-    [ -z "${DEB_HOLDBACK_COMPONENT}" ] && DEB_HOLDBACK_COMPONENT=${DEB_COMPONENT}
+    [ -z "${DEB_UPDATES_DIST_NAME}" ] && DEB_UPDATES_DIST_NAME="${DEB_DIST_NAME}"
+    [ -z "${DEB_PROPOSED_DIST_NAME}" ] && DEB_PROPOSED_DIST_NAME="${DEB_DIST_NAME}"
+    [ -z "${DEB_SECURITY_DIST_NAME}" ] && DEB_SECURITY_DIST_NAME="${DEB_DIST_NAME}"
+    [ -z "${DEB_HOLDBACK_DIST_NAME}" ] && DEB_HOLDBACK_DIST_NAME="${DEB_DIST_NAME}"
+
+    [ -z "${DEB_UPDATES_COMPONENT}" ] && DEB_UPDATES_COMPONENT="${DEB_COMPONENT}"
+    [ -z "${DEB_PROPOSED_COMPONENT}" ] && DEB_PROPOSED_COMPONENT="${DEB_COMPONENT}"
+    [ -z "${DEB_SECURITY_COMPONENT}" ] && DEB_SECURITY_COMPONENT="${DEB_COMPONENT}"
+    [ -z "${DEB_HOLDBACK_COMPONENT}" ] && DEB_HOLDBACK_COMPONENT="${DEB_COMPONENT}"
 
     # Processing different kinds of input directives "IS_XXX"
     # --------------------------------------------------
@@ -250,8 +271,8 @@ main() {
     # --------------------------------------------------
 
     if [ "${IS_UPDATES}" = 'true' ] ; then
-        DEB_DIST_NAME=${DEB_PROPOSED_DIST_NAME}
-        DEB_COMPONENT=${DEB_PROPOSED_COMPONENT}
+        LOCAL_DEB_DIST_NAME="${DEB_PROPOSED_DIST_NAME}"
+        LOCAL_DEB_COMPONENT="${DEB_PROPOSED_COMPONENT}"
     fi
 
     # Holdback workflow:
@@ -260,8 +281,8 @@ main() {
     # --------------------------------------------------
 
     if [ "${IS_HOLDBACK}" = 'true' ] ; then
-        DEB_DIST_NAME=${DEB_HOLDBACK_DIST_NAME}
-        DEB_COMPONENT=${DEB_HOLDBACK_COMPONENT}
+        LOCAL_DEB_DIST_NAME="${DEB_HOLDBACK_DIST_NAME}"
+        LOCAL_DEB_COMPONENT="${DEB_HOLDBACK_COMPONENT}"
     fi
 
     # Security workflow:
@@ -270,17 +291,21 @@ main() {
     # --------------------------------------------------
 
     if [ "${IS_SECURITY}" = 'true' ] ; then
-        DEB_DIST_NAME=${DEB_SECURITY_DIST_NAME}
-        DEB_COMPONENT=${DEB_SECURITY_COMPONENT}
+        LOCAL_DEB_DIST_NAME="${DEB_SECURITY_DIST_NAME}"
+        LOCAL_DEB_COMPONENT="${DEB_SECURITY_COMPONENT}"
     fi
 
-    [ -z "${DEB_COMPONENT}" ] && local DEB_COMPONENT=main
+    if [ -z "${DEB_COMPONENT}" ] ; then
+        DEB_COMPONENT="main"
+    fi
 
     # Restricted components:
     # forcefully change component to restricted
     # --------------------------------------------------
 
-    [ "${IS_RESTRICTED}" = 'true' ] && DEB_COMPONENT=restricted
+    if [ "${IS_RESTRICTED}" = 'true' ] ; then
+        LOCAL_DEB_COMPONENT="restricted"
+    fi
 
     local LOCAL_REPO_PATH=${REPO_BASE_PATH}/${DEB_REPO_PATH}
     local CONFIGDIR="${LOCAL_REPO_PATH}/conf"
@@ -303,35 +328,54 @@ main() {
     local BINSRCLIST=""
     for binary in ${TMP_DIR}/* ; do
         case ${binary##*.} in
-            deb) BINDEBLIST="${BINDEBLIST} ${binary}"
-                 BINDEBNAMES="${BINDEBNAMES} ${binary##*/}"
-                 ;;
-            udeb) BINUDEBLIST="${BINUDEBLIST} ${binary}" ;;
-            dsc) BINSRCLIST="${binary}" ;;
+            deb)
+                BINDEBLIST="${BINDEBLIST} ${binary}"
+                BINDEBNAMES="${BINDEBNAMES} ${binary##*/}"
+            ;;
+            udeb)
+                BINUDEBLIST="${BINUDEBLIST} ${binary}"
+            ;;
+            dsc)
+                # note: we don't extend list of sources, because
+                #       publisher doesn't support masspublishing of packages
+                #       built from different sources
+
+                BINSRCLIST="${binary}"
+            ;;
         esac
     done
 
-    job_lock ${CONFIGDIR}.lock wait 3600
+    job_lock "${CONFIGDIR}.lock" wait 3600
 
         # Get source name - this name represents sources from which package(s) was built
         # ----------------------------------------------
 
-        local SRC_NAME=$(awk '/^Source:/ {print $2}' ${BINSRCLIST})
+        local SRC_NAME="$(                              \
+            awk '/^Source:/ {print $2}' ${BINSRCLIST}   \
+        )"
 
         # Get queued version of package related to the SRC_NAME
         # because publisher doesn't support masspublishing,
         # it's ok, that we get one variable from list
         # ----------------------------------------------
 
-        local NEW_VERSION=$(awk '/^Version:/ {print $2}' ${BINSRCLIST} | head -n 1)
+        local NEW_VERSION="$(                           \
+            awk '/^Version:/ {print $2}' ${BINSRCLIST}  \
+            | head -n 1                                 \
+        )"
 
         # Get currently published version of package related to the SRC_NAME
         # note: we hold only one version of each package
         # ----------------------------------------------
 
+        local OLD_VERSION="$(                           \
+            reprepro ${REPREPRO_OPTS}                   \
+                     --list-format '${version}\n'       \
+                     listfilter ${LOCAL_DEB_DIST_NAME} "Package (==${SRC_NAME})" \
+            | sort -u                                   \
+            | head -n 1                                 \
+        )"
 
-        local OLD_VERSION=$(reprepro ${REPREPRO_OPTS} --list-format '${version}\n' \
-            listfilter ${DEB_DIST_NAME} "Package (==${SRC_NAME})" | sort -u | head -n 1)
         [ "${OLD_VERSION}" == "" ] && OLD_VERSION=none
 
         # Remove existing packages for requests-on-review and downgrades
@@ -348,23 +392,37 @@ main() {
 
         # Add .deb binaries
         if [ "${BINDEBLIST}" != "" ]; then
-            reprepro ${REPREPRO_COMP_OPTS} includedeb ${DEB_DIST_NAME} ${BINDEBLIST} \
-                || error "Can't include packages"
+
+            reprepro ${REPREPRO_COMP_OPTS}              \
+                     includedeb "${LOCAL_DEB_DIST_NAME}" ${BINDEBLIST} \
+            || error "Can't include .deb packages"
+
         fi
+
         # Add .udeb binaries
         if [ "${BINUDEBLIST}" != "" ]; then
-            reprepro ${REPREPRO_COMP_OPTS} includeudeb ${DEB_DIST_NAME} ${BINUDEBLIST} \
-                || error "Can't include packages"
+
+            reprepro ${REPREPRO_COMP_OPTS}              \
+                     includeudeb "${LOCAL_DEB_DIST_NAME}" ${BINUDEBLIST} \
+            || error "Can't include .udeb packages"
+
         fi
 
         # Replace sources
         # TODO: Get rid of replacing. Just increase version properly
         if [ "${BINSRCLIST}" != "" ]; then
-            reprepro ${REPREPRO_COMP_OPTS} --architecture source \
-                remove ${DEB_DIST_NAME} ${SRC_NAME} || :
-            reprepro ${REPREPRO_COMP_OPTS} includedsc ${DEB_DIST_NAME} ${BINSRCLIST} \
-                || error "Can't include packages"
+
+            reprepro ${REPREPRO_COMP_OPTS}              \
+                     --architecture source              \
+                     remove ${LOCAL_DEB_DIST_NAME} ${SRC_NAME} \
+            || true
+
+            reprepro ${REPREPRO_COMP_OPTS}              \
+                     includedsc ${LOCAL_DEB_DIST_NAME} ${BINSRCLIST} \
+            || error "Can't include packages"
+
         fi
+
         # Cleanup files from previous version
         # When packages are replaced, there could stay some artifacts
         # from previously published version, so it's required to clean them.
@@ -377,9 +435,11 @@ main() {
         #       in other cases everything is removed by first pass
         # ----------------------------------------------
 
+        if [ "${OLD_VERSION}" != "${NEW_VERSION}" ] ; then
 
-        [ "${OLD_VERSION}" != "${NEW_VERSION}" ] \
-            && reprepro ${REPREPRO_OPTS} removesrc ${DEB_DIST_NAME} ${SRC_NAME} ${OLD_VERSION}
+            reprepro ${REPREPRO_OPTS}                   \
+                     removesrc "${DEB_DIST_NAME}" "${SRC_NAME}" "${OLD_VERSION}"
+        fi
 
         # Fix Codename field
         # This is done because reprepro is created for deb but used for ubuntu
@@ -387,33 +447,50 @@ main() {
         # ----------------------------------------------
 
         local release_file="${DISTDIR}/${DEB_DIST_NAME}/Release"
+
         sed "s|^Codename:.*$|Codename: ${DEB_BASE_DIST_NAME}|" -i ${release_file}
+
 
         # Signing changed release file
         # fixme: why we do it in other way than in the beginning of the file?
         # ----------------------------------------------
 
-        rm -f ${release_file}.gpg
+        rm -f "${release_file}.gpg"
         local pub_key_file="${LOCAL_REPO_PATH}/public/archive-${PROJECT_NAME}${PROJECT_VERSION}.key"
+
         if [ -n "${SIGN_STRING}" ] ; then
-            gpg --sign --local-user ${SIGKEYID} -ba -o ${release_file}.gpg ${release_file}
-            [ ! -f "${pub_key_file}" ] && touch ${pub_key_file}
-            gpg -o ${pub_key_file}.tmp --armor --export ${SIGKEYID}
+
+            gpg --sign                                  \
+                --local-user "${SIGKEYID}"              \
+                -ba                                     \
+                -o "${release_file}.gpg" "${release_file}"
+
+            if [ ! -f "${pub_key_file}" ] ; then
+                touch ${pub_key_file}
+            fi
+
+            gpg -o "${pub_key_file}.tmp"                \
+                --armor                                 \
+                --export "${SIGKEYID}"
+
 
             # Replace pub_key_file only if it's changed
             # ------------------------------------------
 
-            if diff -q ${pub_key_file} ${pub_key_file}.tmp &>/dev/null ; then
-                rm ${pub_key_file}.tmp
+            if diff -q "${pub_key_file}" "${pub_key_file}.tmp" &>/dev/null ; then
+                rm "${pub_key_file}.tmp"
             else
-                mv ${pub_key_file}.tmp ${pub_key_file}
+                mv "${pub_key_file}.tmp" "${pub_key_file}"
             fi
+
         else
-            rm -f ${pub_key_file}
+            rm -f "${pub_key_file}"
         fi
 
         sync-repo ${OUTDIR} ${DEB_REPO_PATH} ${REPO_REQUEST_PATH_PREFIX} ${REQUEST_NUM} ${LP_BUG}
-    job_lock ${CONFIGDIR}.lock unset
+
+    job_lock "${CONFIGDIR}.lock" unset
+
 
     # Filling report file and export results
     # ==================================================
