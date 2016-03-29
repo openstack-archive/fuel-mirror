@@ -19,6 +19,11 @@ info () {
   echo
 }
 
+recreate_tmp_dir () {
+    [ -d "${TMP_DIR}" ] && rm -rf "${TMP_DIR}"
+    mkdir -p "${TMP_DIR}"
+}
+
 check-gpg() {
   local RESULT=0
   [ -z "$SIGKEYID" ] && echo "WARNING: No secret keys given" && RESULT=1
