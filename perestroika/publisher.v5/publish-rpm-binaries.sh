@@ -111,9 +111,9 @@ main() {
 
     if [ -n "${SIGKEYID}" ] ; then
         check-gpg || :
-        gpg --export -a ${SIGKEYID} > RPM-GPG-KEY
-        if [ $(rpm -qa | grep gpg-pubkey | grep -ci ${SIGKEYID}) -eq 0 ]; then
-          rpm --import RPM-GPG-KEY
+        gpg --export -a "${SIGKEYID}" > RPM-GPG-KEY
+        if [ $(rpm -qa | grep gpg-pubkey | grep -ci "${SIGKEYID}") -eq 0 ]; then
+            rpm --import RPM-GPG-KEY
         fi
     fi
 
@@ -132,8 +132,13 @@ main() {
     #        We didn't shoot-in-the leg IRL because we don't pass this param
     #        Prop. sol: [ -z "${SSH_USER}" ] && SSH_USER="${SSH_USER}@"
 
-    rsync -avPzt -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${SSH_OPTS}" \
-        ${SSH_USER}${BUILD_HOST}:${PKG_PATH}/ ${TMP_DIR}/ || error "Can't download packages"
+    rsync -avPzt                                        \
+          -e "ssh -o StrictHostKeyChecking=no           \
+                  -o UserKnownHostsFile=/dev/null       \
+                  ${SSH_OPTS}"                          \
+          "${SSH_USER}${BUILD_HOST}:${PKG_PATH}/"       \
+          "${TMP_DIR}/"                                 \
+    || error "Can't download packages"
 
     # fixme: this check is performed for rpm, but missed in deb, why?
     [ $(ls -1 ${TMP_DIR}/ | wc -l) -eq 0 ] && error "Can't download packages"
@@ -149,7 +154,7 @@ main() {
     # - CUSTOM_REPO_ID is used instead of request serial number
     if [ -n "${CUSTOM_REPO_ID}" ] ; then
         unset LP_BUG
-        REQUEST_NUM=${CUSTOM_REPO_ID}
+        REQUEST_NUM="${CUSTOM_REPO_ID}"
     fi
 
     # Configuring paths and namespaces:
@@ -177,16 +182,33 @@ main() {
     # Create all repositories
     # ---------------------------------------------------
 
+    for repo_path in "${RPM_OS_REPO_PATH}"       \
+                     "${RPM_PROPOSED_REPO_PATH}" \
+                     "${RPM_UPDATES_REPO_PATH}"  \
+                     "${RPM_SECURITY_REPO_PATH}" \
+                     "${RPM_HOLDBACK_REPO_PATH}" ; do
 
-    for repo_path in ${RPM_OS_REPO_PATH} ${RPM_PROPOSED_REPO_PATH} ${RPM_UPDATES_REPO_PATH} ${RPM_SECURITY_REPO_PATH} ${RPM_HOLDBACK_REPO_PATH} ; do
         local _full_repo_path="${LOCAL_REPO_BASE_PATH}/${repo_path}"
+
         if [ ! -d "${_full_repo_path}" ] ; then
-            mkdir -p ${_full_repo_path}/{x86_64/Packages,Source/SPackages,x86_64/repodata}
-            job_lock ${_full_repo_path}.lock wait 3600
-                createrepo --pretty --database --update -o ${_full_repo_path}/x86_64/ ${_full_repo_path}/x86_64
-                createrepo --pretty --database --update -o ${_full_repo_path}/Source/ ${_full_repo_path}/Source
-            job_lock ${_full_repo_path}.lock unset
+
+            mkdir -p "${_full_repo_path}/{x86_64/Packages,Source/SPackages,x86_64/repodata}"
+
+            job_lock "${_full_repo_path}.lock" wait 3600
+
+                createrepo --pretty                     \
+                           --database                   \
+                           --update                     \
+                           -o "${_full_repo_path}/x86_64/" "${_full_repo_path}/x86_64"
+
+                createrepo --pretty                     \
+                           --database                   \
+                           --update                     \
+                           -o "${_full_repo_path}/Source/" "${_full_repo_path}/Source"
+
+            job_lock "${_full_repo_path}.lock" unset
         fi
+
     done
 
 
@@ -298,12 +320,13 @@ main() {
             local NEWBINVERSION=$(echo ${NEWBINDATA} | cut -d' ' -f3)
             local NEWBINRELEASE=$(echo ${NEWBINDATA} | cut -d' ' -f4)
             local NEWBINSHA=$(echo ${NEWBINDATA} | cut -d' ' -f5)
-            # EXISTBINDATA format pkg-name-epoch:version-release.arch (NEVRA)
-            local _repoid_os=$(mktemp -u XXXXXXXX)
-            local _repoid_updates=$(mktemp -u XXXXXXXX)
-            local _repoid_proposed=$(mktemp -u XXXXXXXX)
-            local _repoid_holdback=$(mktemp -u XXXXXXXX)
-            local _repoid_security=$(mktemp -u XXXXXXXX)
+
+            local _repoid_os="$(mktemp -u XXXXXXXX)"
+            local _repoid_updates="$(mktemp -u XXXXXXXX)"
+            local _repoid_proposed="$(mktemp -u XXXXXXXX)"
+            local _repoid_holdback="$(mktemp -u XXXXXXXX)"
+            local _repoid_security="$(mktemp -u XXXXXXXX)"
+
             local repoquery_cmd="repoquery --repofrompath=${_repoid_os},file://${LOCAL_REPO_BASE_PATH}/${RPM_OS_REPO_PATH}/${PACKAGEFOLDER%/*} --repoid=${_repoid_os}"
             local repoquery_cmd="${repoquery_cmd} --repofrompath=${_repoid_updates},file://${LOCAL_REPO_BASE_PATH}/${RPM_UPDATES_REPO_PATH}/${PACKAGEFOLDER%/*} --repoid=${_repoid_updates}"
             local repoquery_cmd="${repoquery_cmd} --repofrompath=${_repoid_proposed},file://${LOCAL_REPO_BASE_PATH}/${RPM_PROPOSED_REPO_PATH}/${PACKAGEFOLDER%/*} --repoid=${_repoid_proposed}"
@@ -427,8 +450,8 @@ main() {
 
         # Keep only latest packages
 
-        rm -f $(repomanage --keep=1 --old ${LOCAL_REPO_PATH}/x86_64)
-        rm -f $(repomanage --keep=1 --old ${LOCAL_REPO_PATH}/Source)
+        rm -f "$(repomanage --keep=1 --old "${LOCAL_REPO_PATH}/x86_64")"
+        rm -f "$(repomanage --keep=1 --old "${LOCAL_REPO_PATH}/Source")"
 
         # Update and sign repository metadata
         # ----------------------------------------------
@@ -437,15 +460,26 @@ main() {
         createrepo --pretty --database --update -g ${LOCAL_REPO_PATH}/comps.xml -o ${LOCAL_REPO_PATH}/x86_64/ ${LOCAL_REPO_PATH}/x86_64
         createrepo --pretty --database --update -o ${LOCAL_REPO_PATH}/Source/ ${LOCAL_REPO_PATH}/Source
         if [ -n "${SIGKEYID}" ] ; then
-            rm -f ${LOCAL_REPO_PATH}/x86_64/repodata/repomd.xml.asc
-            rm -f ${LOCAL_REPO_PATH}/Source/repodata/repomd.xml.asc
-            gpg --armor --local-user ${SIGKEYID} --detach-sign ${LOCAL_REPO_PATH}/x86_64/repodata/repomd.xml
-            gpg --armor --local-user ${SIGKEYID} --detach-sign ${LOCAL_REPO_PATH}/Source/repodata/repomd.xml
-            [ -f "RPM-GPG-KEY" ] && cp RPM-GPG-KEY ${LOCAL_REPO_PATH}/RPM-GPG-KEY-${PROJECT_NAME}${PROJECT_VERSION}
+
+            rm -f "${LOCAL_REPO_PATH}/x86_64/repodata/repomd.xml.asc"
+            rm -f "${LOCAL_REPO_PATH}/Source/repodata/repomd.xml.asc"
+
+            gpg --armor                                 \
+                --local-user ${SIGKEYID}                \
+                --detach-sign ${LOCAL_REPO_PATH}/x86_64/repodata/repomd.xml
+
+            gpg --armor                                 \
+                --local-user ${SIGKEYID}                \
+                --detach-sign ${LOCAL_REPO_PATH}/Source/repodata/repomd.xml
+
+            if [ -f "RPM-GPG-KEY" ] ; then
+                cp "RPM-GPG-KEY" "${LOCAL_REPO_PATH}/RPM-GPG-KEY-${PROJECT_NAME}${PROJECT_VERSION}"
+            fi
+
         fi
 
         # Sync repo to remote host
-        sync-repo ${LOCAL_REPO_PATH}/ ${RPM_REPO_PATH} ${REPO_REQUEST_PATH_PREFIX} ${REQUEST_NUM} ${LP_BUG}
+        sync-repo "${LOCAL_REPO_PATH}/" "${LOCAL_RPM_REPO_PATH}" "${REPO_REQUEST_PATH_PREFIX}" "${REQUEST_NUM}" "${LP_BUG}"
     job_lock ${LOCAL_REPO_PATH}.lock unset
 
 
