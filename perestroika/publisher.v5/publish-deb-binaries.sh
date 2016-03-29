@@ -162,17 +162,16 @@ main() {
         fi
     fi
 
-    # Repos
-    for repo_path in ${DEB_REPO_PATH} ; do
-        local LOCAL_REPO_PATH=${REPO_BASE_PATH}/${repo_path}
-        local DBDIR="+b/db"
-        local CONFIGDIR="${LOCAL_REPO_PATH}/conf"
-        local DISTDIR="${LOCAL_REPO_PATH}/public/dists/"
-        local OUTDIR="+b/public/"
-        if [ ! -d "${CONFIGDIR}" ] ; then
-            mkdir -p ${CONFIGDIR}
-            job_lock ${CONFIGDIR}.lock wait 3600
-                for dist_name in ${DEB_DIST_NAME} ${DEB_PROPOSED_DIST_NAME} ${DEB_UPDATES_DIST_NAME} \
+    local LOCAL_REPO_PATH=${REPO_BASE_PATH}/${DEB_REPO_PATH}
+    local DBDIR="+b/db"
+    local CONFIGDIR="${LOCAL_REPO_PATH}/conf"
+    local DISTDIR="${LOCAL_REPO_PATH}/public/dists/"
+    local OUTDIR="+b/public/"
+
+    if [ ! -d "${CONFIGDIR}" ] ; then
+        mkdir -p ${CONFIGDIR}
+        job_lock ${CONFIGDIR}.lock wait 3600
+            for dist_name in ${DEB_DIST_NAME} ${DEB_PROPOSED_DIST_NAME} ${DEB_UPDATES_DIST_NAME} \
                              ${DEB_SECURITY_DIST_NAME} ${DEB_HOLDBACK_DIST_NAME} ; do
 
                 # Filling distributions configuretion file (this file is used by reprepro)
@@ -215,10 +214,12 @@ main() {
                     [ -n "${SIGN_STRING}" ] \
                         && gpg --sign --local-user ${SIGKEYID} -ba \
                         -o ${release_file}.gpg ${release_file}
-                done
-            job_lock ${CONFIGDIR}.lock unset
-        fi
-    done
+            done
+
+        job_lock "${CONFIGDIR}.lock" unset
+
+    fi
+
 
     # Defining distribution name and component
     # Here we determine where to put new packages
