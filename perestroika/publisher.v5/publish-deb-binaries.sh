@@ -418,21 +418,32 @@ main() {
     # Filling report file and export results
     # ==================================================
 
-    rm -f ${WRK_DIR}/deb.publish.setenvfile
+    local DEB_REPO_URL="\"http://${REMOTE_REPO_HOST}/${URL_PREFIX}${DEB_REPO_PATH} ${DEB_DIST_NAME} ${DEB_COMPONENT}\""
+    local DEB_BINARIES="$(                              \
+        cat ${BINSRCLIST}                               \
+        | grep ^Binary                                  \
+        | sed 's|^Binary:||; s| ||g'                    \
+    )"
+
+    local rep_file="${WRK_DIR}/deb.publish.setenvfile"
+    rm -f "${rep_file}"
+
 
     # Report:
     # --------------------------------------------------
 
-    cat > ${WRK_DIR}/deb.publish.setenvfile<<-EOF
-        DEB_PUBLISH_SUCCEEDED=true
-        DEB_DISTRO=${DIST}
-        DEB_REPO_URL="http://${REMOTE_REPO_HOST}/${URL_PREFIX}${DEB_REPO_PATH} ${DEB_DIST_NAME} ${DEB_COMPONENT}"
-        DEB_PACKAGENAME=${SRC_NAME}
-        DEB_VERSION=${NEW_VERSION}
-        DEB_BINARIES=$(cat ${BINSRCLIST} | grep ^Binary | sed 's|^Binary:||; s| ||g')
-        DEB_CHANGE_REVISION=${GERRIT_PATCHSET_REVISION}
-        LP_BUG=${LP_BUG}
-        EOF
+    info "Creating report in ${rep_file}"
+
+    echo                                     > "${rep_file}"
+    echo "DEB_PUBLISH_SUCCEEDED=true"       >> "${rep_file}"
+    echo "DEB_DISTRO=${DIST}"               >> "${rep_file}"
+    echo "DEB_REPO_URL=${DEB_REPO_URL}"     >> "${rep_file}"
+    echo "DEB_PACKAGENAME=${SRC_NAME}"      >> "${rep_file}"
+    echo "DEB_VERSION=${NEW_VERSION}"       >> "${rep_file}"
+    echo "DEB_BINARIES=${DEB_BINARIES}"     >> "${rep_file}"
+    echo "DEB_CHANGE_REVISION=${GERRIT_PATCHSET_REVISION}" \
+                                            >> "${rep_file}"
+    echo "LP_BUG=${LP_BUG}"                 >> "${rep_file}"
 
     # --------------------------------------------------
 

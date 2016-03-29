@@ -415,24 +415,35 @@ exit \$value
         sync-repo ${LOCAL_REPO_PATH}/ ${RPM_REPO_PATH} ${REPO_REQUEST_PATH_PREFIX} ${REQUEST_NUM} ${LP_BUG}
     job_lock ${LOCAL_REPO_PATH}.lock unset
 
+
     # Filling report file and export results
     # ==================================================
 
-    rm -f ${WRK_DIR}/rpm.publish.setenvfile
+
+    local RPM_VERSION="${NEWBINEPOCH}:${NEWBINVERSION}-${NEWBINRELEASE}"
+    local RPM_REPO_URL="http://${REMOTE_REPO_HOST}/${URL_PREFIX}${RPM_REPO_PATH}/x86_64"
+    local RPM_BINARIES="$(                              \
+        echo ${NEW_BIN_PKG_NAMES}                       \
+        | sed 's|^ ||; s| |,|g'                         \
+    )"
+
+    local rep_file="${WRK_DIR}/rpm.publish.setenvfile"
+    rm -f "${rep_file}"
 
     # Report:
     # --------------------------------------------------
 
+    info "Creating report in ${rep_file}"
 
-    cat > ${WRK_DIR}/rpm.publish.setenvfile <<-EOF
-        RPM_PUBLISH_SUCCEEDED=true
-        RPM_DISTRO=${DIST}
-        RPM_VERSION=${NEWBINEPOCH}:${NEWBINVERSION}-${NEWBINRELEASE}
-        RPM_REPO_URL=http://${REMOTE_REPO_HOST}/${URL_PREFIX}${RPM_REPO_PATH}/x86_64
-        RPM_BINARIES=$(echo ${PACKAGENAMES} | sed 's|^ ||; s| |,|g')
-        RPM_CHANGE_REVISION=${GERRIT_PATCHSET_REVISION}
-        LP_BUG=${LP_BUG}
-        EOF
+    echo                                     > "${rep_file}"
+    echo "RPM_PUBLISH_SUCCEEDED=true"       >> "${rep_file}"
+    echo "RPM_DISTRO=${DIST}"               >> "${rep_file}"
+    echo "RPM_VERSION=${RPM_VERSION}"       >> "${rep_file}"
+    echo "RPM_REPO_URL=${RPM_REPO_URL}"     >> "${rep_file}"
+    echo "RPM_BINARIES=${RPM_BINARIES}"     >> "${rep_file}"
+    echo "RPM_CHANGE_REVISION=${GERRIT_PATCHSET_REVISION}" \
+                                            >> "${rep_file}"
+    echo "LP_BUG=${LP_BUG}"                 >> "${rep_file}"
 
     # --------------------------------------------------
 }
