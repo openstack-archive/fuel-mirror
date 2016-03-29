@@ -243,9 +243,11 @@ swift-object
 swift-plugin-s3
 swift-proxy
 sysfsutils
+syslinux
 sysstat
 tasksel
 tcptraceroute
+tftpd-hpa
 tmux
 traceroute
 ubuntu-minimal
