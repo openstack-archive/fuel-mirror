@@ -181,6 +181,14 @@ main() {
     local DISTDIR="${LOCAL_REPO_PATH}/public/dists/"
     local OUTDIR="+b/public/"
 
+    # Array of reprepro options for reducing copypasting
+    local REPREPRO_OPTS="--verbose                      \
+                         --basedir ${LOCAL_REPO_PATH}   \
+                         --dbdir   ${DBDIR}             \
+                         --outdir  ${OUTDIR}            \
+                         --distdir ${DISTDIR}           \
+                         --confdir ${CONFIGDIR}"
+
     if [ ! -d "${CONFIGDIR}" ] ; then
         mkdir -p "${CONFIGDIR}"
 
@@ -210,12 +218,7 @@ main() {
                 echo "Contents: . .gz .bz2"               >> "${CONFIGDIR}/distributions"
                 echo ""                                   >> "${CONFIGDIR}/distributions"
 
-                reprepro --basedir ${LOCAL_REPO_PATH} \
-                         --dbdir ${DBDIR} \
-                         --outdir ${OUTDIR} \
-                         --distdir ${DISTDIR} \
-                         --confdir ${CONFIGDIR} \
-                         export ${dist_name}
+                reprepro ${REPREPRO_OPTS} export "${dist_name}"
 
                 # Fix Codename field
                 # This is done because reprepro is created for deb but used for ubuntu
@@ -319,13 +322,6 @@ main() {
         LOCAL_DEB_COMPONENT="restricted"
     fi
 
-    local CONFIGDIR="${LOCAL_REPO_PATH}/conf"
-    local DBDIR="+b/db"
-    local DISTDIR="${LOCAL_REPO_PATH}/public/dists/"
-    local OUTDIR="${LOCAL_REPO_PATH}/public/"
-    local REPREPRO_OPTS="--verbose --basedir ${LOCAL_REPO_PATH} --dbdir ${DBDIR} \
-        --outdir ${OUTDIR} --distdir ${DISTDIR} --confdir ${CONFIGDIR}"
-    local REPREPRO_COMP_OPTS="${REPREPRO_OPTS} --component ${DEB_COMPONENT}"
 
     # Filling of repository with new files
     # ==================================================
@@ -387,19 +383,26 @@ main() {
             | head -n 1                                 \
         )"
 
-        [ "${OLD_VERSION}" == "" ] && OLD_VERSION=none
-
         # Remove existing packages for requests-on-review and downgrades
         # when there is previous version
         # ----------------------------------------------
 
-        # TODO: Get rid of removing. Just increase version properly
-        if [ "${GERRIT_CHANGE_STATUS}" = "NEW" -o "$IS_DOWNGRADE" == "true" ] ; then
-            reprepro ${REPREPRO_OPTS} removesrc ${DEB_DIST_NAME} ${SRC_NAME} ${OLD_VERSION} || :
+        if [ "${OLD_VERSION}" != "" ] ; then
+            if [ "${GERRIT_CHANGE_STATUS}" = "NEW" -o "${IS_DOWNGRADE}" == "true" ] ; then
+
+                reprepro ${REPREPRO_OPTS}               \
+                         removesrc "${LOCAL_DEB_DIST_NAME}" "${SRC_NAME}" "${OLD_VERSION}" \
+                || true
+
+            fi
         fi
 
         # Collecting all binaries
         # ----------------------------------------------
+
+        # array of reprepro options for reducing copypasting
+        local REPREPRO_COMP_OPTS="${REPREPRO_OPTS} --component ${LOCAL_DEB_COMPONENT}"
+
 
         # Add .deb binaries
         if [ "${BINDEBLIST}" != "" ]; then
@@ -535,6 +538,6 @@ main() {
     # --------------------------------------------------
 }
 
-main "$@"
+main
 
 exit 0
