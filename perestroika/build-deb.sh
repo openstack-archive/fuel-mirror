@@ -61,7 +61,8 @@ main () {
           done
           # Prepare source tarball
           pushd $_srcpath &>/dev/null
-          if [ "$PACKAGENAME" == "rally" ]; then
+          local ignore_list="rally horizon-vendor-theme"
+          if [ $(echo $ignore_list | grep -Eo "(^| )$PACKAGENAME( |$)") ]; then
               # Do not perform `setup.py sdist` for rally packages
               tar -czf ${BUILDDIR}/$TAR_NAME $EXCLUDES .
           else
