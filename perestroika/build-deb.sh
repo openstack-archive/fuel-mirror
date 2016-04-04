@@ -52,6 +52,8 @@ main () {
               && _rev=$(( $_rev + 1 ))
           [ "$IS_HOTFIX" == "true" ] \
               && _rev=$(get_extra_revision hotfix ${_srcpath} ${release_tag})
+          [ "$IS_SECURITY" == "true" ] \
+              && local _rev=$(get_extra_revision security ${_srcpath} ${release_tag})
           local release=$(dpkg-parsechangelog --show-field Version -l${_debianpath}/debian/changelog | awk -F'-' '{print $NF}' | sed -r 's|[0-9]+$||')
           local release="${release}${_rev}"
           local fullver=${epochnumber}${version}-${release}

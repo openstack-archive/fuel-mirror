@@ -55,8 +55,6 @@ request_is_merged () {
 set_default_params () {
   [ -z "$PROJECT_NAME" ] && error "Project name is not defined! Exiting!"
   [ -z "$PROJECT_VERSION" ] && error "Project version is not defined! Exiting!"
-  [ -z "$SECUPDATETAG" ] && local SECUPDATETAG="^Security-update"
-  [ -z "$IS_SECURITY" ] && IS_SECURITY='false'
   if [ -n "$GERRIT_PROJECT" ]; then
     GERRIT_CHANGE_STATUS="NEW"
     if [ -n "$GERRIT_REFSPEC" ]; then
@@ -77,12 +75,6 @@ set_default_params () {
       if [ -n "${CUSTOM_REPO_ID}" ] ; then
          unset LP_BUG
          REQUEST_NUM=${CUSTOM_REPO_ID}
-      fi
-    else
-      if [ -n "$GERRIT_MESSAGE" ] ; then
-         if [ `echo $GERRIT_MESSAGE | grep -c \"$SECUPDATETAG\"` -gt 0 ] ; then
-            IS_SECURITY='true'
-         fi
       fi
     fi
     # Detect packagename
