@@ -44,6 +44,20 @@ main () {
           [ "$GERRIT_CHANGE_STATUS" == "NEW" ] \
               && [ ${GERRIT_PROJECT} == "${SRC_PROJECT}" ] \
               && _rev=$(( $_rev + 1 ))
+          if [ "$IS_SECURITY" == "true" ] ; then
+              # Security branch name for openstack project should be like
+              # "{stable_branch_name}-security-<id>"
+              # Get parent branch
+              local _parent_branch=$(echo ${SOURCE_BRANCH} | sed -r 's|-security-.*$||')
+              [ $(git -C ${_srcpath} branch -a | fgrep -c "origin/${_parent_branch}") -eq 0 ] && error "Can't find parent source branch"
+              # Get common ancestor
+              local _merge_base=$(git -C ${_srcpath} merge-base origin/${_parent_branch} origin/${SOURCE_BRANCH})
+              # Calculate ancestor revision
+              local _base_rev=$(git -C ${_srcpath} rev-list --no-merges ${release_tag}..${_merge_base} | wc -l)
+              # Calculate delta revision
+              local _delta_rev=$(( ${_rev} - ${_base_rev} ))
+              local _rev=${_base_rev}.sec.${_delta_rev}
+          fi
           local release=$(dpkg-parsechangelog --show-field Version -l${_debianpath}/debian/changelog | cut -d'-' -f2 | sed -r 's|[0-9]+$||')
           local release="${release}${_rev}"
           local fullver=${epochnumber}${version}-${release}

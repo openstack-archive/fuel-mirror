@@ -41,6 +41,20 @@ main () {
     # if gitshasrc is not defined (we are not using fetch_upstream), let's do it
     [ -n "${gitshasrc}" ] || local gitshasrc=$(git -C $_srcpath log -1 --pretty="%h")
     [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && _rev=$(( $_rev + 1 ))
+    if [ "$IS_SECURITY" == "true" ] ; then
+        # Security branch name for fuel project should be like
+        # "{stable_branch_name}-security-<id>"
+        # Get parent branch
+        local _parent_branch=$(echo ${SOURCE_BRANCH} | sed -r 's|-security-.*$||')
+        [ $(git -C ${_srcpath} branch -a | fgrep -c "origin/${_parent_branch}") -eq 0 ] && error "Can't find parent source branch"
+        # Get common ancestor
+        local _merge_base=$(git -C ${_srcpath} merge-base origin/${_parent_branch} origin/${SOURCE_BRANCH})
+        # Calculate ancestor revision
+        local _base_rev=$(git -C ${_srcpath} rev-list --no-merges ${_merge_base} | wc -l)
+        # Calculate delta revision
+        local _delta_rev=$(( ${_rev} - ${_base_rev} ))
+        local _rev=${_base_rev}.sec.${_delta_rev}
+    fi
     local release="1.mos${_rev}"
     [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && release="${release}.git.${gitshasrc}"
     local TAR_NAME=${PACKAGENAME}-${version}.tar.gz

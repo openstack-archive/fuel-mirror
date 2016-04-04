@@ -55,8 +55,6 @@ request_is_merged () {
 set_default_params () {
   [ -z "$PROJECT_NAME" ] && error "Project name is not defined! Exiting!"
   [ -z "$PROJECT_VERSION" ] && error "Project version is not defined! Exiting!"
-  [ -z "$SECUPDATETAG" ] && local SECUPDATETAG="^Security-update"
-  [ -z "$IS_SECURITY" ] && IS_SECURITY='false'
   if [ -n "$GERRIT_PROJECT" ]; then
     GERRIT_CHANGE_STATUS="NEW"
     if [ -n "$GERRIT_REFSPEC" ]; then
@@ -74,12 +72,6 @@ set_default_params () {
       local _LP_BUG=`echo "$GERRIT_TOPIC" | egrep -o "group/[0-9]+" | cut -d'/' -f2`
       #[ -z "$_LP_BUG" ] && _LP_BUG=`echo "$GERRIT_MEGGASE" | egrep -i -o "(closes|partial|related)-bug: ?#?[0-9]+" | sort -u | head -1 | awk -F'[: #]' '{print $NF}'`
       [ -n "$_LP_BUG" ] && LP_BUG="LP-$_LP_BUG"
-    else
-      if [ -n "$GERRIT_MESSAGE" ] ; then
-         if [ `echo $GERRIT_MESSAGE | grep -c \"$SECUPDATETAG\"` -gt 0 ] ; then
-            IS_SECURITY='true'
-         fi
-      fi
     fi
     # Detect packagename
     PACKAGENAME=${GERRIT_PROJECT##*/}
@@ -92,6 +84,11 @@ set_default_params () {
     esac
     SOURCE_BRANCH=$GERRIT_BRANCH
     [ "$IS_OPENSTACK" == "true" ] && SPEC_BRANCH=$GERRIT_BRANCH
+  fi
+  if [ -z "$IS_SECURITY" ] ; then
+      IS_SECURITY='false'
+      echo "$SOURCE_BRANCH" | egrep "\-security-[0-9]+$" &>/dev/null \
+          && IS_SECURITY='true'
   fi
   [ -z "$PACKAGENAME" ] && error "Package name is not defined! Exiting!"
   [ -z "$SOURCE_BRANCH" ] && error "Source branch is not defined! Exiting!"
