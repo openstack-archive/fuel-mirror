@@ -41,6 +41,8 @@ main () {
     # if gitshasrc is not defined (we are not using fetch_upstream), let's do it
     [ -n "${gitshasrc}" ] || local gitshasrc=$(git -C $_srcpath log -1 --pretty="%h")
     [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && _rev=$(( $_rev + 1 ))
+    [ "$IS_SECURITY" == "true" ] \
+        && local _rev=$(get_sec_update_revision ${_srcpath})
     local release="1.mos${_rev}"
     [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && release="${release}.git.${gitshasrc}"
     local TAR_NAME=${PACKAGENAME}-${version}.tar.gz

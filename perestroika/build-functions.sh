@@ -55,8 +55,6 @@ request_is_merged () {
 set_default_params () {
   [ -z "$PROJECT_NAME" ] && error "Project name is not defined! Exiting!"
   [ -z "$PROJECT_VERSION" ] && error "Project version is not defined! Exiting!"
-  [ -z "$SECUPDATETAG" ] && local SECUPDATETAG="^Security-update"
-  [ -z "$IS_SECURITY" ] && IS_SECURITY='false'
   if [ -n "$GERRIT_PROJECT" ]; then
     GERRIT_CHANGE_STATUS="NEW"
     if [ -n "$GERRIT_REFSPEC" ]; then
@@ -74,12 +72,6 @@ set_default_params () {
       local _LP_BUG=`echo "$GERRIT_TOPIC" | egrep -o "group/[0-9]+" | cut -d'/' -f2`
       #[ -z "$_LP_BUG" ] && _LP_BUG=`echo "$GERRIT_MEGGASE" | egrep -i -o "(closes|partial|related)-bug: ?#?[0-9]+" | sort -u | head -1 | awk -F'[: #]' '{print $NF}'`
       [ -n "$_LP_BUG" ] && LP_BUG="LP-$_LP_BUG"
-    else
-      if [ -n "$GERRIT_MESSAGE" ] ; then
-         if [ `echo $GERRIT_MESSAGE | grep -c \"$SECUPDATETAG\"` -gt 0 ] ; then
-            IS_SECURITY='true'
-         fi
-      fi
     fi
     # Detect packagename
     PACKAGENAME=${GERRIT_PROJECT##*/}
@@ -93,6 +85,9 @@ set_default_params () {
     SOURCE_BRANCH=$GERRIT_BRANCH
     [ "$IS_OPENSTACK" == "true" ] && SPEC_BRANCH=$GERRIT_BRANCH
   fi
+  IS_SECURITY='false'
+  echo "$SOURCE_BRANCH" | egrep "\-security-[0-9]+$" &>/dev/null \
+          && IS_SECURITY='true'
   [ -z "$PACKAGENAME" ] && error "Package name is not defined! Exiting!"
   [ -z "$SOURCE_BRANCH" ] && error "Source branch is not defined! Exiting!"
   [ "$IS_OPENSTACK" == "true" ] && [ -z "$SPEC_BRANCH" ] && SPEC_BRANCH=$SOURCE_BRANCH
@@ -226,6 +221,28 @@ get_last_commit_info () {
     lastgitlog=$(git log --pretty="%h|%ae|%an|%s" -n 10)
     popd &>/dev/null
   fi
+}
+
+get_sec_update_revision () {
+    local _srcpath=$1
+    [ -n "$2" ] && local release_tag=$2
+    # Security branch name for fuel and openstack projects should be like
+    # "{stable_branch_name}-security-<id>"
+    # Get parent branch
+    local _parent_branch=$(echo ${SOURCE_BRANCH} | sed -r 's|-security-.*$||')
+    [ $(git -C ${_srcpath} branch -a | fgrep -c "origin/${_parent_branch}") -eq 0 ] && error "Can't find parent source branch"
+    # Get common ancestor
+    local _merge_base=$(git -C ${_srcpath} merge-base origin/${_parent_branch} origin/${SOURCE_BRANCH})
+    # Calculate ancestor revision
+    if [ -n "$release_tag" ] ; then
+        local _base_rev=$(git -C ${_srcpath} rev-list --no-merges ${release_tag}..${_merge_base} | wc -l)
+    else
+        local _base_rev=$(git -C ${_srcpath} rev-list --no-merges ${_merge_base} | wc -l)
+    fi
+    # Calculate delta revision
+    local _delta_rev=$(( ${_rev} - ${_base_rev} ))
+    local _rev=${_base_rev}.${_delta_rev}
+    echo $_rev
 }
 
 fill_buildresult () {

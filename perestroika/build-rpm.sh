@@ -51,6 +51,8 @@ This package provides the %{-n*} kernel modules
       [ "$GERRIT_CHANGE_STATUS" == "NEW" ] \
           && [ ${GERRIT_PROJECT} == "${SRC_PROJECT}" ] \
           && _rev=$(( $_rev + 1 ))
+      [ "$IS_SECURITY" == "true" ] \
+          && local _rev=$(get_sec_update_revision ${_srcpath} ${release_tag})
       local release="mos${_rev}"
       local TAR_NAME=${PACKAGENAME}-${version}.tar.gz
       # Update version and changelog

@@ -44,6 +44,8 @@ main () {
         # Get revision number as commit count for src+spec projects
         local _rev=`git -C $_srcpath rev-list --no-merges origin/${SOURCE_BRANCH} | wc -l`
         [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && _rev=$(( $_rev + 1 ))
+        [ "$IS_SECURITY" == "true" ] \
+            && local _rev=$(get_sec_update_revision ${_srcpath})
         local release="1~u14.04+mos${_rev}"
         # if gitshasrc is not defined (we are not using fetch_upstream), let's do it
         [ -n "${gitshasrc}" ] || local gitshasrc=$(git -C $_srcpath log -1 --pretty="%h")

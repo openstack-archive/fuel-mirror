@@ -44,6 +44,8 @@ main () {
           [ "$GERRIT_CHANGE_STATUS" == "NEW" ] \
               && [ ${GERRIT_PROJECT} == "${SRC_PROJECT}" ] \
               && _rev=$(( $_rev + 1 ))
+          [ "$IS_SECURITY" == "true" ] \
+              && local _rev=$(get_sec_update_revision ${_srcpath} ${release_tag})
           local release=$(dpkg-parsechangelog --show-field Version -l${_debianpath}/debian/changelog | cut -d'-' -f2 | sed -r 's|[0-9]+$||')
           local release="${release}${_rev}"
           local fullver=${epochnumber}${version}-${release}
