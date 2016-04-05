@@ -34,6 +34,7 @@ Release: %{release} \
 This package provides the %{-n*} kernel modules
 ' )
   local version=`rpm -q "${define_macros[@]}" --specfile $specfile --queryformat %{VERSION}"\n" | head -1`
+  src_version="${version}"
   local release=`rpm -q "${define_macros[@]}" --specfile $specfile --queryformat %{RELEASE}"\n" | head -1`
   ## Add changelog section if it doesn't exist
   [ "`cat ${specfile} | grep -c '^%changelog'`" -eq 0 ] && echo "%changelog" >> ${specfile}
@@ -45,7 +46,10 @@ This package provides the %{-n*} kernel modules
       # Change it to 2015.1.0~rc1
       local convert_version_py="$(dirname $(readlink -e $0))/convert_version.py"
       version=$(python ${convert_version_py} --tag ${release_tag})
-
+      if [ "${version}" != "${src_version}" ] ; then
+          echo -e "ERROR: Version mistmatch. Latest version from Gerrit tag: $version, and from changelog: $src_version. Build aborted."
+          exit 1
+      fi
       # Get revision number as commit count for src+spec projects
       local _rev=$(git -C $_srcpath rev-list --no-merges ${release_tag}..origin/${SOURCE_BRANCH} | wc -l)
       [ "$GERRIT_CHANGE_STATUS" == "NEW" ] \
