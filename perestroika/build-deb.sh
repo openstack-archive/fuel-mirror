@@ -24,6 +24,7 @@ main () {
       local binpackagenames="`cat ${_debianpath}/debian/control | grep ^Package | cut -d' ' -f 2 | tr '\n' ' '`"
       local epochnumber=`head -1 ${_debianpath}/debian/changelog | grep -o "(.:" | sed 's|(||'`
       local distro=`head -1 ${_debianpath}/debian/changelog | awk -F'[ ;]' '{print $3}'`
+      local pkg_version="${version#*:}"
 
       # Get last commit info
       # $message $author $email $cdate $commitsha $lastgitlog
@@ -38,6 +39,10 @@ main () {
           # Change it to 2015.1.0~rc1
           local convert_version_py="$(dirname $(readlink -e $0))/convert_version.py"
           version=$(python ${convert_version_py} --tag ${release_tag})
+          if [ "${version}" != "${pkg_version}" ] ; then
+              echo -e "ERROR: Version mismatch. Latest version from Gerrit tag: $version, and from changelog: $pkg_version. Build aborted."
+              exit 1
+          fi
           local TAR_NAME="${srcpackagename}_${version}.orig.tar.gz"
           # Get revision number as commit count from tag to head of source branch
           local _rev=$(git -C $_srcpath rev-list --no-merges ${release_tag}..origin/${SOURCE_BRANCH} | wc -l)
