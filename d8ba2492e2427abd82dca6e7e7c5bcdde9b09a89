@@ -1,0 +1,10 @@
+Code-Review+1: Roman Vyalov <rvyalov@mirantis.com>
+Code-Review+2: Sergey Kulanov <skulanov@mirantis.com>
+Workflow+1: Vitaly Parakhin <vparakhin@mirantis.com>
+Code-Review+2: Vitaly Parakhin <vparakhin@mirantis.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Fri, 08 Apr 2016 11:27:10 +0000
+Reviewed-on: https://review.openstack.org/300364
+Project: openstack/fuel-mirror
+Branch: refs/heads/master
