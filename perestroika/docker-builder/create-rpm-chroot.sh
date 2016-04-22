@@ -21,7 +21,7 @@ DIST_VERSION=${DIST/centos/}
 # by default we init env for CentOS 7
 [ -z "${DIST_VERSION}" ] && DIST_VERSION=7
 
-if [ "${DIST_VERSION}" != 6 ] && [ "${DIST_VERSION}" != 7 ]; then
+if [ ! -f "${BIN}/mockbuild/centos${DIST_VERSION}.conf" ] ; then 
   echo "Unknown dist version: ${DIST_VERSION}"
   exit 1
 fi
