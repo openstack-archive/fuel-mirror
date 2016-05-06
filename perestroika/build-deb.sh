@@ -41,10 +41,11 @@ main () {
           local TAR_NAME="${srcpackagename}_${version}.orig.tar.gz"
           # Get revision number as commit count from tag to head of source branch
           local _rev=$(git -C $_srcpath rev-list --no-merges ${release_tag}..origin/${SOURCE_BRANCH} | wc -l)
-          [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && _rev=$(( $_rev + 1 ))
+          [ "$GERRIT_CHANGE_STATUS" == "NEW" ] \
+              && [ ${GERRIT_PROJECT} == "${SRC_PROJECT}" ] \
+              && _rev=$(( $_rev + 1 ))
           local release=$(dpkg-parsechangelog --show-field Version -l${_debianpath}/debian/changelog | cut -d'-' -f2 | sed -r 's|[0-9]+$||')
           local release="${release}${_rev}"
-          [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && release="${release}+git.${gitshasrc}.${gitshaspec}"
           local fullver=${epochnumber}${version}-${release}
           # Update version and changelog
           local firstline=1
