@@ -4,7 +4,7 @@ FROM centos:centos7
 MAINTAINER Igor Gnatenko <ignatenko@mirantis.com>
 
 
-RUN yum -y --disableplugin=fastestmirror install http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-5.noarch.rpm && \
+RUN yum -y --disableplugin=fastestmirror install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
     yum -y --disableplugin=fastestmirror install --enablerepo=epel-testing mock && \
     yum clean --enablerepo=epel-testing all && \
     useradd abuild -g mock
