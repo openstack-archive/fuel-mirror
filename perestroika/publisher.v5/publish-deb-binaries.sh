@@ -25,6 +25,10 @@ main() {
   # Create all repositories
 
   # Paths
+  if [ -n "${CUSTOM_REPO_ID}" ] ; then
+      unset LP_BUG
+      REQUEST_NUM=${CUSTOM_REPO_ID}
+  fi
   local URL_PREFIX=""
   if [ "${GERRIT_CHANGE_STATUS}" = "NEW" ] ; then
       REPO_BASE_PATH=${REPO_BASE_PATH}/${REPO_REQUEST_PATH_PREFIX}
