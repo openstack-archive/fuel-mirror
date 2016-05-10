@@ -162,8 +162,12 @@ main() {
   # Replace sources
   # TODO: Get rid of replacing. Just increase version properly
   if [ "${BINSRCLIST}" != "" ]; then
-      reprepro ${REPREPRO_COMP_OPTS} --architecture source \
-          remove ${DEB_DIST_NAME} ${SRC_NAME} || :
+      for dist_name in ${DEB_BASE_DIST_NAME} ${DEB_PROPOSED_DIST_NAME} \
+          ${DEB_UPDATES_DIST_NAME} ${DEB_SECURITY_DIST_NAME} \
+          ${DEB_HOLDBACK_DIST_NAME} ; do
+          reprepro ${REPREPRO_COMP_OPTS} --architecture source \
+              remove ${dist_name} ${SRC_NAME} || :
+      done
       reprepro ${REPREPRO_COMP_OPTS} includedsc ${DEB_DIST_NAME} ${BINSRCLIST} \
           || error "Can't include packages"
   fi
