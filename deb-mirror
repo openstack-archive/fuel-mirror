@@ -248,6 +248,14 @@ for dist in "${DISTs[@]}"; do
                 to_fetch+=( `rsync_ls "$arch_path/Packages.diff/*"` )
             fi
 
+            # Delete old Packages files if those exist before fetching
+            for tf in ${to_fetch[@]}; do
+                if [ -f ${LOCAL_DIR}/$tf ]; then
+                    debug "Deleting ${LOCAL_DIR}/${tf}"
+                    rm -f "${LOCAL_DIR}/${tf}"
+                fi
+            done
+
             # Download files in our wishlist and get names of actually
             # downloaded files
             fetched_files=`fetch_all "$LOCAL_DIR" ${to_fetch[@]}`
