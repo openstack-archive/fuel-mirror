@@ -1,0 +1,44 @@
+#!/bin/bash
+
+#
+# needed functions
+#
+
+cleanup_and_exit()
+{
+    trap EXIT
+    exit ${1:-0}
+}
+
+fail_exit()
+{
+  echo "$@"
+  cleanup_and_exit 1
+}
+
+job_lock() {
+    [ -z "$1" ] && fail_exit "Lock file is not specified"
+    local LOCKFILE=$1
+    shift
+    local fd=1000
+    eval "exec $fd>>$LOCKFILE"
+    case $1 in
+        "set")
+            flock -x -n $fd \
+                || fail_exit "Process already running. Lockfile: $LOCKFILE"
+            ;;
+        "unset")
+            flock -u $fd
+            rm -f $LOCKFILE
+            ;;
+        "wait")
+            local TIMEOUT=${2:-3600}
+            [ "${VERBOSE}" == "true" ] \
+                && echo "Waiting of concurrent process (lockfile: $LOCKFILE, timeout = $TIMEOUT seconds) ..."
+            flock -x -w $TIMEOUT $fd \
+                || fail_exit "Timeout error (lockfile: $LOCKFILE)"
+            ;;
+    esac
+}
+
+trap fail_exit EXIT
