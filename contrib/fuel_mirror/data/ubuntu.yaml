@@ -130,6 +130,7 @@ packages: &packages
      - "vim"
      - "virt-what"
      - "xinetd"
+     - "xmlstarlet"
 
 
 groups:
