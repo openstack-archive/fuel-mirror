@@ -1,0 +1,10 @@
+Code-Review+1: Bartłomiej Piotrowski <bpiotrowski@mirantis.com>
+Code-Review+1: Bartosz Kupidura <bkupidura@mirantis.com>
+Code-Review+2: Vitaly Parakhin <vparakhin@mirantis.com>
+Workflow+1: Vitaly Parakhin <vparakhin@mirantis.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Wed, 11 May 2016 12:00:55 +0000
+Reviewed-on: https://review.openstack.org/314963
+Project: openstack/fuel-mirror
+Branch: refs/heads/master
