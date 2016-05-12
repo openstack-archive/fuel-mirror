@@ -95,16 +95,34 @@ main () {
       EXTRAREPO="${EXTRAREPO}|repo3,http://${REMOTE_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${RPM_PROPOSED_REPO_PATH}/x86_64"
     export EXTRAREPO
 
-    pushd $BUILDDIR &>/dev/null
+    if [ -n "$EXTRAREPO" ] ; then
+        local EXTRAPARAMS=""
+        local OLDIFS="$IFS"
+        IFS='|'
+        for repo in $EXTRAREPO; do
+          IFS="$OLDIFS"
+          [ -n "$repo" ] && EXTRAPARAMS="${EXTRAPARAMS} --repository ${repo#*,}"
+          IFS='|'
+        done
+        IFS="$OLDIFS"
+    fi
+
+    local tmpdir=$(mktemp -d ${PKG_DIR}/build-XXXXXXXX)
     echo "BUILD_SUCCEEDED=false" > ${WRKDIR}/buildresult.params
-    bash -x ${BINDIR}/docker-builder/build-rpm-package.sh
-    local exitstatus=`cat build/exitstatus.mock || echo 1`
-    rm -f build/exitstatus.mock build/state.log
-    [ -f "build/build.log" ] && mv build/build.log ${WRKDIR}/buildlog.txt
-    [ -f "build/root.log" ] && mv build/root.log ${WRKDIR}/rootlog.txt
+    bash -c "${WRKDIR}/build \
+          --verbose \
+          --no-keep-chroot \
+          --dist ${DIST} \
+          --build \
+          --source $BUILDDIR \
+          --output $tmpdir \
+          ${EXTRAPARAMS}"
+    local exitstatus=$(cat ${tmpdir}/exitstatus.mock || echo 1)
+    [ -f "${tmpdir}/build.log" ] && mv "${tmpdir}/build.log" "${WRKDIR}/buildlog.txt"
+    [ -f "${tmpdir}/root.log" ] && mv "${tmpdir}/root.log" "${WRKDIR}/rootlog.txt"
+
     fill_buildresult $exitstatus 0 $PACKAGENAME RPM
     if [ "$exitstatus" == "0" ] && [ -n "${GERRIT_BRANCH}" ]; then
-        tmpdir=`mktemp -d ${PKG_DIR}/build-XXXXXXXX`
         rm -f ${WRKDIR}/buildresult.params
         cat >${WRKDIR}/buildresult.params<<-EOL
 			BUILD_HOST=`hostname -f`
@@ -117,9 +135,7 @@ main () {
 			REPO_TYPE=rpm
 			DIST=$DIST
 		EOL
-        mv build/* $tmpdir/
     fi
-    popd &>/dev/null
     echo "Packages: $PACKAGENAME"
 
     exit $exitstatus
