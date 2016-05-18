@@ -1,0 +1,43 @@
+#!/bin/bash
+
+#
+# needed functions
+#
+
+cleanup_mounts()
+{
+    trap EXIT
+    local ROOT_NAME=%ROOT_NAME%
+    local TYPE=%TYPE%
+    local UNAME=%UNAME%
+    local GNAME=%GNAME%
+
+    case ${TYPE} in
+        mock)
+           umount -n /srv/tmpfs/cache 2> /dev/null || true
+           umount -n /var/cache/mock 2> /dev/null || true
+           umount -n /var/lib/mock/${ROOT_NAME}/root/tmp/ccache 2> /dev/null || true
+           umount -n /var/lib/mock/${ROOT_NAME}/root/var/cache/yum/ 2> /dev/null || true
+           umount -n -l /var/lib/mock/${ROOT_NAME}/root/dev/pts 2> /dev/null || true
+           umount -n -l /var/lib/mock/${ROOT_NAME}/root/dev/shm 2> /dev/null || true
+           umount -n -l /var/lib/mock/${ROOT_NAME}/root/sys 2> /dev/null || true
+           umount -n -l /var/lib/mock/${ROOT_NAME}/root/proc 2> /dev/null || true
+           rm -f /home/abuild/rpmbuild/{build,root,state}.log
+           chown -R ${UNAME}:${GNAME} /home/abuild
+           ;;
+       sbuild)
+           umount -n -l /srv/root/dev/pts 2> /dev/null || true
+           umount -n -l /srv/root/dev/shm 2> /dev/null || true
+           umount -n -l /srv/root/sys 2> /dev/null || true
+           umount -n -l /srv/root/proc 2> /dev/null || true
+           umount -n -l /srv/root 2> /dev/null || true
+           schroot -e --all-sessions 2> /dev/null || true
+           chown -R ${UNAME}:${GNAME} /srv/source /srv/build 2> /dev/null || true
+           ;;
+       *)
+           ;;
+    esac
+    exit 0
+}
+
+trap cleanup_mounts EXIT

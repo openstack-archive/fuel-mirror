@@ -1,0 +1,202 @@
+#!/bin/bash
+
+set -o errexit
+
+BIN_DIR=$(dirname `readlink -e $0`)
+source ${BIN_DIR}/functions/build-functions || exit 1
+source ${BIN_DIR}/functions/docker-functions || exit 1
+
+main () {
+    local repos=()
+    local pins=()
+    local pinpkgs=()
+    local pinprios=()
+    local KEEP_CHROOT=true
+    # Parse parameters
+    while test -n "$1" ; do
+        case "$1" in
+        --config-dir|-c)
+            local CONFIG_DIR=$2
+            shift 2
+            ;;
+        --no-keep-chroot| -n)
+            shift
+            unset KEEP_CHROOT
+            ;;
+        --verbose|-v)
+            shift
+            VERBOSE=true
+            local MOCK_OPTS="${MOCK_OPTS} -v"
+            local BASH_OPTS="${BASH_OPTS} -x"
+            set -o xtrace
+            ;;
+        --build|-b)
+            shift
+            local ACTION_BUILD=true
+            ;;
+        --update|-u)
+            shift
+            local ACTION_UPDATE=true
+            ;;
+        --shell|-s)
+            shift
+            local ACTION_SHELL=true
+            ;;
+        --init|-i)
+            shift
+            local ACTION_INIT=true
+            ;;
+        --no-init)
+            shift
+            local NO_INIT=true
+            ;;
+        --repository|--repo|-r)
+            local repos[${#repos[@]}]="$2";
+            shift 2;
+            ;;
+        --pin)
+            local pins[${#pins[@]}]="$2";
+            shift 2;
+            ;;
+        --pin-package)
+            local pinpkgs[${#pinpkgs[@]}]="$2";
+            shift 2;
+            ;;
+        --pin-priority)
+            local pinprios[${#pinprios[@]}]="$2";
+            shift 2;
+            ;;
+        --dist|-d)
+            local DIST="$2";
+            shift 2;
+            ;;
+        --source|--src)
+            local SOURCE_PATH="$2";
+            shift 2;
+            ;;
+        --output|-o)
+            local DEST_PATH="$2";
+            shift 2;
+            ;;
+        *)
+            fail_exit "ERROR: Unknow parameter \`$1\`"
+            ;;
+        esac
+    done
+
+    [ -z "${DIST}" ] && fail_exit "ERROR: Distribution is not specified"
+    [ ${#pins[@]} -ne ${#pinpkgs[@]} \
+        -o ${#pins[@]} -ne ${#pinprios[@]} ] \
+        && fail_exit "ERROR: Inconsistent Apt pinning options"
+
+    local CONFIG_DIR=${CONFIG_DIR:-${BIN_DIR}/conf}
+    local SOURCE_PATH=${SOURCE_PATH:-`pwd`}
+    local DEST_PATH=${DEST_PATH:-${SOURCE_PATH}/buildresult}
+
+    [ -e "${CONFIG_DIR}/common.conf" ] \
+        && source ${CONFIG_DIR}/common.conf
+
+    source ${CONFIG_DIR}/${DIST}.conf 2>/dev/null \
+        || fail_exit "ERROR: Unsupported distribution ${DIST}"
+    [ -z "${ROOT_NAME}" ] && fail_exit "CONFIG ERROR: Chroot name is not specified"
+    [ -z "${TYPE}" ] && fail_exit "CONFIG ERROR: Chroot type is not specified"
+
+    # Check docker image
+    local LOCK_FILE=/tmp/${CONTAINER_NAME%%:*}.lock
+    job_lock ${LOCK_FILE} wait 3600
+    [ $(docker images | egrep -c "^${CONTAINER_NAME%%:*}") -eq 0 ] \
+        && local BUILD_DOCKER_IMAGE=true
+
+    [ "${BUILD_DOCKER_IMAGE}" = "true" -a "${NO_INIT}" = "true" ] \
+        && fail_exit "ERROR: Can't find docker image for ${CONTAINER_NAME%%:*}"
+
+    # Build docker image
+    [ ! -f "${CONFIG_DIR}/${CONTAINER_NAME%%:*}/Dockerfile" ] \
+        && fail_exit "CONFIG ERROR: Unsupported container ${CONTAINER_NAME%%:*}"
+    if [ "${BUILD_DOCKER_IMAGE}" == "true" ] ; then
+        docker build -t ${CONTAINER_NAME%%:*} \
+            ${CONFIG_DIR}/${CONTAINER_NAME%%:*}/
+    fi
+    job_lock ${LOCK_FILE} unset
+
+    # Check chroot
+    local LOCK_FILE=/tmp/${ROOT_NAME}.lock
+    job_lock ${LOCK_FILE} wait 3600
+    [ ! -d "${CACHE_DIR}/${ROOT_NAME}" ] && local ACTION_INIT=true
+    [ "${ACTION_INIT}" == "true" ] && unset ACTION_UPDATE
+
+    [ "${ACTION_INIT}" = "true" -a "${NO_INIT}" = "true" ] \
+        && fail_exit "ERROR: Can't find chroot for ${DIST}"
+    # Init chroot
+    if [ "${ACTION_INIT}" == "true" ] ; then
+        case $TYPE in
+            mock)
+                docker_init_mock
+                ;;
+            sbuild)
+                docker_init_sbuild
+                ;;
+            *)
+                fail_exit "CONFIG ERROR: Unsupported distribution type"
+                ;;
+        esac
+    fi
+
+    # Update chroot
+    [ "${NO_INIT}" = "true" ] && unset ACTION_UPDATE
+    if [ "${ACTION_UPDATE}" == "true" ] ; then
+        case ${TYPE} in
+            mock)
+                docker_update_mock
+                ;;
+            sbuild)
+                docker_update_sbuild
+                ;;
+            *)
+                fail_exit "CONFIG ERROR: Unsupported distribution type"
+                ;;
+        esac
+    fi
+    job_lock ${LOCK_FILE} unset
+
+    local UNAME=$(id -u)
+    local GNAME=$(id -g)
+
+    # Build package
+    if [ "${ACTION_BUILD}" == "true" ] ; then
+        case ${TYPE} in
+            mock)
+                docker_build_mock
+                ;;
+            sbuild)
+                docker_build_sbuild
+                ;;
+            *)
+                fail_exit "CONFIG ERROR: Unsupported distribution type"
+                ;;
+        esac
+    fi
+
+    # Get into buildroot
+    if [ "${ACTION_SHELL}" == "true" ] ; then
+        case ${TYPE} in
+            mock)
+                [ ! -d "${ROOT_DIR}/${ROOT_NAME}/root/etc" ] \
+                    && fail_exit "ERROR: There is no buildroot for ${DIST}"
+                docker_shell_mock
+                ;;
+            sbuild)
+                [ ! -d "${ROOT_DIR}/${ROOT_NAME}/build" ] \
+                    && fail_exit "ERROR: There is no buildroot for ${DIST}"
+                docker_shell_sbuild
+                ;;
+            *)
+                fail_exit "CONFIG_ERROR: Unsupported distribution type"
+                ;;
+        esac
+    fi
+}
+
+main "$@"
+
+cleanup_and_exit 0

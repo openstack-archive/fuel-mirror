@@ -1,0 +1,11 @@
+#!/bin/sh
+. "${SETUP_DATA_DIR}/common-data"
+. "${SETUP_DATA_DIR}/common-functions"
+#. "$SETUP_DATA_DIR/common-config"
+if [ "${STAGE}" = "setup-start" ]; then
+  mount -t tmpfs overlay /var/lib/schroot/union/overlay
+elif [ "${STAGE}" = "setup-recover" ]; then
+  mount -t tmpfs overlay /var/lib/schroot/union/overlay
+elif [ "${STAGE}" = "setup-stop" ]; then
+  umount -f /var/lib/schroot/union/overlay
+fi
