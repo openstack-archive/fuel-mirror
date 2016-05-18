@@ -45,6 +45,13 @@ class ApplyCommand(BaseCommand):
             help="Replace default repos with generated mirrors."
         )
         parser.add_argument(
+            "--set",
+            dest="set",
+            action="store_true",
+            default=False,
+            help="Set default repos to provided."
+        )
+        parser.add_argument(
             "-e", "--env",
             dest="env", nargs="+",
             help="Fuel environment ID to update, "
@@ -77,7 +84,8 @@ class ApplyCommand(BaseCommand):
             parsed_args.env,
             localized_repos,
             release_match,
-            replace_repos=replace_repos)
+            replace_repos=replace_repos,
+            parsed_args=parsed_args)
 
         if parsed_args.set_default:
             self.update_release_repos(
@@ -93,7 +101,8 @@ class ApplyCommand(BaseCommand):
                         ids,
                         repositories,
                         release_match,
-                        replace_repos=False):
+                        replace_repos=False,
+                        parsed_args=None):
         """Applies repositories for existing clusters.
 
         :param ids: the cluster ids.
@@ -118,7 +127,8 @@ class ApplyCommand(BaseCommand):
             modified = self._update_repository_settings(
                 cluster.get_settings_data(),
                 repositories,
-                replace_repos=replace_repos)
+                replace_repos=replace_repos,
+                parsed_args=parsed_args)
 
             if modified:
                 self.app.LOG.info(
@@ -166,10 +176,34 @@ class ApplyCommand(BaseCommand):
                     release.data
                 )
 
+    def _replace_by_group(self, original_repos, new_repos, groups):
+        """Replace only repos from in groups.
+
+        :param original_repos: the meta information of exists repositories
+        :param new_repos: the meta information of new repositories
+        :param groups: names of repository groups
+        """
+        merged_repos = []
+        for group in groups:
+            # Remove original repo groups
+            for i, repo in enumerate(original_repos):
+                if not repo['name'].startswith(group):
+                    merged_repos.append(repo)
+
+        names = [r['name'] for r in merged_repos]
+        for group in groups:
+            # Add new repo groups
+            for i, repo in enumerate(new_repos):
+                if repo['name'].startswith(group) and \
+                   repo['name'] not in names:
+                    merged_repos.append(repo)
+        return merged_repos
+
     def _update_repository_settings(self,
                                     settings,
                                     repositories,
-                                    replace_repos=False):
+                                    replace_repos=False,
+                                    parsed_args=None):
         """Updates repository settings.
 
         :param settings: the target settings
@@ -181,8 +215,14 @@ class ApplyCommand(BaseCommand):
             return
 
         repos_attr = editable["repo_setup"]["repos"]
-        if replace_repos:
+        if replace_repos and parsed_args.set:
+            # Same as --replace previously, just set provided repos as is
             repos_attr['value'] = repositories
+        elif replace_repos and parsed_args.groups:
+            # Replace exists repos based on group name
+            repos_attr['value'] = self._replace_by_group(repos_attr['value'],
+                                                         repositories,
+                                                         parsed_args.groups)
         else:
             lists_merge(repos_attr['value'], repositories, "name")
 
