@@ -118,7 +118,8 @@ This package provides the %{-n*} kernel modules
   # Build stage
   local REQUEST=$REQUEST_NUM
   [ -n "$LP_BUG" ] && REQUEST=$LP_BUG
-  EXTRAREPO="repo1,http://${REMOTE_REPO_HOST}/${RPM_OS_REPO_PATH}/x86_64"
+  [ -n "${EXTRAREPO}" ] && EXTRAREPO="${EXTRAREPO}|"
+  EXTRAREPO="${EXTRAREPO}repo1,http://${REMOTE_REPO_HOST}/${RPM_OS_REPO_PATH}/x86_64"
 
   [ "$IS_UPDATES" == 'true' ] && \
     EXTRAREPO="${EXTRAREPO}|repo2,http://${REMOTE_REPO_HOST}/${RPM_PROPOSED_REPO_PATH}/x86_64"
