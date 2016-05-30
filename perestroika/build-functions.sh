@@ -74,6 +74,10 @@ set_default_params () {
       local _LP_BUG=`echo "$GERRIT_TOPIC" | egrep -o "group/[0-9]+" | cut -d'/' -f2`
       #[ -z "$_LP_BUG" ] && _LP_BUG=`echo "$GERRIT_MEGGASE" | egrep -i -o "(closes|partial|related)-bug: ?#?[0-9]+" | sort -u | head -1 | awk -F'[: #]' '{print $NF}'`
       [ -n "$_LP_BUG" ] && LP_BUG="LP-$_LP_BUG"
+      if [ -n "${CUSTOM_REPO_ID}" ] ; then
+         unset LP_BUG
+         REQUEST_NUM=${CUSTOM_REPO_ID}
+      fi
     else
       if [ -n "$GERRIT_MESSAGE" ] ; then
          if [ `echo $GERRIT_MESSAGE | grep -c \"$SECUPDATETAG\"` -gt 0 ] ; then
