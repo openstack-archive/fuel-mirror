@@ -95,15 +95,33 @@ main () {
         && EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${DEB_REPO_PATH} ${DEB_PROPOSED_DIST_NAME} ${COMPONENTS}"
     export EXTRAREPO
 
-    pushd $BUILDDIR &>/dev/null
+    if [ -n "$EXTRAREPO" ] ; then
+        local EXTRAPARAMS=""
+        local OLDIFS="$IFS"
+        IFS='|'
+        for repo in $EXTRAREPO; do
+            IFS="$OLDIFS"
+            [ -n "$repo" ] && EXTRAPARAMS="${EXTRAPARAMS} --repository \"$repo\""
+            IFS='|'
+        done
+        IFS="$OLDIFS"
+    fi
+
+    local tmpdir=$(mktemp -d ${PKG_DIR}/build-XXXXXXXX)
     echo "BUILD_SUCCEEDED=false" > ${WRKDIR}/buildresult.params
-    bash -ex ${BINDIR}/docker-builder/build-deb-package.sh
-    local exitstatus=`cat buildresult/exitstatus.sbuild || echo 1`
-    rm -f buildresult/exitstatus.sbuild
-    [ -f "buildresult/buildlog.sbuild" ] && mv buildresult/buildlog.sbuild ${WRKDIR}/buildlog.txt
+    bash -c "${WRKDIR}/build \
+          --verbose \
+          --no-keep-chroot \
+          --dist ${DIST} \
+          --build \
+          --source $BUILDDIR \
+          --output $tmpdir \
+          ${EXTRAPARAMS}"
+    local exitstatus=$(cat ${tmpdir}/exitstatus || echo 1)
+    [ -f "${tmpdir}/buildlog.sbuild" ] && mv "${tmpdir}/buildlog.sbuild" "${WRKDIR}/buildlog.txt"
+
     fill_buildresult $exitstatus 0 $PACKAGENAME DEB
     if [ "$exitstatus" == "0" ] && [ -n "${GERRIT_BRANCH}" ]; then
-        tmpdir=`mktemp -d ${PKG_DIR}/build-XXXXXXXX`
         rm -f ${WRKDIR}/buildresult.params
         cat >${WRKDIR}/buildresult.params<<-EOL
 			BUILD_HOST=`hostname -f`
@@ -116,9 +134,7 @@ main () {
 			REPO_TYPE=deb
 			DIST=$DIST
 		EOL
-        mv buildresult/* $tmpdir/
     fi
-    popd &>/dev/null
     echo "Packages: $PACKAGENAME"
 
     exit $exitstatus
