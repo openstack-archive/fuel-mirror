@@ -228,6 +228,28 @@ get_last_commit_info () {
   fi
 }
 
+get_hotfix_revision () {
+    local _srcpath=$1
+    [ -n "$2" ] && local release_tag=$2
+    # hotfix branch name for openstack projects should be like
+    # "{stable_branch_name}-hotfix-<id>"
+    # Get parent branch
+    local _parent_branch=$(echo ${SOURCE_BRANCH} | sed -r 's|-hotfix-.*$||')
+    [ $(git -C ${_srcpath} branch -a | fgrep -c "origin/${_parent_branch}") -eq 0 ] && error "Can't find parent source branch"
+    # Get common ancestor
+    local _merge_base=$(git -C ${_srcpath} merge-base origin/${_parent_branch} origin/${SOURCE_BRANCH})
+    # Calculate ancestor revision
+    if [ -n "$release_tag" ] ; then
+        local _base_rev=$(git -C ${_srcpath} rev-list --no-merges ${release_tag}..${_merge_base} | wc -l)
+    else
+        local _base_rev=$(git -C ${_srcpath} rev-list --no-merges ${_merge_base} | wc -l)
+    fi
+    # Calculate delta revision
+    local _delta_rev=$(( ${_rev} - ${_base_rev} ))
+    local _rev=${_base_rev}.${_delta_rev}
+    echo $_rev
+}
+
 fill_buildresult () {
     #$status $time $PACKAGENAME $pkgtype
     local status=$1
