@@ -56,6 +56,8 @@ main () {
           [ "$GERRIT_CHANGE_STATUS" == "NEW" ] \
               && [ ${GERRIT_PROJECT} == "${SRC_PROJECT}" ] \
               && _rev=$(( $_rev + 1 ))
+          [ "$IS_HOTFIX" == "true" ] \
+              && _rev=$(get_extra_revision hotfix ${_srcpath} ${release_tag})
           local release=$(dpkg-parsechangelog --show-field Version -l${_debianpath}/debian/changelog | awk -F'-' '{print $NF}' | sed -r 's|[0-9]+$||')
           local release="${release}${_rev}"
           local fullver=${epochnumber}${version}-${release}
@@ -121,16 +123,49 @@ main () {
   # Build stage
   local REQUEST=$REQUEST_NUM
   [ -n "$LP_BUG" ] && REQUEST=$LP_BUG
-
+  #[ -n "$IS_HOTFIX" -a -z "$IS_UPDATES" ] && error "ERROR: Hotfix update before release"
   COMPONENTS="main restricted"
+  DEB_HOTFIX_DIST_NAME=${DEB_HOTFIX_DIST_NAME:-hotfix}
   [ -n "${EXTRAREPO}" ] && EXTRAREPO="${EXTRAREPO}|"
   EXTRAREPO="${EXTRAREPO}http://${REMOTE_REPO_HOST}/${DEB_REPO_PATH} ${DEB_DIST_NAME} ${COMPONENTS}"
-  [ "$IS_UPDATES" == 'true' ] \
-      && EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${DEB_REPO_PATH} ${DEB_PROPOSED_DIST_NAME} ${COMPONENTS}"
-  [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && [ "$IS_UPDATES" != "true" ] && [ -n "$LP_BUG" ] \
-      && EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${DEB_REPO_PATH} ${DEB_DIST_NAME} ${COMPONENTS}"
-  [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && [ "$IS_UPDATES" == "true" ] && [ -n "$LP_BUG" ] \
-      && EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${DEB_REPO_PATH} ${DEB_PROPOSED_DIST_NAME} ${COMPONENTS}"
+  if [ "$IS_HOTFIX" == "true" ] ; then
+      EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${DEB_REPO_PATH} ${DEB_HOTFIX_DIST_NAME} ${COMPONENTS}"
+      EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${DEB_REPO_PATH} ${DEB_UPDATES_DIST_NAME} ${COMPONENTS}"
+  else
+      [ "$IS_UPDATES" == 'true' ] \
+          && EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${DEB_REPO_PATH} ${DEB_PROPOSED_DIST_NAME} ${COMPONENTS}"
+  fi
+##############
+#
+# Hotfix flow debug code
+# Should be removed after tests
+#
+  if [ "$GERRIT_CHANGE_STATUS" == "NEW" -a -n "$LP_BUG" ] ; then
+      if [ "$IS_UPDATES" == "true" ] ; then
+          EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${DEB_REPO_PATH} ${DEB_PROPOSED_DIST_NAME} ${COMPONENTS}"
+      else
+          EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${DEB_REPO_PATH} ${DEB_DIST_NAME} ${COMPONENTS}"
+      fi
+      [ "$IS_HOTFIX" == "true" ] \
+          && EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${DEB_REPO_PATH} ${DEB_HOTFIX_DIST_NAME} ${COMPONENTS}"
+  fi
+
+###############
+#
+# Right code
+#
+#  if [ "$GERRIT_CHANGE_STATUS" == "NEW" -a -n "$LP_BUG" ] ; then
+#      if [ "$IS_UPDATES" == "true" ] ; then
+#          if [ "$IS_HOTFIX" == "true" ] ; then
+#              EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${DEB_REPO_PATH} ${DEB_HOTFIX_DIST_NAME} ${COMPONENTS}"
+#          else
+#              EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${DEB_REPO_PATH} ${DEB_PROPOSED_DIST_NAME} ${COMPONENTS}"
+#          fi
+#      else
+#          EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${DEB_REPO_PATH} ${DEB_DIST_NAME} ${COMPONENTS}"
+#      fi
+#  fi
+
   export EXTRAREPO
 
   if [ -n "$EXTRAREPO" ] ; then
@@ -168,6 +203,7 @@ main () {
 		REQUEST_NUM=$REQUEST_NUM
 		LP_BUG=$LP_BUG
 		IS_SECURITY=$IS_SECURITY
+		IS_HOTFIX=$IS_HOTFIX
 		EXTRAREPO="$EXTRAREPO"
 		REPO_TYPE=deb
 		DIST=$DIST
