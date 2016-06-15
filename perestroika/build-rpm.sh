@@ -55,6 +55,8 @@ This package provides the %{-n*} kernel modules
       [ "$GERRIT_CHANGE_STATUS" == "NEW" ] \
           && [ ${GERRIT_PROJECT} == "${SRC_PROJECT}" ] \
           && _rev=$(( $_rev + 1 ))
+      [ "$IS_HOTFIX" == "true" ] \
+          && _rev=$(get_hotfix_revision ${_srcpath} ${release_tag})
       local release="mos${_rev}"
       local TAR_NAME=${PACKAGENAME}-${version}.tar.gz
       # Update version and changelog
@@ -122,15 +124,29 @@ This package provides the %{-n*} kernel modules
   # Build stage
   local REQUEST=$REQUEST_NUM
   [ -n "$LP_BUG" ] && REQUEST=$LP_BUG
+  [ -n "$IS_HOTFIX" -a -z "$IS_UPDATES" ] && error "ERROR: Hotfix update before release"
+  RPM_HOTFIX_REPO_PATH=${RPM_HOTFIX_REPO_PATH:-${RPM_OS_REPO_PATH%/*}/hotfix}
   [ -n "${EXTRAREPO}" ] && EXTRAREPO="${EXTRAREPO}|"
   EXTRAREPO="${EXTRAREPO}repo1,http://${REMOTE_REPO_HOST}/${RPM_OS_REPO_PATH}/x86_64"
 
-  [ "$IS_UPDATES" == 'true' ] && \
-    EXTRAREPO="${EXTRAREPO}|repo2,http://${REMOTE_REPO_HOST}/${RPM_PROPOSED_REPO_PATH}/x86_64"
-  [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && [ "$IS_UPDATES" != "true" ] && [ -n "$LP_BUG" ] && \
-    EXTRAREPO="${EXTRAREPO}|repo3,http://${REMOTE_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${RPM_OS_REPO_PATH}/x86_64"
-  [ "$GERRIT_STATUS" == "NEW" ] && [ "$IS_UPDATES" == "true" ] && [ -n "$LP_BUG" ] && \
-    EXTRAREPO="${EXTRAREPO}|repo3,http://${REMOTE_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${RPM_PROPOSED_REPO_PATH}/x86_64"
+  if [ "$IS_UPDATES" == 'true' ] ; then
+      if [ "$IS_HOTFIX" == 'true' ] ; then
+          EXTRAREPO="${EXTRAREPO}|repo2,http://${REMOTE_REPO_HOST}/${RPM_HOTFIX_REPO_PATH}/x86_64"
+      else
+          EXTRAREPO="${EXTRAREPO}|repo2,http://${REMOTE_REPO_HOST}/${RPM_PROPOSED_REPO_PATH}/x86_64"
+      fi
+  fi
+  if [ "$GERRIT_CHANGE_STATUS" == "NEW" -a -n "$LP_BUG" ] ; then
+     if [ "$IS_UPDATES" == "true" ] ; then
+         if [ "$IS_HOTFIX" == 'true' ] ; then
+             EXTRAREPO="${EXTRAREPO}|repo3,http://${REMOTE_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${RPM_HOTFIX_REPO_PATH}/x86_64"
+         else
+             EXTRAREPO="${EXTRAREPO}|repo3,http://${REMOTE_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${RPM_PROPOSED_REPO_PATH}/x86_64"
+         fi
+     else
+         EXTRAREPO="${EXTRAREPO}|repo4,http://${REMOTE_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${RPM_OS_REPO_PATH}/x86_64"
+     fi
+  fi
   export EXTRAREPO
 
   if [ -n "$EXTRAREPO" ] ; then
