@@ -145,6 +145,18 @@ class RetryHandler(urllib.BaseHandler):
     https_request = http_request
     https_response = http_response
 
+class RetryRedirectHandler(urllib.HTTPRedirectHandler):
+    """urllib RedirectHandler which will return RetryableRequest."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        req = urllib.HTTPRedirectHandler.redirect_request(
+            self, req, fp, code, msg, headers, newurl)
+        return RetryableRequest(req.get_full_url(),
+                                req.data,
+                                req.headers,
+                                req.get_origin_req_host(),
+                                req.unverifiable)
+
 
 def is_retryable_http_error(code):
     """Checks that http error can be retried.
@@ -179,6 +191,7 @@ class ConnectionsManager(object):
         self.retry_interval = retry_interval
         self.opener = urllib.build_opener(
             RetryHandler(),
+            RetryRedirectHandler(),
             urllib.ProxyHandler(proxies)
         )
 
