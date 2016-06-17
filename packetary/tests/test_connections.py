@@ -37,6 +37,13 @@ class TestConnectionManager(base.TestCase):
         else:
             self.fail("ProxyHandler should be in list of handlers.")
 
+    def _check_handlers(self, urllib_handlers, required_handlers):
+        for h in required_handlers:
+            if not any(isinstance(handler, h) for handler in urllib_handlers):
+                self.fail(
+                    "{} should be in list of handlers.".format(h.__name__)
+                )
+
     def test_set_proxy(self, _):
         manager = connections.ConnectionsManager(proxy="http://localhost")
         self._check_proxies(
@@ -49,11 +56,10 @@ class TestConnectionManager(base.TestCase):
         )
         manager = connections.ConnectionsManager(retries_num=2)
         self.assertEqual(2, manager.retries_num)
-        for h in manager.opener.handlers:
-            if isinstance(h, connections.RetryHandler):
-                break
-        else:
-            self.fail("RetryHandler should be in list of handlers.")
+        self._check_handlers(
+            manager.opener.handlers,
+            [connections.RetryHandler, connections.RedirectHandler]
+        )
 
     @mock.patch("packetary.library.connections.urllib.build_opener")
     def test_make_request(self, *_):
@@ -207,6 +213,28 @@ class TestConnectionManager(base.TestCase):
         self.assertEqual(1, os.write.call_count)
         os.fsync.assert_called_once_with(1)
         os.close.assert_called_once_with(1)
+
+
+class TestRedirectHandler(base.TestCase):
+    def setUp(self):
+        super(TestRedirectHandler, self).setUp()
+        self.handler = connections.RedirectHandler()
+        self.handler.add_parent(mock.MagicMock())
+
+    def test_redirect(self):
+        request = mock.MagicMock()
+        request.get_method.return_value = "GET"
+        new_request = self.handler.redirect_request(
+            request,
+            '',
+            302,
+            'Found',
+            '',
+            'http://127.0.0.1'
+        )
+        self.assertIsInstance(
+            new_request, connections.RetryableRequest
+        )
 
 
 @mock.patch("packetary.library.connections.logger")
