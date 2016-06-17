@@ -121,6 +121,30 @@ class TestConnectionManager(base.TestCase):
                 mock.ANY, 501, mock.ANY, retry_num
             )
 
+    @mock.patch.multiple(
+        "packetary.library.connections.urllib.HTTPHandler",
+        http_open=mock.DEFAULT
+    )
+    def test_redirections(self, logger, http_open):
+        response = mock.MagicMock(code=302, msg='Found')
+        response.read.return_value = ''
+        message = mock.MagicMock()
+        message.__contains__.return_value = True
+        response.info.return_value = message
+        response_mock = mock.MagicMock(code=200)
+        response.getcode.return_value = response.code
+        http_open.side_effect = [response, response_mock, response_mock]
+        manager = connections.ConnectionsManager()
+        manager.open_stream("http://127.0.0.1/file1.txt")
+        self.assertIsInstance(
+            http_open.call_args_list[2][0][0],
+            connections.RetryableRequest
+        )
+        self.assertEqual(
+            http_open.call_args_list[2][0][0].get_full_url(),
+            'http://127.0.0.1'
+        )
+
     @mock.patch("packetary.library.connections.urllib.build_opener")
     def test_raise_other_errors(self, *_):
         manager = connections.ConnectionsManager()
