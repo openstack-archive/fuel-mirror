@@ -8,10 +8,18 @@ source $(dirname $(readlink -e $0))/functions/locking.sh
 
 main() {
   if [ -n "${SIGKEYID}" ] ; then
-      check-gpg || :
-      gpg --export -a ${SIGKEYID} > RPM-GPG-KEY
-      if [ $(rpm -qa | grep gpg-pubkey | grep -ci ${SIGKEYID}) -eq 0 ]; then
-        rpm --import RPM-GPG-KEY
+      # Is sigul availble and signed key exist
+      [ -n "${SIGUL_USER}" ] && check-sigul ${SIGKEYID} ${SIGUL_USER} ${SIGUL_ADMIN_PASSWD} && USE_SIGUL=true
+      if [ "${USE_SIGUL}" = "true" ] ; then
+          # Use sigul for sign
+          printf '%s\0' "$SIGUL_ADMIN_PASSWD" | sigul --batch -u $SIGUL_ADMIN get-public-key ${SIGKEYID} > RPM-GPG-KEY
+      else
+          # Use local sign
+          check-gpg || :
+          gpg --export -a ${SIGKEYID} > RPM-GPG-KEY
+          if [ $(rpm -qa | grep gpg-pubkey | grep -ci ${SIGKEYID}) -eq 0 ]; then
+             rpm --import RPM-GPG-KEY
+          fi
       fi
   fi
 
@@ -183,7 +191,11 @@ main() {
       ##
       if [ -n "${SIGKEYID}" ] ; then
         # rpmsign requires pass phrase. use `expect` to skip it
-        LANG=C expect <<EOL
+          if [ "${USE_SIGUL}" = "true" ] ; then
+              mv "${binary}" "${binary}_unsign"
+              printf '%s\0' "$KEY_PASSPHRASE" | sigul --batch -u $SIGUL_USER sign-rpm -o ${binary} ${SIGKEYID} "${binary}_unsign"
+          else
+              LANG=C expect <<EOL
 spawn rpmsign --define "%__gpg_check_password_cmd /bin/true" --define "%_signature gpg" --define "%_gpg_name ${SIGKEYID}" --resign ${binary}
 expect -exact "Enter pass phrase:"
 send -- "Doesn't matter\r"
@@ -192,7 +204,8 @@ lassign [wait] pid spawnid os_error_flag value
 puts "exit status: \$value"
 exit \$value
 EOL
-        [ $? -ne 0 ] && error "Something went wrong. Can't sign package ${binary#*/}"
+          fi
+              [ $? -ne 0 ] && error "Something went wrong. Can't sign package ${binary#*/}"
       fi
       ##
       ###########
@@ -213,8 +226,14 @@ EOL
   if [ -n "${SIGKEYID}" ] ; then
       rm -f ${LOCAL_REPO_PATH}/x86_64/repodata/repomd.xml.asc
       rm -f ${LOCAL_REPO_PATH}/Source/repodata/repomd.xml.asc
-      gpg --armor --local-user ${SIGKEYID} --detach-sign ${LOCAL_REPO_PATH}/x86_64/repodata/repomd.xml
-      gpg --armor --local-user ${SIGKEYID} --detach-sign ${LOCAL_REPO_PATH}/Source/repodata/repomd.xml
+      if [ "${USE_SIGUL}" = true ] ; then
+          for TYPE in x86_64 Source ; do
+              printf '%s\0' "$KEY_PASSPHRASE" | sigul --batch -u $SIGUL_USER sign-data -o "${LOCAL_REPO_PATH}/${TYPE}/repodata/repomd.asc" "${SIGKEYID}" "${LOCAL_REPO_PATH}/${TYPE}/repodata/repomd.xml"
+          done
+      else
+          gpg --armor --local-user ${SIGKEYID} --detach-sign ${LOCAL_REPO_PATH}/x86_64/repodata/repomd.xml
+          gpg --armor --local-user ${SIGKEYID} --detach-sign ${LOCAL_REPO_PATH}/Source/repodata/repomd.xml
+      fi
       [ -f "RPM-GPG-KEY" ] && cp RPM-GPG-KEY ${LOCAL_REPO_PATH}/RPM-GPG-KEY-${PROJECT_NAME}${PROJECT_VERSION}
   fi
 
