@@ -33,6 +33,18 @@ check-gpg() {
   return $RESULT
 }
 
+check-sigul() {
+  local SIGKEYID=${1}
+  local SIGUL_USER=${2}
+  local RESULT=0
+  [ -z "$SIGKEYID" ] && echo "WARNING: No secret keys given" && RESULT=1
+  # Test secret keys
+  [ $RESULT -eq 0 ] && [ $(sigul -u ${SIGUL_USER} list-keys | grep -c "$SIGKEYID") -eq 0 ] && error "No secret keys found or Sigul is unavailable"
+  # Check for password
+  [ $RESULT -ne 0 ] && echo "WARNING: Fall back to local signed"
+  return $RESULT
+}
+
 sync-repo() {
   local LOCAL_DIR=$1
   local REMOTE_DIR=$2
