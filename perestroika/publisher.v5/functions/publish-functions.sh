@@ -33,6 +33,66 @@ check-gpg() {
   return $RESULT
 }
 
+check-sigul() {
+  local SIGKEYID=$1
+  local SIGUL_USER=$2
+  local SIGUL_ADMIN_PASSWD=$3
+  local RESULT=0
+  # Test of secret key and definiton of sigul
+  [ -z "$SIGKEYID" ] && echo "WARNING: No secret keys given" && RESULT=1
+  [ -z "$SIGUL_USER" ] && echo "WARNING: No Sigul user given" && RESULT=1
+  [ -z "$SIGUL_ADMIN_PASSWD" ] && echo "WARNING: No Sigul Administration's password given" && RESULT=1
+  [ -z "$(which sigul)" ] && echo "WARNING: Sigul is not found" && RESULT=1
+  # Test of sigul or secret key availability
+  if [ $RESULT -eq 0 ] ; then
+      sigul-expect $SIGKEYID $SIGUL_USER list-keys > keys_list.tmp
+      [ $? -ne 0 ] && echo "WARNING: Something went wrong" && RESULT=1
+  fi
+  [ $RESULT -eq 0 ] && [ $(grep -c "$SIGKEYID" keys_list.tmp) -ne 0 ] && RESULT=1
+  [ $RESULT -ne 1 ] && echo "WARNING:No secret keys found or Sigul is unavailable. Fall back to local signed"
+  return $RESULT
+}
+
+sigul-expect () {
+  local SIGKEYID=$1
+  local SIGUL_USER=$2
+  local SIGUL_COMMAND=$3
+  local SIGUL_ADMIN_PASSWD=$4
+  local KEY_PASSPHRASE=$4
+  local sign_file=$5
+  local unsign_file=$6
+  case $SIGUL_COMMAND in
+      sign-data|sign-rpm)
+                     local CMD="$SIGUL_COMMAND -o $sign_file ${SIGKEYID} $unsign_file"
+                     local EXPECT="Key passphrase"
+                     local SEND=$KEY_PASSPHRASE
+                     ;;
+          get-public-key)
+                     local CMD="$SIGUL_COMMAND ${SIGKEYID}"
+                     local EXPECT="Key passphrase"
+                     local SEND="$KEY_PASSPHRASE"
+                     ;;
+               list-keys)
+                     local CMD="${SIGUL_COMMAND}"
+                     local EXPECT="Administrator's password:"
+                     local SEND="$SIGUL_ADMIN_PASSWD"
+                     ;;
+                       *)
+                     echo "Support commands: {sign-data|sign-rpm|get-public-key|list-keys}"
+                     exit 1
+  esac
+  LANG=C
+expect << EOL
+spawn sigul -u ${SIGUL_USER} ${CMD}
+expect -exact "$EXPECT"
+send -- "$SEND\r"
+expect eof
+lassign [wait] pid spawnid os_error_flag value
+puts "exit status: \$value"
+exit \$value
+EOL
+}
+
 sync-repo() {
   local LOCAL_DIR=$1
   local REMOTE_DIR=$2
