@@ -19,6 +19,12 @@ info () {
   echo
 }
 
+_sigul () {
+   local PASSWD=$1
+   shift
+   printf '%s\0' "$PASSWD" | sigul --batch $@
+}
+
 check-gpg() {
   local RESULT=0
   [ -z "$SIGKEYID" ] && echo "WARNING: No secret keys given" && RESULT=1
@@ -31,6 +37,55 @@ check-gpg() {
   fi
   [ $RESULT -ne 0 ] && echo "WARNING: Fall back to unsigned mode"
   return $RESULT
+}
+
+check-sigul() {
+  local SIGKEYID=$1
+  local SIGUL_USER=$2
+  local SIGUL_ADMIN_PASSWD=$3
+  local RESULT=0
+  # Test of secret key and definiton of sigul
+  [ -z "$SIGKEYID" ] && echo "WARNING: No secret keys given" && RESULT=1
+  [ -z "$SIGUL_USER" ] && echo "WARNING: No Sigul user given" && RESULT=1
+  [ -z "$SIGUL_ADMIN_PASSWD" ] && echo "WARNING: No Sigul Administration's password given" && RESULT=1
+  [ -z "$(which sigul)" ] && echo "WARNING: Sigul is not found" && RESULT=1
+  # Test of sigul or secret key availability
+  if [ $RESULT -eq 0 ] ; then
+        retry -c4 -s1 _sigul $SIGUL_ADMIN_PASSWD list-keys -u $SIGUL_USER > keys_list.tmp
+      [ $? -ne 0 ] && echo "WARNING: Something went wrong" && RESULT=1
+  fi
+  [ $RESULT -eq 0 ] && [ $(grep -c "$SIGKEYID" keys_list.tmp) -ne 1 ] && RESULT=1
+  [ $RESULT -ne 0 ] && echo "WARNING:No secret keys found or Sigul is unavailable. Fall back to local signed"
+  return $RESULT
+}
+
+function retry {
+    local count=3
+    local sleep=5
+    local optname
+    while getopts 'c:s:' optname
+    do
+        case $optname in
+            c) count=$OPTARG ;;
+            s) sleep=$OPTARG ;;
+            ?) return 1 ;;
+        esac
+    done
+    shift $((OPTIND - 1))
+    local ec
+    while true
+    do
+        "$@" && true
+        ec=$?
+        (( count-- ))
+        if [[ $ec -eq 0 || $count -eq 0 ]]
+        then
+            break
+        else
+            sleep "$sleep"
+        fi
+    done
+    return "$ec"
 }
 
 sync-repo() {
