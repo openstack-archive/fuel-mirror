@@ -127,6 +127,8 @@ packages: &packages
      - "vim"
      - "virt-what"
      - "xinetd"
+     - "tftpd-hpa"
+     - "syslinux"
 
 
 groups:
