@@ -131,6 +131,8 @@ packages: &packages
      - "virt-what"
      - "xinetd"
      - "xmlstarlet"
+     - "tftpd-hpa"
+     - "syslinux"
 
 
 groups:
