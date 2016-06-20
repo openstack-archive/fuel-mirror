@@ -33,6 +33,35 @@ check-gpg() {
   return $RESULT
 }
 
+check-sigul() {
+  local SIGKEYID=$1
+  local SIGUL_USER=$2
+  local SIGUL_ADMIN_PASSWD=$3
+  local RESULT=0
+  # Test of secret key and definiton of sigul
+  [ -z "$SIGKEYID" ] && echo "WARNING: No secret keys given" && RESULT=1
+  [ -z "$SIGUL_USER" ] && echo "WARNING: No Sigul user given" && RESULT=1
+  [ -z "$SIGUL_ADMIN_PASSWD" ] && echo "WARNING: No Sigul Administration's password given" && RESULT=1
+  [ -z "$(which sigul)" ] && echo "WARNING: Sigul is not found" && RESULT=1
+  # Test of sigul or secret key availability
+  if [ $RESULT -eq 0 ] ; then
+      LANG=C
+      expect << EOL > keys_list.tmp
+spawn sigul -u $SIGUL_USER list-keys
+expect -exact "Administrator's password:"
+send -- "$SIGUL_ADMIN_PASSWD\r"
+expect eof
+lassign [wait] pid spawnid os_error_flag value
+puts "exit status: \$value"
+exit \$value
+EOL
+  fi
+  [ $? -ne 0 ] && echo "WARNING: Something went wrong" && RESULT=1
+  [ $RESULT -eq 0 ] && [ $(grep -c "$SIGKEYID" keys_list.tmp) -ne 0 ] && RESULT=1
+  [ $RESULT -ne 1 ] && echo "WARNING:No secret keys found or Sigul is unavailable. Fall back to local signed"
+  return $RESULT
+}
+
 sync-repo() {
   local LOCAL_DIR=$1
   local REMOTE_DIR=$2

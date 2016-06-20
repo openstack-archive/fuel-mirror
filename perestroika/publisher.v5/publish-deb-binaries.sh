@@ -7,6 +7,7 @@ source $(dirname $(readlink -e $0))/functions/locking.sh
 main() {
   local SIGN_STRING=""
   check-gpg && SIGN_STRING="true"
+  check-sigul ${SIGKEYID} ${SIGUL_USER} && USE_SIGUL="true"
 
   ## Download sources from worker
   [ -d $TMP_DIR ] && rm -rf $TMP_DIR
@@ -76,9 +77,21 @@ main() {
                   -i ${release_file}
               rm -f ${release_file}.gpg
               # ReSign Release file
-              [ -n "${SIGN_STRING}" ] \
+              if [ "${USE_SIGUL}" = "true" ] ; then
+                  LANG=C expect << EOL
+spawn sigul -u ${SIGUL_USER} sign-data -o "${release_file}.gpg" ${SIGKEYID} ${release_file}
+expect -exact "Key passphrase:"
+send -- "$KEY_PASSPHRASE\r"
+expect eof
+lassign [wait] pid spawnid os_error_flag value
+puts "exit status: \$value"
+exit \$value
+EOL
+              else
+                  [ -n "${SIGN_STRING}" ] \
                   && gpg --sign --local-user ${SIGKEYID} -ba \
                   -o ${release_file}.gpg ${release_file}
+              fi
           done
           job_lock ${CONFIGDIR}.lock unset
       fi
@@ -183,9 +196,31 @@ main() {
   rm -f ${release_file}.gpg
   local pub_key_file="${LOCAL_REPO_PATH}/public/archive-${PROJECT_NAME}${PROJECT_VERSION}.key"
   if [ -n "${SIGN_STRING}" ] ; then
-      gpg --sign --local-user ${SIGKEYID} -ba -o ${release_file}.gpg ${release_file}
-      [ ! -f "${pub_key_file}" ] && touch ${pub_key_file}
-      gpg -o ${pub_key_file}.tmp --armor --export ${SIGKEYID}
+      if [ "${USE_SIGUL}" = "true" ] ; then
+          expect << EOL
+spawn sigul -u ${SIGUL_USER} sign-data -o "${release_file}.gpg" ${SIGKEYID} ${release_file}
+expect -exact "Key passphrase:"
+send -- "$KEY_PASSPHRASE\r"
+expect eof
+lassign [wait] pid spawnid os_error_flag value
+puts "exit status: \$value"
+exit \$value
+EOL
+          [ ! -f "${pub_key_file}" ] && touch ${pub_key_file}
+          expect << EOL | sed -rn '/^-----BEGIN/,/BLOCK-----$/ s/\r// p' > "${pub_key_file}.tmp"
+spawn sigul -u "${SIGUL_USER}" get-public-key ${SIGKEYID}
+expect -exact "Key passphrase:"
+send -- "$KEY_PASSPHRASE\r"
+expect eof
+lassign [wait] pid spawnid os_error_flag value
+puts "exit status: \$value"
+exit \$value
+EOL
+      else
+          gpg --sign --local-user ${SIGKEYID} -ba -o ${release_file}.gpg ${release_file}
+          [ ! -f "${pub_key_file}" ] && touch ${pub_key_file}
+          gpg -o ${pub_key_file}.tmp --armor --export ${SIGKEYID}
+      fi
       if diff -q ${pub_key_file} ${pub_key_file}.tmp &>/dev/null ; then
           rm ${pub_key_file}.tmp
       else
