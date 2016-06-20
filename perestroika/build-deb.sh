@@ -20,9 +20,10 @@ main () {
   if [ -d "${_debianpath}/debian" ] ; then
       # Unpacked sources and specs
       local srcpackagename=`head -1 ${_debianpath}/debian/changelog | cut -d' ' -f1`
-      local version=`head -1 ${_debianpath}/debian/changelog | sed 's|^.*(||;s|).*$||' | awk -F "-" '{print $1}'`
+      local version_string=$(dpkg-parsechangelog --show-field Version -l${_debianpath}/debian/changelog)
+      local version=`echo "$version_string" | rev | sed 's|[^-]*-||' | rev`
+      local epochnumber=`echo "$version_string" | egrep -o "\([0-9]+:" | sed 's|(||'`
       local binpackagenames="`cat ${_debianpath}/debian/control | grep ^Package | cut -d' ' -f 2 | tr '\n' ' '`"
-      local epochnumber=`head -1 ${_debianpath}/debian/changelog | grep -o "(.:" | sed 's|(||'`
       local distro=`head -1 ${_debianpath}/debian/changelog | awk -F'[ ;]' '{print $3}'`
       local pkg_version="${version#*:}"
 
@@ -30,7 +31,7 @@ main () {
       # $message $author $email $cdate $commitsha $lastgitlog
       get_last_commit_info ${_srcpath}
 
-      TAR_NAME="${srcpackagename}_${version#*:}.orig.tar.gz"
+      TAR_NAME="${srcpackagename}_${pkg_version}.orig.tar.gz"
       if [ "$IS_OPENSTACK" == "true" ] ; then
           # Get version number from the latest git tag for openstack packages
           local release_tag=$(git -C $_srcpath describe --abbrev=0 --candidates=1)
@@ -49,7 +50,7 @@ main () {
           [ "$GERRIT_CHANGE_STATUS" == "NEW" ] \
               && [ ${GERRIT_PROJECT} == "${SRC_PROJECT}" ] \
               && _rev=$(( $_rev + 1 ))
-          local release=$(dpkg-parsechangelog --show-field Version -l${_debianpath}/debian/changelog | cut -d'-' -f2 | sed -r 's|[0-9]+$||')
+          local release=$(dpkg-parsechangelog --show-field Version -l${_debianpath}/debian/changelog | awk -F'-' '{print $NF}' | sed -r 's|[0-9]+$||')
           local release="${release}${_rev}"
           local fullver=${epochnumber}${version}-${release}
           # Update version and changelog

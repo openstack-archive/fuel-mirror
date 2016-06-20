@@ -32,9 +32,9 @@ main () {
     if [ -d "${_debianpath}/debian" ] ; then
         # Unpacked sources and specs
         local srcpackagename=`head -1 ${_debianpath}/debian/changelog | cut -d' ' -f1`
-        local version=`head -1 ${_debianpath}/debian/changelog | sed 's|^.*(||;s|).*$||' | awk -F "-" '{print $1}'`
+        local version_string=$(dpkg-parsechangelog --show-field Version -l${_debianpath}/debian/changelog)
+        local version=`echo "$version_string" | rev | sed 's|[^-]*-||' | rev`
         local binpackagenames="`cat ${_debianpath}/debian/control | grep ^Package | cut -d' ' -f 2 | tr '\n' ' '`"
-        local epochnumber=`head -1 ${_debianpath}/debian/changelog | grep -o "(.:" | sed 's|(||'`
         local distro=`head -1 ${_debianpath}/debian/changelog | awk -F'[ ;]' '{print $3}'`
 
         # Get last commit info
@@ -48,7 +48,7 @@ main () {
         # if gitshasrc is not defined (we are not using fetch_upstream), let's do it
         [ -n "${gitshasrc}" ] || local gitshasrc=$(git -C $_srcpath log -1 --pretty="%h")
         [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && release="${release}+git.${gitshasrc}"
-        local fullver=${epochnumber}${version}-${release}
+        local fullver=${version}-${release}
         # Update version and changelog
         local firstline=1
         local _dchopts="-c ${_debianpath}/debian/changelog"
