@@ -268,6 +268,25 @@ class TestRetryHandler(base.TestCase):
         self.handler.http_response(request, response_mock)
         self.handler.parent.open.assert_called_once_with(request)
 
+    @mock.patch(
+        'packetary.library.connections.urllib.'
+        'HTTPRedirectHandler.redirect_request'
+    )
+    def test_redirect_request(self, redirect_mock, _):
+        redirect_mock.return_value = connections.urllib.Request(
+            'http://localhost/'
+        )
+        req = mock.MagicMock(retries_left=10, retry_interval=5, offset=100)
+        new_req = self.handler.redirect_request(req, -1, 301, "", {}, "")
+        self.assertIsInstance(new_req, connections.RetryableRequest)
+        self.assertEqual(req.retries_left, new_req.retries_left)
+        self.assertEqual(req.retry_interval, new_req.retry_interval)
+        self.assertEqual(req.offset, new_req.offset)
+        redirect_mock.return_value = None
+        self.assertIsNone(
+            self.handler.redirect_request(req, -1, 301, "", {}, "")
+        )
+
 
 class TestResumeableResponse(base.TestCase):
     def setUp(self):

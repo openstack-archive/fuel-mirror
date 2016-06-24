@@ -93,8 +93,22 @@ class ResumableResponse(StreamWrapper):
                 self.stream = response.stream
 
 
-class RetryHandler(urllib.BaseHandler):
+class RetryHandler(urllib.HTTPRedirectHandler):
     """urllib Handler to add ability for retrying on server errors."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        new_req = urllib.HTTPRedirectHandler.redirect_request(
+            self, req, fp, code, msg, headers, newurl
+        )
+        if new_req is not None:
+            # We use class assignment for casting new request to type
+            # RetryableRequest
+            new_req.__class__ = RetryableRequest
+            new_req.retries_left = req.retries_left
+            new_req.offset = req.offset
+            new_req.start_time = req.start_time
+            new_req.retry_interval = req.retry_interval
+        return new_req
 
     @staticmethod
     def http_request(request):
@@ -118,6 +132,11 @@ class RetryHandler(urllib.BaseHandler):
         :return: ResumableResponse if success otherwise same response
         """
         code, msg = response.getcode(), response.msg
+
+        if 300 <= code < 400:
+            # the redirect group, pass to next handler as is
+            return response
+
         # the server should response partial content if range is specified
         if request.offset > 0 and code != 206:
             raise RangeError(msg)
