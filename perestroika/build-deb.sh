@@ -34,7 +34,7 @@ main () {
       TAR_NAME="${srcpackagename}_${pkg_version}.orig.tar.gz"
       if [ "$IS_OPENSTACK" == "true" ] ; then
           # Get version number from the latest git tag for openstack packages
-          local release_tag=$(git -C $_srcpath describe --abbrev=0 --candidates=1)
+          local release_tag=$(git -C $_srcpath describe --abbrev=0 --candidates=1 | sed -r 's|^[^0-9]+||i')
           # Deal with PyPi versions like 2015.1.0rc1
           # It breaks version comparison
           # Change it to 2015.1.0~rc1
