@@ -1,5 +1,0 @@
-include AUTHORS
-include ChangeLog
-include *requirements.txt
-
-global-exclude *.pyc
