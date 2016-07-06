@@ -63,7 +63,7 @@ This package provides the %{-n*} kernel modules
       sed -i "s|Source0:.*$|Source0: ${TAR_NAME}|" $specfile
       # Prepare source tarball
       pushd $_srcpath &>/dev/null
-      local ignore_list="openstack-macros horizon-vendor-theme"
+      local ignore_list="openstack-macros horizon-vendor-theme fuel-astute fuel-library fuel-main fuel-nailgun-agent fuel-ui fuel-web"
       if [ $(echo $ignore_list | grep -Eo "(^| )$PACKAGENAME( |$)") ]; then
           # Do not perform `setup.py sdist` for openstack-macros package
           tar -czf ${BUILDDIR}/$TAR_NAME $EXCLUDES .
