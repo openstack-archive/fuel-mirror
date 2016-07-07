@@ -24,15 +24,17 @@ def main():
         '-t', '--tag', dest='tag', action='store', type=str,
         help='PyPi version tag', required=True, default='0'
     )
+    parser.add_argument(
+        '-l', '--version-length', type=int, default=3,
+        help="Number of version components"
+    )
 
     params, other_params = parser.parse_known_args()
 
-    pip_ver = params.tag
-
-    print(convert_version(pip_ver))
+    print(convert_version(params.tag, params.version_length))
 
 
-def convert_version(pip_ver):
+def convert_version(pip_ver, version_length):
     # drop dashed part from version string because
     # it represents a patch level of given version
     pip_ver = pip_ver.split('-')[0]
@@ -68,7 +70,7 @@ def convert_version(pip_ver):
     pkg_alpha = pkg_alpha.replace('@', 'dev')
 
     # expand version to three items
-    while (len(pkg_ver_part) < 3):
+    while (len(pkg_ver_part) < version_length):
         pkg_ver_part.append('0')
 
     return '.'.join(pkg_ver_part) + pkg_alpha + '.'.join(pkg_rev_part)

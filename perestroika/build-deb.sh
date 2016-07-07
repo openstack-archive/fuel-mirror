@@ -38,8 +38,14 @@ main () {
           # Deal with PyPi versions like 2015.1.0rc1
           # It breaks version comparison
           # Change it to 2015.1.0~rc1
-          local convert_version_py="$(dirname $(readlink -e $0))/convert_version.py"
-          version=$(python ${convert_version_py} --tag ${release_tag})
+          local script_dir=$(dirname $(readlink -e $0))
+          local convert_version_py="$script_dir/convert_version.py"
+          if grep -qE "^${SRC_PROJECT}\$" "$script_dir/fuel-projects-list"
+          then
+              local version_length=2
+          fi
+          version=$(python ${convert_version_py} --tag ${release_tag} \
+                           ${version_length:+ -l $version_length})
           if [ "${version}" != "${pkg_version}" ] ; then
               echo -e "ERROR: Version mismatch. Latest version from Gerrit tag: $version, and from changelog: $pkg_version. Build aborted."
               exit 1
