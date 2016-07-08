@@ -1,0 +1,9 @@
+Code-Review+1: Igor Yozhikov <iyozhikov@mirantis.com>
+Code-Review+2: Dmitry Burmistrov <dburmistrov@mirantis.com>
+Workflow+1: Dmitry Burmistrov <dburmistrov@mirantis.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Fri, 08 Jul 2016 12:47:08 +0000
+Reviewed-on: https://review.openstack.org/339492
+Project: openstack/fuel-mirror
+Branch: refs/heads/master
