@@ -167,6 +167,16 @@ main() {
           ${DEB_HOLDBACK_DIST_NAME} ; do
           reprepro ${REPREPRO_COMP_OPTS} --architecture source \
               remove ${dist_name} ${SRC_NAME} || :
+          # Fix Codename field and resign Release file if necessary
+          local _release_file=${DISTDIR}/${dist_name}/Release
+          if ! gpg --verify "${_release_file}.gpg" "$_release_file" &>/dev/null ; then
+              sed "s|^Codename:.*$|Codename: ${DEB_BASE_DIST_NAME}|" -i "$_release_file"
+              if [ "$USE_SIGUL" = "true" ] ; then
+                  retry -c4 -s1 _sigul "$KEY_PASSPHRASE" -u "$SIGUL_USER" sign-data --armor -o "${_release_file}.gpg" "$SIGKEYID" "$_release_file"
+              else
+                  gpg --sign --local-user "$SIGKEYID" -ba -o "${_release_file}.gpg" "$_release_file"
+              fi
+          fi
       done
       reprepro ${REPREPRO_COMP_OPTS} includedsc ${DEB_DIST_NAME} ${BINSRCLIST} \
           || error "Can't include packages"
