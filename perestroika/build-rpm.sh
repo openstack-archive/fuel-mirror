@@ -61,6 +61,8 @@ This package provides the %{-n*} kernel modules
       [ "$GERRIT_CHANGE_STATUS" == "NEW" ] \
           && [ ${GERRIT_PROJECT} == "${SRC_PROJECT}" ] \
           && _rev=$(( $_rev + 1 ))
+      [ "$IS_HOTFIX" == "true" ] \
+          && _rev=$(get_extra_revision hotfix ${_srcpath} ${release_tag})
       local release="mos${_rev}"
       local TAR_NAME=${PACKAGENAME}-${version}.tar.gz
       # Update version and changelog
@@ -128,15 +130,29 @@ This package provides the %{-n*} kernel modules
   # Build stage
   local REQUEST=$REQUEST_NUM
   [ -n "$LP_BUG" ] && REQUEST=$LP_BUG
+  RPM_HOTFIX_REPO_PATH=${RPM_HOTFIX_REPO_PATH:-${RPM_OS_REPO_PATH%/*}/hotfix}
   [ -n "${EXTRAREPO}" ] && EXTRAREPO="${EXTRAREPO}|"
   EXTRAREPO="${EXTRAREPO}repo1,http://${REMOTE_REPO_HOST}/${RPM_OS_REPO_PATH}/x86_64"
+  if [ "$IS_HOTFIX" == 'true' ] ; then
+      EXTRAREPO="${EXTRAREPO}|repo2,http://${REMOTE_REPO_HOST}/${RPM_HOTFIX_REPO_PATH}/x86_64"
+      EXTRAREPO="${EXTRAREPO}|repo3,http://${REMOTE_REPO_HOST}/${RPM_UPDATES_REPO_PATH}/x86_64"
+  else
+      [ "$IS_UPDATES" == 'true' ] \
+          && EXTRAREPO="${EXTRAREPO}|repo2,http://${REMOTE_REPO_HOST}/${RPM_PROPOSED_REPO_PATH}/x86_64"
+  fi
 
-  [ "$IS_UPDATES" == 'true' ] && \
-    EXTRAREPO="${EXTRAREPO}|repo2,http://${REMOTE_REPO_HOST}/${RPM_PROPOSED_REPO_PATH}/x86_64"
-  [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && [ "$IS_UPDATES" != "true" ] && [ -n "$LP_BUG" -o -n "$CUSTOM_REPO_ID" ] && \
-    EXTRAREPO="${EXTRAREPO}|repo3,http://${REMOTE_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${RPM_OS_REPO_PATH}/x86_64"
-  [ "$GERRIT_STATUS" == "NEW" ] && [ "$IS_UPDATES" == "true" ] && [ -n "$LP_BUG" -o -n "$CUSTOM_REPO_ID" ] && \
-    EXTRAREPO="${EXTRAREPO}|repo3,http://${REMOTE_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${RPM_PROPOSED_REPO_PATH}/x86_64"
+  if [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && [ -n "$LP_BUG" -o -n "$CUSTOM_REPO_ID" ] ; then
+      if [ "$IS_UPDATES" == "true" ] ; then
+          if [ "$IS_HOTFIX" == 'true' ] ; then
+              EXTRAREPO="${EXTRAREPO}|repo4,http://${REMOTE_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${RPM_HOTFIX_REPO_PATH}/x86_64"
+          else
+              EXTRAREPO="${EXTRAREPO}|repo4,http://${REMOTE_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${RPM_PROPOSED_REPO_PATH}/x86_64"
+          fi
+      else
+          EXTRAREPO="${EXTRAREPO}|repo4,http://${REMOTE_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${RPM_OS_REPO_PATH}/x86_64"
+      fi
+  fi
+
   export EXTRAREPO
 
   if [ -n "$EXTRAREPO" ] ; then
@@ -175,6 +191,7 @@ This package provides the %{-n*} kernel modules
 		REQUEST_NUM=$REQUEST_NUM
 		LP_BUG=$LP_BUG
 		IS_SECURITY=$IS_SECURITY
+		IS_HOTFIX=$IS_HOTFIX
 		EXTRAREPO="$EXTRAREPO"
 		REPO_TYPE=rpm
 		DIST=$DIST
