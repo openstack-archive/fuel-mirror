@@ -63,6 +63,8 @@ This package provides the %{-n*} kernel modules
           && _rev=$(( $_rev + 1 ))
       [ "$IS_HOTFIX" == "true" ] \
           && _rev=$(get_extra_revision hotfix ${_srcpath} ${release_tag})
+      [ "$IS_SECURITY" == "true" ] \
+          && _rev=$(get_extra_revision security ${_srcpath} ${release_tag})
       local release="mos${_rev}"
       local TAR_NAME=${PACKAGENAME}-${version}.tar.gz
       # Update version and changelog
