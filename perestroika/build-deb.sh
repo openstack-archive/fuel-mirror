@@ -140,6 +140,7 @@ main () {
   fi
 
   if [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && [ -n "$LP_BUG" -o -n "$CUSTOM_REPO_ID" ] ; then
+      [ -z "$DEB_REQUEST_REPO_PATH" ] && local DEB_REQUEST_REPO_PATH=$DEB_REPO_PATH
       if [ "$IS_HOTFIX" == "true" ] ; then
           local DEB_REQUEST_DIST_NAME=$DEB_HOTFIX_DIST_NAME
       elif [ "$IS_SECURITY" == "true" ] ; then
@@ -149,7 +150,7 @@ main () {
       else
           local DEB_REQUEST_DIST_NAME=$DEB_DIST_NAME
       fi
-      EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${DEB_REPO_PATH} ${DEB_REQUEST_DIST_NAME} ${COMPONENTS}"
+      EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${DEB_REQUEST_REPO_PATH} ${DEB_REQUEST_DIST_NAME} ${COMPONENTS}"
   fi
 
   export EXTRAREPO
