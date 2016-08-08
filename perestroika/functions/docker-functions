@@ -27,6 +27,7 @@ docker_init_sbuild() {
     docker run ${DOCKER_OPTS} --privileged --rm \
         -v ${CACHE_DIR}:/srv/images ${CONTAINER_NAME} \
         bash ${BASH_OPTS} -c "
+            set -o errexit
             mkdir -p /srv/images/chroot.d
             rm -rf /etc/schroot/chroot.d
             ln -s /srv/images/chroot.d /etc/schroot/chroot.d
