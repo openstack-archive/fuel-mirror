@@ -63,6 +63,8 @@ This package provides the %{-n*} kernel modules
           && _rev=$(( $_rev + 1 ))
       [ "$IS_HOTFIX" == "true" ] \
           && _rev=$(get_extra_revision hotfix ${_srcpath} ${release_tag})
+      [ "$IS_SECURITY" == "true" ] \
+          && _rev=$(get_extra_revision security ${_srcpath} ${release_tag})
       local release="mos${_rev}"
       local TAR_NAME=${PACKAGENAME}-${version}.tar.gz
       # Update version and changelog
@@ -133,24 +135,39 @@ This package provides the %{-n*} kernel modules
   RPM_HOTFIX_REPO_PATH=${RPM_HOTFIX_REPO_PATH:-${RPM_OS_REPO_PATH%/*}/hotfix}
   [ -n "${EXTRAREPO}" ] && EXTRAREPO="${EXTRAREPO}|"
   EXTRAREPO="${EXTRAREPO}repo1,http://${REMOTE_REPO_HOST}/${RPM_OS_REPO_PATH}/x86_64"
-  if [ "$IS_HOTFIX" == 'true' ] ; then
-      EXTRAREPO="${EXTRAREPO}|repo2,http://${REMOTE_REPO_HOST}/${RPM_HOTFIX_REPO_PATH}/x86_64"
-      EXTRAREPO="${EXTRAREPO}|repo3,http://${REMOTE_REPO_HOST}/${RPM_UPDATES_REPO_PATH}/x86_64"
-  else
-      [ "$IS_UPDATES" == 'true' ] \
-          && EXTRAREPO="${EXTRAREPO}|repo2,http://${REMOTE_REPO_HOST}/${RPM_PROPOSED_REPO_PATH}/x86_64"
-  fi
+  case true in
+      "$IS_HOTFIX" )
+          EXTRAREPO="${EXTRAREPO}|repo2,http://${REMOTE_REPO_HOST}/${RPM_HOTFIX_REPO_PATH}/x86_64"
+          EXTRAREPO="${EXTRAREPO}|repo3,http://${REMOTE_REPO_HOST}/${RPM_UPDATES_REPO_PATH}/x86_64"
+          EXTRAREPO="${EXTRAREPO}|repo4,http://${REMOTE_REPO_HOST}/${RPM_SECURITY_REPO_PATH}/x86_64"
+          ;;
+      "$IS_SECURITY" )
+          EXTRAREPO="${EXTRAREPO}|repo2,http://${REMOTE_REPO_HOST}/${RPM_UPDATES_REPO_PATH}/x86_64"
+          EXTRAREPO="${EXTRAREPO}|repo3,http://${REMOTE_REPO_HOST}/${RPM_SECURITY_REPO_PATH}/x86_64"
+          ;;
+      "$IS_UPDATES" )
+          EXTRAREPO="${EXTRAREPO}|repo2,http://${REMOTE_REPO_HOST}/${RPM_PROPOSED_REPO_PATH}/x86_64"
+          EXTRAREPO="${EXTRAREPO}|repo2,http://${REMOTE_REPO_HOST}/${RPM_UPDATES_REPO_PATH}/x86_64"
+          EXTRAREPO="${EXTRAREPO}|repo3,http://${REMOTE_REPO_HOST}/${RPM_SECURITY_REPO_PATH}/x86_64"
+          ;;
+  esac
 
   if [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && [ -n "$LP_BUG" -o -n "$CUSTOM_REPO_ID" ] ; then
-      if [ "$IS_UPDATES" == "true" ] ; then
-          if [ "$IS_HOTFIX" == 'true' ] ; then
-              EXTRAREPO="${EXTRAREPO}|repo4,http://${REMOTE_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${RPM_HOTFIX_REPO_PATH}/x86_64"
-          else
-              EXTRAREPO="${EXTRAREPO}|repo4,http://${REMOTE_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${RPM_PROPOSED_REPO_PATH}/x86_64"
-          fi
-      else
-          EXTRAREPO="${EXTRAREPO}|repo4,http://${REMOTE_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${RPM_OS_REPO_PATH}/x86_64"
-      fi
+      case true in
+          "$IS_HOTFIX" )
+              local RPM_REQUEST_REPO_PATH=$RPM_HOTFIX_REPO_PATH
+              ;;
+          "$IS_SECURITY" )
+              local RPM_REQUEST_REPO_PATH=$RPM_SECURITY_REPO_PATH
+              ;;
+          "$IS_UPDATES" )
+              local RPM_REQUEST_REPO_PATH=$RPM_PROPOSED_REPO_PATH
+              ;;
+          * )
+              local RPM_REQUEST_REPO_PATH=$RPM_OS_REPO_PATH
+              ;;
+      esac
+      EXTRAREPO="${EXTRAREPO}|repo5,http://${REMOTE_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${RPM_REQUEST_REPO_PATH}/x86_64"
   fi
 
   export EXTRAREPO

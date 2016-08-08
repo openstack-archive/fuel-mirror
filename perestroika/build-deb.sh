@@ -58,6 +58,8 @@ main () {
               && _rev=$(( $_rev + 1 ))
           [ "$IS_HOTFIX" == "true" ] \
               && _rev=$(get_extra_revision hotfix ${_srcpath} ${release_tag})
+          [ "$IS_SECURITY" == "true" ] \
+              && _rev=$(get_extra_revision security ${_srcpath} ${release_tag})
           local release=$(dpkg-parsechangelog --show-field Version -l${_debianpath}/debian/changelog | awk -F'-' '{print $NF}' | sed -r 's|[0-9]+$||')
           local release="${release}${_rev}"
           local fullver=${epochnumber}${version}-${release}
@@ -127,24 +129,39 @@ main () {
   DEB_HOTFIX_DIST_NAME=${DEB_HOTFIX_DIST_NAME:-hotfix}
   [ -n "${EXTRAREPO}" ] && EXTRAREPO="${EXTRAREPO}|"
   EXTRAREPO="${EXTRAREPO}http://${REMOTE_REPO_HOST}/${DEB_REPO_PATH} ${DEB_DIST_NAME} ${COMPONENTS}"
-  if [ "$IS_HOTFIX" == "true" ] ; then
-      EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${DEB_REPO_PATH} ${DEB_HOTFIX_DIST_NAME} ${COMPONENTS}"
-      EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${DEB_REPO_PATH} ${DEB_UPDATES_DIST_NAME} ${COMPONENTS}"
-  else
-      [ "$IS_UPDATES" == 'true' ] \
-          && EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${DEB_REPO_PATH} ${DEB_PROPOSED_DIST_NAME} ${COMPONENTS}"
-  fi
+  case true in
+      "$IS_HOTFIX" )
+          EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${DEB_REPO_PATH} ${DEB_HOTFIX_DIST_NAME} ${COMPONENTS}"
+          EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${DEB_REPO_PATH} ${DEB_UPDATES_DIST_NAME} ${COMPONENTS}"
+          EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${DEB_REPO_PATH} ${DEB_SECURITY_DIST_NAME} ${COMPONENTS}"
+          ;;
+      "$IS_SECURITY" )
+          EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${DEB_REPO_PATH} ${DEB_UPDATES_DIST_NAME} ${COMPONENTS}"
+          EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${DEB_REPO_PATH} ${DEB_SECURITY_DIST_NAME} ${COMPONENTS}"
+          ;;
+      "$IS_UPDATES" )
+          EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${DEB_REPO_PATH} ${DEB_PROPOSED_DIST_NAME} ${COMPONENTS}"
+          EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${DEB_REPO_PATH} ${DEB_UPDATES_DIST_NAME} ${COMPONENTS}"
+          EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${DEB_REPO_PATH} ${DEB_SECURITY_DIST_NAME} ${COMPONENTS}"
+          ;;
+  esac
 
   if [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && [ -n "$LP_BUG" -o -n "$CUSTOM_REPO_ID" ] ; then
-      if [ "$IS_UPDATES" == "true" ] ; then
-          if [ "$IS_HOTFIX" == "true" ] ; then
-              EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${DEB_REPO_PATH} ${DEB_HOTFIX_DIST_NAME} ${COMPONENTS}"
-          else
-              EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${DEB_REPO_PATH} ${DEB_PROPOSED_DIST_NAME} ${COMPONENTS}"
-          fi
-      else
-          EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${DEB_REPO_PATH} ${DEB_DIST_NAME} ${COMPONENTS}"
-      fi
+      case true in
+          "$IS_HOTFIX" )
+              local DEB_REQUEST_DIST_NAME=$DEB_HOTFIX_DIST_NAME
+              ;;
+          "$IS_SECURITY" )
+              local DEB_REQUEST_DIST_NAME=$DEB_SECURITY_DIST_NAME
+              ;;
+          "$IS_UPDATES" )
+              local DEB_REQUEST_DIST_NAME=$DEB_PROPOSED_DIST_NAME
+              ;;
+          *)
+              local DEB_REQUEST_DIST_NAME=$DEB_DIST_NAME
+              ;;
+      esac
+      EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${DEB_REPO_PATH} ${DEB_REQUEST_DIST_NAME} ${COMPONENTS}"
   fi
 
   export EXTRAREPO
