@@ -50,9 +50,13 @@ main () {
               echo -e "ERROR: Version mismatch. Latest version from Gerrit tag: $version, and from changelog: $pkg_version. Build aborted."
               exit 1
           fi
-          local TAR_NAME="${srcpackagename}_${version}.orig.tar.gz"
           # Get revision number as commit count from tag to head of source branch
-          local _rev=$(git -C $_srcpath rev-list --no-merges ${release_tag}..origin/${SOURCE_BRANCH} | wc -l)
+          if [ "$IS_PLUGIN" = "true" ]
+          then
+              local _rev=$(git -C $_srcpath rev-list ${release_tag}..origin/${SOURCE_BRANCH} | wc -l)
+          else
+              local _rev=$(git -C $_srcpath rev-list --no-merges ${release_tag}..origin/${SOURCE_BRANCH} | wc -l)
+          fi
           [ "$GERRIT_CHANGE_STATUS" == "NEW" ] \
               && [ ${GERRIT_PROJECT} == "${SRC_PROJECT}" ] \
               && _rev=$(( $_rev + 1 ))
@@ -60,14 +64,22 @@ main () {
               && _rev=$(get_extra_revision hotfix ${_srcpath} ${release_tag})
           [ "$IS_SECURITY" == "true" ] \
               && _rev=$(get_extra_revision security ${_srcpath} ${release_tag})
-          local release=$(dpkg-parsechangelog --show-field Version -l${_debianpath}/debian/changelog | awk -F'-' '{print $NF}' | sed -r 's|[0-9]+$||')
-          local release="${release}${_rev}"
+          if [ "$IS_PLUGIN" = "true" ]
+          then
+              version=${version}+dev${_rev}
+              local release=$(dpkg-parsechangelog --show-field Version -l${_debianpath}/debian/changelog | awk -F'-' '{print $NF}')
+              local ditribution_string=$(dpkg-parsechangelog --show-field Distribution -l${_debianpath}/debian/changelog)
+          else
+              local release=$(dpkg-parsechangelog --show-field Version -l${_debianpath}/debian/changelog | awk -F'-' '{print $NF}' | sed -r 's|[0-9]+$||')
+              local release="${release}${_rev}"
+          fi
           local fullver=${epochnumber}${version}-${release}
+          local TAR_NAME="${srcpackagename}_${version}.orig.tar.gz"
           # Update version and changelog
           local firstline=1
           local _dchopts="-c ${_debianpath}/debian/changelog"
           echo "$lastgitlog" | while read LINE; do
-              [ $firstline == 1 ] && local cmd="dch $_dchopts -D $distro -b --force-distribution -v $fullver" || local cmd="dch $_dchopts -a"
+              [ $firstline == 1 ] && local cmd="dch $_dchopts -D ${ditribution_string:-$distro} -b --force-distribution -v $fullver" || local cmd="dch $_dchopts -a"
               firstline=0
               local commitid=`echo "$LINE" | cut -d'|' -f1`
               local email=`echo "$LINE" | cut -d'|' -f2`
