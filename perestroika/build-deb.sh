@@ -66,7 +66,7 @@ main () {
               && _rev=$(get_extra_revision security ${_srcpath} ${release_tag})
           if [ "$IS_PLUGIN" = "true" ]
           then
-              version=${version}+dev${_rev}
+              version=${version}.dev${_rev}
               local release=$(dpkg-parsechangelog --show-field Version -l${_debianpath}/debian/changelog | awk -F'-' '{print $NF}')
               local ditribution_string=$(dpkg-parsechangelog --show-field Distribution -l${_debianpath}/debian/changelog)
           else
@@ -90,7 +90,12 @@ main () {
           # Prepare source tarball
           pushd $_srcpath &>/dev/null
           local ignore_list="rally horizon-vendor-theme fuel-astute fuel-library fuel-main fuel-nailgun-agent fuel-ui fuel-web fuel-agent"
-          if [ $(echo $ignore_list | grep -Eo "(^| )$PACKAGENAME( |$)") ]; then
+          if [ "$IS_PLUGIN" = "true" ]
+          then
+              git -C ${_srcpath} archive --format tar.gz \
+                  --prefix "${srcpackagename}-${version}/" \
+                  --worktree-attributes -o ${BUILDDIR}/${TAR_NAME} HEAD
+          elif [ $(echo $ignore_list | grep -Eo "(^| )$PACKAGENAME( |$)") ]; then
               # Do not perform `setup.py sdist` for rally packages
               tar -czf ${BUILDDIR}/$TAR_NAME $EXCLUDES .
           else
