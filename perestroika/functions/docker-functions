@@ -6,19 +6,31 @@ docker_init_mock() {
     -v ${CACHE_DIR}:/var/cache/mock ${CONTAINER_NAME} \
     bash ${BASH_OPTS} -c "
         mkdir -p /var/cache/mock/configs
-        cp /etc/mock/logging.ini /var/cache/mock/configs/
+        [ ! -f /var/cache/mock/configs/logging.ini ] \
+            && cp /etc/mock/logging.ini /var/cache/mock/configs/
         rm -rf /etc/mock
-        rm -f /var/cache/mock/configs/${DIST}.cfg
-        rm -rf /var/cache/mock/${ROOT_NAME}
         ln -s /var/cache/mock/configs /etc/mock
+        conffile=/etc/mock/${DIST}.cfg
+        tmpconffile=/etc/mock/tmp.${DIST}.cfg
+        rootpath=/var/cache/mock/$ROOT_NAME
+        tmprootpath=/var/cache/mock/tmp.$ROOT_NAME
+        [ -f \$conffile ] && mv \$conffile \$tmpconffile
+        [ -d \$rootpath ] && mv \$rootpath \$tmprootpath
         echo \"${CONFIG_CONTENT_BASE64}\" \
-            | base64 -d > /etc/mock/${DIST}.cfg
+            | base64 -d > \$conffile
         echo 'Current config file:'
-        cat /etc/mock/${DIST}.cfg
+        cat \$conffile
         chown -R abuild:mock /var/cache/mock
         chmod g+s /var/cache/mock
-        su - abuild -c \
-            'mock -r ${DIST} ${MOCK_OPTS} --init'"
+        if su - abuild -c \
+            'mock -r ${DIST} ${MOCK_OPTS} --init'
+        then
+            rm -rf \$tmprootpath \$tmpconffile
+        else
+            rm -rf \$conffile \$rootpath
+            [ -d \$tmprootpath ] && mv \$tmprootpath \$rootpath
+            [ -f \$tmpconffile ] && mv \$tmpconffile \$conffile
+        fi"
 }
 
 docker_init_sbuild() {
@@ -30,20 +42,37 @@ docker_init_sbuild() {
             mkdir -p /srv/images/chroot.d
             rm -rf /etc/schroot/chroot.d
             ln -s /srv/images/chroot.d /etc/schroot/chroot.d
-            rm -rf /srv/images/${ROOT_NAME}
-            rm -f /etc/schroot/chroot.d/${ROOT_NAME}*
-            sbuild-createchroot ${DIST} /srv/images/${ROOT_NAME} ${MIRROR}
-            mv /etc/schroot/chroot.d/${ROOT_NAME}* /etc/schroot/chroot.d/${ROOT_NAME}
-            echo 'union-type=aufs' >> /etc/schroot/chroot.d/${ROOT_NAME}
-            echo ${APT_SOURCES_CONTENT_BASE64} | base64 -d \
-                > /srv/images/${ROOT_NAME}/etc/apt/sources.list
-            echo '#!/bin/bash' > /srv/images/${ROOT_NAME}/usr/bin/apt-add-repo
-            echo 'echo \$* >> /etc/apt/sources.list' >> /srv/images/${ROOT_NAME}/usr/bin/apt-add-repo
-            chmod +x /srv/images/${ROOT_NAME}/usr/bin/apt-add-repo
-            echo '#!/bin/bash' > /srv/images/${ROOT_NAME}/usr/bin/set-apt-prefs
-            echo 'echo \$* | base64 -d > /etc/apt/preferences' >> /srv/images/${ROOT_NAME}/usr/bin/set-apt-prefs
-            chmod +x /srv/images/${ROOT_NAME}/usr/bin/set-apt-prefs
-            sbuild-update -udcar ${DIST}"
+            conffile=/etc/schroot/chroot.d/$ROOT_NAME
+            tmpconffile=/etc/schroot/chroot.d/tmp.$ROOT_NAME
+            rootpath=/srv/images/$ROOT_NAME
+            tmprootpath=/srv/images/tmp.$ROOT_NAME
+            [ -f \$conffile ] && mv \$conffile \$tmpconffile
+            [ -d \$rootpath ] && mv \$rootpath \$tmprootpath
+            if sbuild-createchroot ${DIST} \$rootpath ${MIRROR}
+            then
+                mv \${conffile}* \$conffile
+                echo 'union-type=aufs' >> \$conffile
+                echo $APT_SOURCES_CONTENT_BASE64 | base64 -d \
+                    > \${rootpath}/etc/apt/sources.list
+                echo '#!/bin/bash' > \${rootpath}/usr/bin/apt-add-repo
+                echo 'echo \$* >> /etc/apt/sources.list' >> \${rootpath}/usr/bin/apt-add-repo
+                chmod +x \${rootpath}/usr/bin/apt-add-repo
+                echo '#!/bin/bash' > \${rootpath}/usr/bin/set-apt-prefs
+                echo 'echo \$* | base64 -d > /etc/apt/preferences' >> \${rootpath}/usr/bin/set-apt-prefs
+                chmod +x \${rootpath}/usr/bin/set-apt-prefs
+                if sbuild-update -udcar ${DIST}
+                then
+                    rm -rf \$tmprootpath \$tmpconffile
+                else
+                    rm -rf \$conffile \$rootpath
+                    [ -d \$tmprootpath ] && mv \$tmprootpath \$rootpath
+                    [ -f \$tmpconffile ] && mv \$tmpconffile \$conffile
+                fi
+            else
+                rm -rf \$conffile \$rootpath
+                [ -d \$tmprootpath ] && mv \$tmprootpath \$rootpath
+                [ -f \$tmpconffile ] && mv \$tmpconffile \$conffile
+            fi"
 }
 
 docker_update_mock() {
@@ -53,15 +82,27 @@ docker_update_mock() {
             rm -rf /etc/mock
             mkdir -p /var/cache/mock/configs
             ln -s /var/cache/mock/configs /etc/mock
-            rm -rf /var/cache/mock/${ROOT_NAME}/yum_cache
-            touch /etc/mock/${DIST}.cfg -r \
-                /var/cache/mock/${ROOT_NAME}/root_cache/cache.tar.gz
+            conffile=/etc/mock/${DIST}.cfg
+            tmpconffile=/etc/mock/tmp.${DIST}.cfg
+            rootpath=/var/cache/mock/$ROOT_NAME
+            tmprootpath=/var/cache/mock/tmp.$ROOT_NAME
+            cp -Rl \$rootpath \$tmprootpath
+            cp \$conffile \$tmpconffile
+            rm -rf \${rootpath}/yum_cache
+            touch \$conffile -r \${rootpath}/root_cache/cache.tar.gz
             echo 'Current config file:'
-            cat /etc/mock/${DIST}.cfg
-            chown -R abuild:mock /var/cache/mock
-            chmod g+s /var/cache/mock
-            su - abuild -c \
-                'mock -r ${DIST} ${MOCK_OPTS} --update'"
+            cat \$conffile
+            chown -R abuild:mock \$rootpath
+            chmod g+s \$rootpath
+            if su - abuild -c \
+                'mock -r ${DIST} ${MOCK_OPTS} --update'
+            then
+                rm -rf \$tmprootpath \$tmpconffile
+            else
+                rm -rf \$rootpath \$conffile
+                mv \$tmpconffile \$conffile
+                mv \$tmprootpath \$rootpath
+            fi"
 }
 
 docker_update_sbuild() {
@@ -73,9 +114,18 @@ docker_update_sbuild() {
             mkdir -p /srv/images/chroot.d
             rm -rf /etc/schroot/chroot.d
             ln -s /srv/images/chroot.d /etc/schroot/chroot.d
+            rootpath=/srv/images/$ROOT_NAME
+            tmprootpath=/srv/images/tmp.$ROOT_NAME
+            cp -Rl \$rootpath \$tmprootpath
             echo ${APT_SOURCES_CONTENT_BASE64} | base64 -d \
-                > /srv/images/${ROOT_NAME}/etc/apt/sources.list
-            sbuild-update -udcar ${DIST}"
+                > \${rootpath}/etc/apt/sources.list
+            if sbuild-update -udcar ${DIST}
+            then
+                rm -rf \$tmprootpath
+            else
+                rm -rf \$rootpath
+                mv \$tmprootpath \$rootpath
+            fi"
 }
 
 docker_build_mock() {
