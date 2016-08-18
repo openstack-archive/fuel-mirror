@@ -179,12 +179,15 @@ main() {
               remove ${dist_name} ${SRC_NAME} || :
           # Fix Codename field and resign Release file if necessary
           local _release_file=${DISTDIR}/${dist_name}/Release
+          local _inrelease_file=${DISTDIR}/${dist_name}/InRelease
           if ! gpg --verify "${_release_file}.gpg" "$_release_file" &>/dev/null ; then
               sed "s|^Codename:.*$|Codename: ${DEB_BASE_DIST_NAME}|" -i "$_release_file"
               if [ "$USE_SIGUL" = "true" ] ; then
                   retry -c4 -s1 _sigul "$KEY_PASSPHRASE" -u "$SIGUL_USER" sign-data --armor -o "${_release_file}.gpg" "$SIGKEYID" "$_release_file"
+                  retry -c4 -s1 _sigul "$KEY_PASSPHRASE" -u "$SIGUL_USER" sign-text -o "$_inrelease_file" "$SIGKEYID" "$_release_file"
               else
                   gpg --sign --local-user "$SIGKEYID" -ba -o "${_release_file}.gpg" "$_release_file"
+                  gpg --sign --local-user "$SIGKEYID" --clearsign -o "$_inrelease_file" "$_release_file"
               fi
           fi
       done
