@@ -10,4 +10,5 @@ openstack/fuel-ostf
 openstack/fuel-ui
 openstack/fuel-web
 openstack/network-checker
+openstack/python-fuelclient
 openstack/shotgun
