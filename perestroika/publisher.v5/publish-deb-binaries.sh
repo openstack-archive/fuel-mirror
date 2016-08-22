@@ -200,19 +200,22 @@ main() {
 
   # Fix Codename field
   local release_file="${DISTDIR}/${DEB_DIST_NAME}/Release"
+  local inrelease_file="${DISTDIR}/${DEB_DIST_NAME}/InRelease"
   sed "s|^Codename:.*$|Codename: ${DEB_BASE_DIST_NAME}|" -i ${release_file}
 
   # Resign Release file
-  rm -f ${release_file}.gpg
+  rm -f "${release_file}.gpg" "$inrelease_file"
   local pub_key_file="${LOCAL_REPO_PATH}/public/archive-${PROJECT_NAME}${PROJECT_VERSION}.key"
   if [ -n "${SIGN_STRING}" ] ; then
       [ ! -f "${pub_key_file}" ] && touch ${pub_key_file}
       if [ "${USE_SIGUL}" = "true" ] ; then
            retry -c4 -s1 _sigul "$KEY_PASSPHRASE" -u "$SIGUL_USER" sign-data --armor -o "${release_file}.gpg" "${SIGKEYID}" "${release_file}"
+           retry -c4 -s1 _sigul "$KEY_PASSPHRASE" -u "$SIGUL_USER" sign-text -o "$inrelease_file" "$SIGKEYID" "$release_file"
            retry -c4 -s1 _sigul "$KEY_PASSPHRASE" -u "$SIGUL_ADMIN" get-public-key "${SIGKEYID}" > "${pub_key_file}.tmp"
       else
-          gpg --sign --local-user ${SIGKEYID} -ba -o ${release_file}.gpg ${release_file}
-          gpg -o ${pub_key_file}.tmp --armor --export ${SIGKEYID}
+          gpg --sign --local-user "$SIGKEYID" -ba -o "${release_file}.gpg" "$release_file"
+          gpg --sign --local-user "$SIGKEYID" --clearsign -o "$inrelease_file" "$release_file"
+          gpg -o "${pub_key_file}.tmp" --armor --export "$SIGKEYID"
       fi
       if diff -q ${pub_key_file} ${pub_key_file}.tmp &>/dev/null ; then
           rm ${pub_key_file}.tmp
