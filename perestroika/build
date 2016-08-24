@@ -176,6 +176,7 @@ main () {
                 ;;
         esac
     fi
+    local EXIT_STATUS=$(cat ${DEST_PATH}/exitstatus || echo 1)
 
     # Get into buildroot
     if [ "${ACTION_SHELL}" == "true" ] ; then
@@ -194,6 +195,10 @@ main () {
                 fail_exit "CONFIG_ERROR: Unsupported distribution type"
                 ;;
         esac
+    fi
+
+    if [ "$EXIT_STATUS" -ne 0 ] ; then
+        fail_exit "BUILD FAILED: returned result is $EXIT_STATUS"
     fi
 }
 
