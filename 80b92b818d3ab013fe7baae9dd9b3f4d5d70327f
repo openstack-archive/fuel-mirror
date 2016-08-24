@@ -1,0 +1,10 @@
+Code-Review+1: Aleksandra Fedorova <afedorova@mirantis.com>
+Code-Review+1: Roman Vyalov <rvyalov@mirantis.com>
+Code-Review+2: Dmitry Burmistrov <dburmistrov@mirantis.com>
+Workflow+1: Dmitry Burmistrov <dburmistrov@mirantis.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Wed, 24 Aug 2016 14:44:51 +0000
+Reviewed-on: https://review.openstack.org/359823
+Project: openstack/fuel-mirror
+Branch: refs/heads/master
