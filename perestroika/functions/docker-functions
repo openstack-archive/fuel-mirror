@@ -43,7 +43,7 @@ docker_init_sbuild() {
             rm -rf /etc/schroot/chroot.d
             ln -s /srv/images/chroot.d /etc/schroot/chroot.d
             conffile=/etc/schroot/chroot.d/$ROOT_NAME
-            tmpconffile=/etc/schroot/chroot.d/tmp.$ROOT_NAME
+            tmpconffile=/tmp/tmp.$ROOT_NAME
             rootpath=/srv/images/$ROOT_NAME
             tmprootpath=/srv/images/tmp.$ROOT_NAME
             [ -f \$conffile ] && mv \$conffile \$tmpconffile
