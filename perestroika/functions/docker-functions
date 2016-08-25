@@ -199,6 +199,10 @@ docker_build_mock() {
                  --resultdir=/home/abuild/buildresult \
                  \$(ls /home/abuild/rpmbuild/*.src.rpm)'
             echo \$? > /home/abuild/buildresult/exitstatus"
+        local EXIT_STATUS=$(cat ${DEST_PATH}/exitstatus || echo 1)
+        if [ "$EXIT_STATUS" -ne 0 ] ; then
+            fail_exit "BUILD FAILED: returned result is $EXIT_STATUS"
+        fi
 }
 
 docker_build_sbuild() {
@@ -266,6 +270,10 @@ docker_build_sbuild() {
                   cp -R /var/lib/schroot/union/overlay/\${SESSION}/* /srv/overlay
                   cp -R /var/lib/schroot/mount/\${SESSION}/build /srv/overlay/
               fi"
+        local EXIT_STATUS=$(cat ${DEST_PATH}/exitstatus || echo 1)
+        if [ "$EXIT_STATUS" -ne 0 ] ; then
+            fail_exit "BUILD FAILED: returned result is $EXIT_STATUS"
+        fi
 }
 
 docker_shell_mock() {
