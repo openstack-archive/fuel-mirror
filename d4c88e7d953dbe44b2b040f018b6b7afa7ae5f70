@@ -1,0 +1,9 @@
+Code-Review+1: Alexander Evseev <aevseev@mirantis.com>
+Code-Review+2: Dmitry Burmistrov <dburmistrov@mirantis.com>
+Workflow+1: Dmitry Burmistrov <dburmistrov@mirantis.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Wed, 31 Aug 2016 14:12:20 +0000
+Reviewed-on: https://review.openstack.org/363667
+Project: openstack/fuel-mirror
+Branch: refs/heads/stable/mitaka
