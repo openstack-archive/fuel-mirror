@@ -147,8 +147,8 @@ This package provides the %{-n*} kernel modules
           ;;
       "$IS_UPDATES" )
           EXTRAREPO="${EXTRAREPO}|repo2,http://${REMOTE_REPO_HOST}/${RPM_PROPOSED_REPO_PATH}/x86_64"
-          EXTRAREPO="${EXTRAREPO}|repo2,http://${REMOTE_REPO_HOST}/${RPM_UPDATES_REPO_PATH}/x86_64"
-          EXTRAREPO="${EXTRAREPO}|repo3,http://${REMOTE_REPO_HOST}/${RPM_SECURITY_REPO_PATH}/x86_64"
+          EXTRAREPO="${EXTRAREPO}|repo3,http://${REMOTE_REPO_HOST}/${RPM_UPDATES_REPO_PATH}/x86_64"
+          EXTRAREPO="${EXTRAREPO}|repo4,http://${REMOTE_REPO_HOST}/${RPM_SECURITY_REPO_PATH}/x86_64"
           ;;
   esac
 
