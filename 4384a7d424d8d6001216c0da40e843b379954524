@@ -1,0 +1,9 @@
+Code-Review+2: Bulat Gaifullin <bgaifullin@mirantis.com>
+Code-Review+1: Stanislaw Bogatkin <sbogatkin@mirantis.com>
+Workflow+1: Bulat Gaifullin <bgaifullin@mirantis.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Fri, 09 Sep 2016 09:26:34 +0000
+Reviewed-on: https://review.openstack.org/331993
+Project: openstack/fuel-mirror
+Branch: refs/heads/stable/mitaka
