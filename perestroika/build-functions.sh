@@ -57,13 +57,16 @@ set_default_params () {
   [ -z "$PROJECT_VERSION" ] && error "Project version is not defined! Exiting!"
   [ "$IS_HOTFIX" == "true" -a "$IS_UPDATES" == "false" ] && error "ERROR: Hotfix update before release"
   if [ -n "$GERRIT_PROJECT" ]; then
-    GERRIT_CHANGE_STATUS="NEW"
-    if [ -n "$GERRIT_REFSPEC" ]; then
-      request_is_merged $GERRIT_REFSPEC && GERRIT_CHANGE_STATUS="MERGED"
-    else
-      # Support ref-updated gerrit event
-      GERRIT_CHANGE_STATUS="REF_UPDATED"
-      GERRIT_BRANCH=$GERRIT_REFNAME
+    if [ -z "$GERRIT_CHANGE_STATUS" ] ; then
+        # Detect change status
+        GERRIT_CHANGE_STATUS="NEW"
+        if [ -n "$GERRIT_REFSPEC" ]; then
+          request_is_merged $GERRIT_REFSPEC && GERRIT_CHANGE_STATUS="MERGED"
+        else
+          # Support ref-updated gerrit event
+          GERRIT_CHANGE_STATUS="REF_UPDATED"
+          GERRIT_BRANCH=$GERRIT_REFNAME
+        fi
     fi
     if [ -n "$GERRIT_CHANGE_COMMIT_MESSAGE" ] ; then
         local GERRIT_MEGGASE="`echo $GERRIT_CHANGE_COMMIT_MESSAGE | base64 -d || :`"
