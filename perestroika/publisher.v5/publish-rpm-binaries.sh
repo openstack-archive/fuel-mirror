@@ -127,13 +127,16 @@ main() {
       local _repoid_proposed=$(mktemp -u XXXXXXXX)
       local _repoid_holdback=$(mktemp -u XXXXXXXX)
       local _repoid_security=$(mktemp -u XXXXXXXX)
+      local _repoid_hotfix=$(mktemp -u XXXXXXXX)
       local repoquery_cmd="repoquery --repofrompath=${_repoid_os},file://${REPO_BASE_PATH}/${RPM_OS_REPO_PATH}/${PACKAGEFOLDER%/*} --repoid=${_repoid_os}"
       local repoquery_cmd="${repoquery_cmd} --repofrompath=${_repoid_updates},file://${REPO_BASE_PATH}/${RPM_UPDATES_REPO_PATH}/${PACKAGEFOLDER%/*} --repoid=${_repoid_updates}"
       local repoquery_cmd="${repoquery_cmd} --repofrompath=${_repoid_holdback},file://${REPO_BASE_PATH}/${RPM_HOLDBACK_REPO_PATH}/${PACKAGEFOLDER%/*} --repoid=${_repoid_holdback}"
       local repoquery_cmd="${repoquery_cmd} --repofrompath=${_repoid_security},file://${REPO_BASE_PATH}/${RPM_SECURITY_REPO_PATH}/${PACKAGEFOLDER%/*} --repoid=${_repoid_security}"
       # Hotfixes must not be checked against proposed repository
       if [ "${IS_HOTFIX}" != 'true' ]; then
-        local repoquery_cmd="${repoquery_cmd} --repofrompath=${_repoid_proposed},file://${REPO_BASE_PATH}/${RPM_PROPOSED_REPO_PATH}/${PACKAGEFOLDER%/*} --repoid=${_repoid_proposed}"
+          local repoquery_cmd="${repoquery_cmd} --repofrompath=${_repoid_proposed},file://${REPO_BASE_PATH}/${RPM_PROPOSED_REPO_PATH}/${PACKAGEFOLDER%/*} --repoid=${_repoid_proposed}"
+      else
+          local repoquery_cmd="${repoquery_cmd} --repofrompath=${_repoid_hotfix},file://${REPO_BASE_PATH}/${RPM_HOTFIX_REPO_PATH}/${PACKAGEFOLDER%/*} --repoid=${_repoid_hotfix}"
       fi
       [ "${binary:(-7)}" == "src.rpm" ] && repoquery_cmd="${repoquery_cmd} --archlist=src"
       local EXISTBINDATA=$(${repoquery_cmd} ${BINNAME} 2>/dev/null)
