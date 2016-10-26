@@ -19,6 +19,8 @@ main() {
   rsync -avPzt \
       -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${SSH_OPTS}" \
       ${SSH_USER}${BUILD_HOST}:${PKG_PATH}/ ${TMP_DIR}/ || error "Can't download packages"
+  local DEB_BINARIES
+  DEB_BINARIES=$(find "$TMP_DIR" -name *.deb | awk -F'/' '{print $NF}' | cut -d'_' -f1 | tr '\n' ',')
 
   ## Resign source package
   ## FixMe: disabled for discussion: does it really need to sign
@@ -236,7 +238,7 @@ main() {
 	DEB_REPO_URL="http://${REMOTE_REPO_HOST}/${URL_PREFIX}${DEB_REPO_PATH} ${DEB_DIST_NAME} ${DEB_COMPONENT}"
 	DEB_PACKAGENAME=${SRC_NAME}
 	DEB_VERSION=${NEW_VERSION}
-	DEB_BINARIES=$(cat ${BINSRCLIST} | grep ^Binary | sed 's|^Binary:||; s| ||g')
+	DEB_BINARIES=$DEB_BINARIES
 	DEB_CHANGE_REVISION=${GERRIT_PATCHSET_REVISION}
 	LP_BUG=${LP_BUG}
 	EOF
