@@ -14,6 +14,8 @@ main() {
   rsync -avPzt \
       -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${SSH_OPTS}" \
       ${SSH_USER}${BUILD_HOST}:${PKG_PATH}/ ${TMP_DIR}/ || error "Can't download packages"
+  local DEB_BINARIES
+  DEB_BINARIES=$(find "$TMP_DIR" -name *.deb | awk -F'/' '{print $NF}' | cut -d'_' -f1 | tr '\n' ',')
 
   ## Resign source package
   ## FixMe: disabled for discussion: does it really need to sign
@@ -43,57 +45,58 @@ main() {
   fi
 
   # Repos
-  for repo_path in ${DEB_REPO_PATH} ; do
-      local LOCAL_REPO_PATH=${REPO_BASE_PATH}/${repo_path}
-      local DBDIR="+b/db"
-      local CONFIGDIR="${LOCAL_REPO_PATH}/conf"
-      local DISTDIR="${LOCAL_REPO_PATH}/public/dists/"
-      local OUTDIR="+b/public/"
-      if [ ! -d "${CONFIGDIR}" ] ; then
-          mkdir -p ${CONFIGDIR}
-          job_lock ${CONFIGDIR}.lock wait 3600
-          for dist_name in ${DEB_DIST_NAME} ${DEB_PROPOSED_DIST_NAME} ${DEB_UPDATES_DIST_NAME} \
-                       ${DEB_SECURITY_DIST_NAME} ${DEB_HOLDBACK_DIST_NAME} ; do
-              cat >> ${CONFIGDIR}/distributions <<- EOF
-					Origin: ${ORIGIN}
-					Label: ${DEB_DIST_NAME}
-					Suite: ${dist_name}
-					Codename: ${dist_name}
-					Version: ${PRODUCT_VERSION}
-					Architectures: amd64 i386 source
-					Components: main restricted
-					UDebComponents: main restricted
-					Contents: . .gz .bz2
+  DEB_UPDATES_DIST_NAME=${DEB_UPDATES_DIST_NAME:-$DEB_DIST_NAME}
+  DEB_PROPOSED_DIST_NAME=${DEB_PROPOSED_DIST_NAME:-$DEB_DIST_NAME}
+  DEB_SECURITY_DIST_NAME=${DEB_SECURITY_DIST_NAME:-$DEB_DIST_NAME}
+  DEB_HOLDBACK_DIST_NAME=${DEB_HOLDBACK_DIST_NAME:-$DEB_DIST_NAME}
+  DEB_HOTFIX_DIST_NAME=${DEB_HOTFIX_DIST_NAME:-hotfix}
+  DEB_UPDATES_COMPONENT=${DEB_UPDATES_COMPONENT:-$DEB_COMPONENT}
+  DEB_PROPOSED_COMPONENT=${DEB_PROPOSED_COMPONENT:-$DEB_COMPONENT}
+  DEB_SECURITY_COMPONENT=${DEB_SECURITY_COMPONENT:-$DEB_COMPONENT}
+  DEB_HOLDBACK_COMPONENT=${DEB_HOLDBACK_COMPONENT:-$DEB_COMPONENT}
+  DEB_HOTFIX_COMPONENT=${DEB_HOTFIX_COMPONENT:-$DEB_COMPONENT}
 
-					EOF
+  local LOCAL_REPO_PATH=${REPO_BASE_PATH}/${DEB_REPO_PATH}
+  local DBDIR="+b/db"
+  local CONFIGDIR="${LOCAL_REPO_PATH}/conf"
+  local DISTDIR="${LOCAL_REPO_PATH}/public/dists/"
+  local OUTDIR="+b/public/"
+  if [ ! -d "${CONFIGDIR}" ] ; then
+      mkdir -p ${CONFIGDIR}
+      job_lock ${CONFIGDIR}.lock wait 3600
+      for dist_name in ${DEB_DIST_NAME} ${DEB_PROPOSED_DIST_NAME} \
+          ${DEB_UPDATES_DIST_NAME} ${DEB_SECURITY_DIST_NAME} \
+          ${DEB_HOLDBACK_DIST_NAME} ${DEB_HOTFIX_DIST_NAME} ; do
+          cat >> ${CONFIGDIR}/distributions <<- EOF
+			Origin: ${ORIGIN}
+			Label: ${DEB_DIST_NAME}
+			Suite: ${dist_name}
+			Codename: ${dist_name}
+			Version: ${PRODUCT_VERSION}
+			Architectures: amd64 i386 source
+			Components: main restricted
+			UDebComponents: main restricted
+			Contents: . .gz .bz2
 
-              reprepro --basedir ${LOCAL_REPO_PATH} --dbdir ${DBDIR} \
-                  --outdir ${OUTDIR} --distdir ${DISTDIR} --confdir ${CONFIGDIR} \
-                  export ${dist_name}
-              # Fix Codename field
-              local release_file="${DISTDIR}/${dist_name}/Release"
-              sed "s|^Codename:.*$|Codename: ${DEB_DIST_NAME}|" \
-                  -i ${release_file}
-              rm -f ${release_file}.gpg
-              # ReSign Release file
-              [ -n "${SIGN_STRING}" ] \
-                  && gpg --sign --local-user ${SIGKEYID} -ba \
-                  -o ${release_file}.gpg ${release_file}
-          done
-          job_lock ${CONFIGDIR}.lock unset
-      fi
-  done
+			EOF
+
+          reprepro --basedir ${LOCAL_REPO_PATH} --dbdir ${DBDIR} \
+              --outdir ${OUTDIR} --distdir ${DISTDIR} --confdir ${CONFIGDIR} \
+              export ${dist_name}
+          # Fix Codename field
+          local release_file="${DISTDIR}/${dist_name}/Release"
+          sed "s|^Codename:.*$|Codename: ${DEB_DIST_NAME}|" \
+              -i ${release_file}
+          rm -f ${release_file}.gpg
+          # ReSign Release file
+          [ -n "${SIGN_STRING}" ] \
+              && gpg --sign --local-user ${SIGKEYID} -ba \
+              -o ${release_file}.gpg ${release_file}
+      done
+      job_lock ${CONFIGDIR}.lock unset
+  fi
 
   DEB_BASE_DIST_NAME=${DEB_DIST_NAME}
-
-  [ -z "${DEB_UPDATES_DIST_NAME}" ] && DEB_UPDATES_DIST_NAME=${DEB_DIST_NAME}
-  [ -z "${DEB_PROPOSED_DIST_NAME}" ] && DEB_PROPOSED_DIST_NAME=${DEB_DIST_NAME}
-  [ -z "${DEB_SECURITY_DIST_NAME}" ] && DEB_SECURITY_DIST_NAME=${DEB_DIST_NAME}
-  [ -z "${DEB_HOLDBACK_DIST_NAME}" ] && DEB_HOLDBACK_DIST_NAME=${DEB_DIST_NAME}
-  [ -z "${DEB_UPDATES_COMPONENT}" ] && DEB_UPDATES_COMPONENT=${DEB_COMPONENT}
-  [ -z "${DEB_PROPOSED_COMPONENT}" ] && DEB_PROPOSED_COMPONENT=${DEB_COMPONENT}
-  [ -z "${DEB_SECURITY_COMPONENT}" ] && DEB_SECURITY_COMPONENT=${DEB_COMPONENT}
-  [ -z "${DEB_HOLDBACK_COMPONENT}" ] && DEB_HOLDBACK_COMPONENT=${DEB_COMPONENT}
 
   if [ "${IS_UPDATES}" = 'true' ] ; then
       DEB_DIST_NAME=${DEB_PROPOSED_DIST_NAME}
@@ -106,6 +109,10 @@ main() {
   if [ "${IS_SECURITY}" = 'true' ] ; then
       DEB_DIST_NAME=${DEB_SECURITY_DIST_NAME}
       DEB_COMPONENT=${DEB_SECURITY_COMPONENT}
+  fi
+  if [ "${IS_HOTFIX}" = 'true' ] ; then
+      DEB_DIST_NAME=${DEB_HOTFIX_DIST_NAME}
+      DEB_COMPONENT=${DEB_HOTFIX_COMPONENT}
   fi
 
   [ -z "${DEB_COMPONENT}" ] && local DEB_COMPONENT=main
@@ -164,14 +171,16 @@ main() {
   if [ "${BINSRCLIST}" != "" ]; then
       for dist_name in ${DEB_BASE_DIST_NAME} ${DEB_PROPOSED_DIST_NAME} \
           ${DEB_UPDATES_DIST_NAME} ${DEB_SECURITY_DIST_NAME} \
-          ${DEB_HOLDBACK_DIST_NAME} ; do
+          ${DEB_HOLDBACK_DIST_NAME} ${DEB_HOTFIX_DIST_NAME}; do
           reprepro ${REPREPRO_COMP_OPTS} --architecture source \
               remove ${dist_name} ${SRC_NAME} || :
           # Fix Codename field and resign Release file if necessary
           local _release_file=${DISTDIR}/${dist_name}/Release
+          local _inrelease_file=${DISTDIR}/${dist_name}/InRelease
           if ! gpg --verify "${_release_file}.gpg" "$_release_file" &>/dev/null ; then
               sed "s|^Codename:.*$|Codename: ${DEB_BASE_DIST_NAME}|" -i "$_release_file"
               gpg --sign --local-user "$SIGKEYID" -ba -o "${_release_file}.gpg" "$_release_file"
+              gpg --sign --local-user "$SIGKEYID" --clearsign -o "$_inrelease_file" "$_release_file"
           fi
       done
       reprepro ${REPREPRO_COMP_OPTS} includedsc ${DEB_DIST_NAME} ${BINSRCLIST} \
@@ -183,15 +192,17 @@ main() {
 
   # Fix Codename field
   local release_file="${DISTDIR}/${DEB_DIST_NAME}/Release"
+  local inrelease_file="${DISTDIR}/${DEB_DIST_NAME}/InRelease"
   sed "s|^Codename:.*$|Codename: ${DEB_BASE_DIST_NAME}|" -i ${release_file}
 
   # Resign Release file
-  rm -f ${release_file}.gpg
+  rm -f "${release_file}.gpg" "$inrelease_file"
   local pub_key_file="${LOCAL_REPO_PATH}/public/archive-${PROJECT_NAME}${PROJECT_VERSION}.key"
   if [ -n "${SIGN_STRING}" ] ; then
-      gpg --sign --local-user ${SIGKEYID} -ba -o ${release_file}.gpg ${release_file}
+      gpg --sign --local-user "$SIGKEYID" -ba -o "${release_file}.gpg" "${release_file}"
+      gpg --sign --local-user "$SIGKEYID" --clearsign -o "$inrelease_file" "$release_file"
       [ ! -f "${pub_key_file}" ] && touch ${pub_key_file}
-      gpg -o ${pub_key_file}.tmp --armor --export ${SIGKEYID}
+      gpg -o "${pub_key_file}.tmp" --armor --export "$SIGKEYID"
       if diff -q ${pub_key_file} ${pub_key_file}.tmp &>/dev/null ; then
           rm ${pub_key_file}.tmp
       else
@@ -211,7 +222,7 @@ main() {
 	DEB_REPO_URL="http://${REMOTE_REPO_HOST}/${URL_PREFIX}${DEB_REPO_PATH} ${DEB_DIST_NAME} ${DEB_COMPONENT}"
 	DEB_PACKAGENAME=${SRC_NAME}
 	DEB_VERSION=${NEW_VERSION}
-	DEB_BINARIES=$(cat ${BINSRCLIST} | grep ^Binary | sed 's|^Binary:||; s| ||g')
+	DEB_BINARIES=$DEB_BINARIES
 	DEB_CHANGE_REVISION=${GERRIT_PATCHSET_REVISION}
 	LP_BUG=${LP_BUG}
 	EOF
