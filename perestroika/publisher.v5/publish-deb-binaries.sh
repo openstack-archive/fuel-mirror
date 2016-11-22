@@ -171,7 +171,7 @@ main() {
   if [ "${BINSRCLIST}" != "" ]; then
       for dist_name in ${DEB_BASE_DIST_NAME} ${DEB_PROPOSED_DIST_NAME} \
           ${DEB_UPDATES_DIST_NAME} ${DEB_SECURITY_DIST_NAME} \
-          ${DEB_HOLDBACK_DIST_NAME} ; do
+          ${DEB_HOLDBACK_DIST_NAME} ${DEB_HOTFIX_DIST_NAME}; do
           reprepro ${REPREPRO_COMP_OPTS} --architecture source \
               remove ${dist_name} ${SRC_NAME} || :
           # Fix Codename field and resign Release file if necessary
