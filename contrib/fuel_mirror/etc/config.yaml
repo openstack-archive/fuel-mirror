@@ -4,6 +4,8 @@ retries_num: 3
 target_dir: "/var/www/nailgun/mirrors"
 pattern_dir: "/usr/share/fuel-mirror"
 base_url: "http://{FUEL_SERVER_IP}:8080/mirrors/"
+mos_version: "9.0"
+openstack_version: "mitaka-9.0"
 
 # uncomment if need
 #   http_proxy: null
