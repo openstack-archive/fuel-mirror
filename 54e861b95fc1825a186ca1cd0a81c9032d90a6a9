@@ -1,0 +1,9 @@
+Code-Review+2: Bulat Gaifullin <gaifullinbf@gmail.com>
+Code-Review+2: Vladimir Kozhukalov <vkozhukalov@mirantis.com>
+Workflow+1: Vladimir Kozhukalov <vkozhukalov@mirantis.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Thu, 01 Dec 2016 10:37:41 +0000
+Reviewed-on: https://review.openstack.org/405206
+Project: openstack/fuel-mirror
+Branch: refs/heads/stable/mitaka
