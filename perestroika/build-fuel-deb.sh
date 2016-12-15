@@ -44,6 +44,8 @@ main () {
         # Get revision number as commit count for src+spec projects
         local _rev=`git -C $_srcpath rev-list --no-merges origin/${SOURCE_BRANCH} | wc -l`
         [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && _rev=$(( $_rev + 1 ))
+        [ "$IS_HOTFIX" == "true" ] \
+            && _rev=$(get_extra_revision hotfix ${_srcpath})
         local release="1~u14.04+mos${_rev}"
         # if gitshasrc is not defined (we are not using fetch_upstream), let's do it
         [ -n "${gitshasrc}" ] || local gitshasrc=$(git -C $_srcpath log -1 --pretty="%h")
@@ -85,14 +87,47 @@ main () {
     [ -n "$LP_BUG" ] && REQUEST=$LP_BUG
 
     COMPONENTS="main restricted"
+    DEB_HOTFIX_DIST_NAME=${DEB_HOTFIX_DIST_NAME:-hotfix}
     [ -n "${EXTRAREPO}" ] && EXTRAREPO="${EXTRAREPO}|"
     EXTRAREPO="${EXTRAREPO}http://${REMOTE_REPO_HOST}/${DEB_REPO_PATH} ${DEB_DIST_NAME} ${COMPONENTS}"
-    [ "$IS_UPDATES" == 'true' ] \
-        && EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${DEB_REPO_PATH} ${DEB_PROPOSED_DIST_NAME} ${COMPONENTS}"
-    [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && [ "$IS_UPDATES" != "true" ] && [ -n "$LP_BUG" ] \
-        && EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${DEB_REPO_PATH} ${DEB_DIST_NAME} ${COMPONENTS}"
-    [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && [ "$IS_UPDATES" == "true" ] && [ -n "$LP_BUG" ] \
-        && EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${DEB_REPO_PATH} ${DEB_PROPOSED_DIST_NAME} ${COMPONENTS}"
+
+    case true in
+        "$IS_HOTFIX" )
+            EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${DEB_REPO_PATH} ${DEB_HOTFIX_DIST_NAME} ${COMPONENTS}"
+            EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${DEB_REPO_PATH} ${DEB_UPDATES_DIST_NAME} ${COMPONENTS}"
+            EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${DEB_REPO_PATH} ${DEB_SECURITY_DIST_NAME} ${COMPONENTS}"
+            ;;
+        "$IS_SECURITY" )
+            EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${DEB_REPO_PATH} ${DEB_UPDATES_DIST_NAME} ${COMPONENTS}"
+            EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${DEB_REPO_PATH} ${DEB_SECURITY_DIST_NAME} ${COMPONENTS}"
+            ;;
+        "$IS_UPDATES" )
+            EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${DEB_REPO_PATH} ${DEB_PROPOSED_DIST_NAME} ${COMPONENTS}"
+            EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${DEB_REPO_PATH} ${DEB_UPDATES_DIST_NAME} ${COMPONENTS}"
+            EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REPO_HOST}/${DEB_REPO_PATH} ${DEB_SECURITY_DIST_NAME} ${COMPONENTS}"
+            ;;
+    esac
+
+    if [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && [ -n "$LP_BUG" -o -n "$CUSTOM_REPO_ID" ] ; then
+        local DEB_REQUEST_REPO_PATH=${DEB_REQUEST_REPO_PATH:-$DEB_REPO_PATH}
+        local REMOTE_REQUEST_REPO_HOST=${REMOTE_REQUEST_REPO_HOST:-$REMOTE_REPO_HOST}
+        case true in
+            "$IS_HOTFIX" )
+                local DEB_REQUEST_DIST_NAME=$DEB_HOTFIX_DIST_NAME
+                ;;
+            "$IS_SECURITY" )
+                local DEB_REQUEST_DIST_NAME=$DEB_SECURITY_DIST_NAME
+                ;;
+            "$IS_UPDATES" )
+                local DEB_REQUEST_DIST_NAME=$DEB_PROPOSED_DIST_NAME
+                ;;
+            *)
+                local DEB_REQUEST_DIST_NAME=$DEB_DIST_NAME
+                ;;
+        esac
+        EXTRAREPO="${EXTRAREPO}|http://${REMOTE_REQUEST_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${DEB_REQUEST_REPO_PATH} ${DEB_REQUEST_DIST_NAME} ${COMPONENTS}"
+    fi
+
     export EXTRAREPO
 
     if [ -n "$EXTRAREPO" ] ; then
@@ -129,6 +164,7 @@ main () {
 			GERRIT_CHANGE_STATUS=$GERRIT_CHANGE_STATUS
 			REQUEST_NUM=$REQUEST_NUM
 			LP_BUG=$LP_BUG
+			IS_HOTFIX=$IS_HOTFIX
 			IS_SECURITY=$IS_SECURITY
 			EXTRAREPO="$EXTRAREPO"
 			REPO_TYPE=deb

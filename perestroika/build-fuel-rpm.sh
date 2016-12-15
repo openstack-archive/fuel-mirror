@@ -41,6 +41,8 @@ main () {
     # if gitshasrc is not defined (we are not using fetch_upstream), let's do it
     [ -n "${gitshasrc}" ] || local gitshasrc=$(git -C $_srcpath log -1 --pretty="%h")
     [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && _rev=$(( $_rev + 1 ))
+    [ "$IS_HOTFIX" == "true" ] \
+        && _rev=$(get_extra_revision hotfix ${_srcpath})
     local release="1.mos${_rev}"
     [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && release="${release}.git.${gitshasrc}"
     local TAR_NAME=${PACKAGENAME}-${version}.tar.gz
@@ -85,14 +87,49 @@ main () {
     local REQUEST=$REQUEST_NUM
     [ -n "$LP_BUG" ] && REQUEST=$LP_BUG
 
+    RPM_HOTFIX_REPO_PATH=${RPM_HOTFIX_REPO_PATH:-${RPM_OS_REPO_PATH%/*}/hotfix}
     [ -n "${EXTRAREPO}" ] && EXTRAREPO="${EXTRAREPO}|"
     EXTRAREPO="${EXTRAREPO}repo1,http://${REMOTE_REPO_HOST}/${RPM_OS_REPO_PATH}/x86_64"
-    [ "$IS_UPDATES" == 'true' ] && \
-      EXTRAREPO="${EXTRAREPO}|repo2,http://${REMOTE_REPO_HOST}/${RPM_PROPOSED_REPO_PATH}/x86_64"
-    [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && [ "$IS_UPDATES" != "true" ] && [ -n "$LP_BUG" ] && \
-      EXTRAREPO="${EXTRAREPO}|repo3,http://${REMOTE_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${RPM_OS_REPO_PATH}/x86_64"
-    [ "$GERRIT_STATUS" == "NEW" ] && [ "$IS_UPDATES" == "true" ] && [ -n "$LP_BUG" ] && \
-      EXTRAREPO="${EXTRAREPO}|repo3,http://${REMOTE_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${RPM_PROPOSED_REPO_PATH}/x86_64"
+    case true in
+        "$IS_HOTFIX" )
+            EXTRAREPO="${EXTRAREPO}|repo2,http://${REMOTE_REPO_HOST}/${RPM_HOTFIX_REPO_PATH}/x86_64"
+            EXTRAREPO="${EXTRAREPO}|repo3,http://${REMOTE_REPO_HOST}/${RPM_UPDATES_REPO_PATH}/x86_64"
+            EXTRAREPO="${EXTRAREPO}|repo4,http://${REMOTE_REPO_HOST}/${RPM_SECURITY_REPO_PATH}/x86_64"
+            ;;
+        "$IS_SECURITY" )
+            EXTRAREPO="${EXTRAREPO}|repo2,http://${REMOTE_REPO_HOST}/${RPM_UPDATES_REPO_PATH}/x86_64"
+            EXTRAREPO="${EXTRAREPO}|repo3,http://${REMOTE_REPO_HOST}/${RPM_SECURITY_REPO_PATH}/x86_64"
+            ;;
+        "$IS_UPDATES" )
+            EXTRAREPO="${EXTRAREPO}|repo2,http://${REMOTE_REPO_HOST}/${RPM_PROPOSED_REPO_PATH}/x86_64"
+            EXTRAREPO="${EXTRAREPO}|repo3,http://${REMOTE_REPO_HOST}/${RPM_UPDATES_REPO_PATH}/x86_64"
+            EXTRAREPO="${EXTRAREPO}|repo4,http://${REMOTE_REPO_HOST}/${RPM_SECURITY_REPO_PATH}/x86_64"
+            ;;
+    esac
+
+    if [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && [ -n "$LP_BUG" -o -n "$CUSTOM_REPO_ID" ] ; then
+        local REMOTE_REQUEST_REPO_HOST=${REMOTE_REQUEST_REPO_HOST:-$REMOTE_REPO_HOST}
+        local RPM_REQUEST_HOTFIX_REPO_PATH=${RPM_REQUEST_HOTFIX_REPO_PATH:-$RPM_HOTFIX_REPO_PATH}
+        local RPM_REQUEST_SECURITY_REPO_PATH=${RPM_REQUEST_SECURITY_REPO_PATH:-$RPM_SECURITY_REPO_PATH}
+        local RPM_REQUEST_PROPOSED_REPO_PATH=${RPM_REQUEST_PROPOSED_REPO_PATH:-$RPM_PROPOSED_REPO_PATH}
+        local RPM_REQUEST_OS_REPO_PATH=${RPM_REQUEST_OS_REPO_PATH:-$RPM_OS_REPO_PATH}
+        case true in
+            "$IS_HOTFIX" )
+                local RPM_REQUEST_REPO_PATH=$RPM_REQUEST_HOTFIX_REPO_PATH
+                ;;
+            "$IS_SECURITY" )
+                local RPM_REQUEST_REPO_PATH=$RPM_REQUEST_SECURITY_REPO_PATH
+                ;;
+            "$IS_UPDATES" )
+                local RPM_REQUEST_REPO_PATH=$RPM_REQUEST_PROPOSED_REPO_PATH
+                ;;
+            * )
+                local RPM_REQUEST_REPO_PATH=$RPM_REQUEST_OS_REPO_PATH
+                ;;
+        esac
+        EXTRAREPO="${EXTRAREPO}|repo5,http://${REMOTE_REQUEST_REPO_HOST}/${REPO_REQUEST_PATH_PREFIX}/${REQUEST}/${RPM_REQUEST_REPO_PATH}/x86_64"
+    fi
+
     export EXTRAREPO
 
     if [ -n "$EXTRAREPO" ] ; then
@@ -130,6 +167,7 @@ main () {
 			GERRIT_CHANGE_STATUS=$GERRIT_CHANGE_STATUS
 			REQUEST_NUM=$REQUEST_NUM
 			LP_BUG=$LP_BUG
+			IS_HOTFIX=$IS_HOTFIX
 			IS_SECURITY=$IS_SECURITY
 			EXTRAREPO="$EXTRAREPO"
 			REPO_TYPE=rpm
