@@ -105,8 +105,14 @@ main () {
               # Do not perform `setup.py sdist` for rally packages
               tar -czf ${BUILDDIR}/$TAR_NAME $EXCLUDES .
           else
+              # Use virtualenv to deal with different pbr requirements
+              local venv=$(mktemp -d)
+              virtualenv "$venv"
+              source "${venv}/bin/activate"
               python setup.py --version  # this will download pbr if it's not available
               PBR_VERSION=$release_tag python setup.py sdist -d ${BUILDDIR}/
+              deactivate
+              [ -d "$venv" ] && rm -rf "$venv"
               # Fix source folder name at sdist tarball
               local sdist_tarball=$(find ${BUILDDIR}/ -maxdepth 1 -name "*.gz")
               if [ "$(tar -tf $sdist_tarball | head -n 1 | cut -d'/' -f1)" != "${srcpackagename}-${version}" ] ; then
