@@ -135,6 +135,7 @@ packages: &packages
      - "xmlstarlet"
      - "tftpd-hpa"
      - "syslinux"
+     - "systemd-shim"
 
 
 groups:
