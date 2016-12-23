@@ -91,6 +91,7 @@ main () {
               local venv=$(mktemp -d)
               virtualenv "$venv"
               source "${venv}/bin/activate"
+              pip install --upgrade setuptools
               python setup.py --version  # this will download pbr if it's not available
               PBR_VERSION=$release_tag python setup.py sdist -d ${BUILDDIR}/
               deactivate
