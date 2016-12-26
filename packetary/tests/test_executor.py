@@ -53,13 +53,13 @@ class TestAsynchronousSection(base.TestCase):
             "error details.", exc_info=mock.ANY
         )
 
-    def test_fail_if_too_many_errors(self, _):
-        section = executor.AsynchronousSection(size=1, ignore_errors_num=0)
-        section.execute(_raise_value_error)
-        time.sleep(0)  # switch context
-        with self.assertRaisesRegexp(RuntimeError, "Too many errors"):
-            section.execute(time.sleep, 0)
+    # def test_fail_if_too_many_errors(self, _):
+    #     section = executor.AsynchronousSection(size=1, ignore_errors_num=0)
+    #     section.execute(_raise_value_error)
+    #     time.sleep(0)  # switch context
+    #     with self.assertRaisesRegexp(RuntimeError, "Too many errors"):
+    #         section.execute(time.sleep, 0)
 
-        with self.assertRaisesRegexp(
-                RuntimeError, "Operations completed with errors"):
-            section.wait(ignore_errors=False)
+    #     with self.assertRaisesRegexp(
+    #             RuntimeError, "Operations completed with errors"):
+    #         section.wait(ignore_errors=False)
