@@ -57,6 +57,7 @@ class TestAsynchronousSection(base.TestCase):
         section = executor.AsynchronousSection(size=1, ignore_errors_num=0)
         section.execute(_raise_value_error)
         time.sleep(0)  # switch context
+
         with self.assertRaisesRegexp(RuntimeError, "Too many errors"):
             section.execute(time.sleep, 0)
 

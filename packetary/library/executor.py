@@ -56,10 +56,11 @@ class AsynchronousSection(object):
 
     def execute(self, func, *args, **kwargs):
         """Calls function asynchronously."""
+        gt = self.executor.spawn(func, *args, **kwargs)
+
         if 0 <= self.ignore_errors_num < len(self.errors):
             raise RuntimeError("Too many errors.")
 
-        gt = self.executor.spawn(func, *args, **kwargs)
         self.tasks.add(gt)
         gt.link(self.on_complete)
         return gt
