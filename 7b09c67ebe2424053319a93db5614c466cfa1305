@@ -1,0 +1,10 @@
+Code-Review+1: Georgy Kibardin <gkibardin@mirantis.com>
+Code-Review+1: Alexander Kislitsky <akislitsky@mirantis.com>
+Code-Review+2: Vladimir Kozhukalov <vkozhukalov@mirantis.com>
+Workflow+1: Vladimir Kozhukalov <vkozhukalov@mirantis.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Wed, 28 Dec 2016 09:55:41 +0000
+Reviewed-on: https://review.openstack.org/415223
+Project: openstack/fuel-mirror
+Branch: refs/heads/stable/mitaka
