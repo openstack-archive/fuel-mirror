@@ -46,10 +46,14 @@ main () {
         [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && _rev=$(( $_rev + 1 ))
         [ "$IS_HOTFIX" == "true" ] \
             && _rev=$(get_extra_revision hotfix ${_srcpath})
-        local release="1~u14.04+mos${_rev}"
         # if gitshasrc is not defined (we are not using fetch_upstream), let's do it
         [ -n "${gitshasrc}" ] || local gitshasrc=$(git -C $_srcpath log -1 --pretty="%h")
-        [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && release="${release}+git.${gitshasrc}"
+        if [ "$GERRIT_CHANGE_STATUS" == "NEW" ] ; then
+            local OVERRIDE_PKG_REVISION=${OVERRIDE_PKG_REVISION:-1}
+            local release="${OVERRIDE_PKG_REVISION}~u14.04+mos${_rev}+git.${gitshasrc}"
+        else
+            local release="1~u14.04+mos${_rev}"
+        fi
         local fullver=${version}-${release}
         # Update version and changelog
         local firstline=1
