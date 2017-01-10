@@ -41,8 +41,12 @@ main () {
     # if gitshasrc is not defined (we are not using fetch_upstream), let's do it
     [ -n "${gitshasrc}" ] || local gitshasrc=$(git -C $_srcpath log -1 --pretty="%h")
     [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && _rev=$(( $_rev + 1 ))
-    local release="1.mos${_rev}"
-    [ "$GERRIT_CHANGE_STATUS" == "NEW" ] && release="${release}.git.${gitshasrc}"
+    if [ "$GERRIT_CHANGE_STATUS" == "NEW" ] ; then
+        local OVERRIDE_PKG_REVISION=${OVERRIDE_PKG_REVISION:-1}
+        local release="${OVERRIDE_PKG_REVISION}.mos${_rev}.git.${gitshasrc}"
+    else
+        local release="1.mos${_rev}"
+    fi
     local TAR_NAME=${PACKAGENAME}-${version}.tar.gz
     # Update version and changelog
     sed -i "s|Version:.*$|Version: ${version}|" $specfile
