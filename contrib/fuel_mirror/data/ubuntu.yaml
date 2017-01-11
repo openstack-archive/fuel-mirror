@@ -97,6 +97,7 @@ packages: &packages
      - "libapache2-mod-fastcgi"
      - "libicu-dev"
      - "libnss3-tools"
+     - "libseccomp2"
      - "linux-firmware-nonfree"
      - "linux-headers-generic-lts-trusty"
      - "linux-headers-generic-lts-xenial"
