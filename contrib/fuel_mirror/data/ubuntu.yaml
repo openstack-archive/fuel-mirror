@@ -95,6 +95,7 @@ packages: &packages
      - "irqbalance"
      - "language-pack-en"
      - "libapache2-mod-fastcgi"
+     - "libmysqlclient18"
      - "libicu-dev"
      - "libnss3-tools"
      - "linux-firmware-nonfree"
