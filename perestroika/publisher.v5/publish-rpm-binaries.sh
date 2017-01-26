@@ -249,6 +249,14 @@ EOL
       [ -f "RPM-GPG-KEY" ] && cp RPM-GPG-KEY ${LOCAL_REPO_PATH}/RPM-GPG-KEY-${PROJECT_NAME}${PROJECT_VERSION}
   fi
 
+  # Publish yaml files
+  local yaml_file=$(find "$TMP_DIR" -name *.yaml 2>/dev/null)
+  if [ -n "$yaml_file" ] ; then
+      local yaml_dir=${LOCAL_REPO_PATH}/versioner
+      mkdir -p "$yaml_dir"
+      cp -v "$yaml_file" "$yaml_dir"
+  fi
+
   # Sync repo to remote host
   sync-repo ${LOCAL_REPO_PATH}/ ${RPM_REPO_PATH} ${REPO_REQUEST_PATH_PREFIX} ${REQUEST_NUM} ${LP_BUG}
   job_lock ${LOCAL_REPO_PATH}.lock unset

@@ -19,9 +19,13 @@ main () {
   # Get last commit info
   # $message $author $email $cdate $commitsha $lastgitlog
   get_last_commit_info ${_srcpath}
+  local gitsrcsha=$(git -C ${_srcpath} log -n 1 --pretty=format:%H)
+  local gitsrcprj=$(git -C ${_srcpath} remote -v | head -n 1 | awk '{print $2}' | awk -F '/' '{print $NF}' | sed 's|.git$||' )
 
   # Update specs
   local specfile=`find $_specpath -name *.spec`
+  local srcpackagename=${specfile##*/}
+  srcpackagename=${srcpackagename%.spec}
   #local binpackagename=`rpm -q $RPMQUERYPARAMS --specfile $specfile --queryformat %{NAME}"\n" | head -1`
   local define_macros=(
       -D 'kernel_module_package_buildreqs kernel-devel'
@@ -39,6 +43,8 @@ This package provides the %{-n*} kernel modules
   ## Add changelog section if it doesn't exist
   [ "`cat ${specfile} | grep -c '^%changelog'`" -eq 0 ] && echo "%changelog" >> ${specfile}
   if [ "$IS_OPENSTACK" == "true" ] ; then
+      local gitspecsha=$(git -C ${_specpath} log -n 1 --pretty=format:%H)
+      local gitspecprj=$(git -C ${_specpath} remote -v | head -n 1 | awk '{print $2}' | awk -F '/' '{print $NF}' | sed 's|.git$||' )
       # Get version number from the latest git tag for openstack packages
       local release_tag=$(git -C $_srcpath describe --abbrev=0 --candidates=1 | sed -r 's|^[^0-9]+||')
       # Deal with PyPi versions like 2015.1.0rc1
@@ -225,6 +231,24 @@ This package provides the %{-n*} kernel modules
 		REPO_TYPE=rpm
 		DIST=$DIST
 		EOL
+      # Fill yaml file
+      yaml_report_file=${tmpdir}/${srcpackagename}.yaml
+      local srpmfile=$(find ${tmpdir}/ -name *.src.rpm)
+      local newrelease=`rpm -qp $srpmfile --queryformat %{RELEASE}"\n" | head -1`
+      echo "Source: ${srcpackagename}" > $yaml_report_file
+      echo "Version: ${version}-${newrelease}" >> $yaml_report_file
+      echo "Binary:" >> $yaml_report_file
+      for binary in $(find ${tmpdir}/ -name *.rpm | egrep -v '\.src\.rpm$') ; do
+          _binary=${binary##*/}
+          _binary=${_binary%-*}
+          _binary=${_binary%-*}
+          echo "  - ${_binary}" >> $yaml_report_file
+      done
+      echo "Build_time: $(date '+%F-%H-%M-%S')" >> $yaml_report_file
+      echo "Code_project:" >> $yaml_report_file
+      echo "  ${gitsrcprj}: ${gitsrcsha}" >> $yaml_report_file
+      [ "$IS_OPENSTACK" == "true" ] \
+          && echo "  ${gitspecprj}: ${gitspecsha}" >> $yaml_report_file
   fi
 
   exit $exitstatus
