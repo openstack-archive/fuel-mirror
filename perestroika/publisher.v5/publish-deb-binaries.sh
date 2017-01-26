@@ -228,6 +228,14 @@ main() {
       rm -f ${pub_key_file}
   fi
 
+  # Publish yaml files
+  local yaml_file=$(find "$TMP_DIR" -name *.yaml 2>/dev/null)
+  if [ -n "$yaml_file" ] ; then
+      local yaml_dir=${OUTDIR}/${DEB_DIST_NAME}-versioner
+      mkdir -p "$yaml_dir"
+      cp -v "$yaml_file" "$yaml_dir"
+  fi
+
   sync-repo ${OUTDIR} ${DEB_REPO_PATH} ${REPO_REQUEST_PATH_PREFIX} ${REQUEST_NUM} ${LP_BUG}
   job_lock ${CONFIGDIR}.lock unset
 

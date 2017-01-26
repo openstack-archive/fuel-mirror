@@ -40,6 +40,8 @@ main () {
         # Get last commit info
         # $message $author $email $cdate $commitsha $lastgitlog
         get_last_commit_info ${_srcpath}
+        local gitsrcsha=$(git -C ${_srcpath} log -n 1 --pretty=format:%H)
+        local gitsrcprj=$(git -C ${_srcpath} remote -v | head -n 1 | awk '{print $2}' | awk -F '/' '{print $NF}' | sed 's|.git$||' )
 
         # Get revision number as commit count for src+spec projects
         local _rev=`git -C $_srcpath rev-list --no-merges origin/${SOURCE_BRANCH} | wc -l`
@@ -138,6 +140,18 @@ main () {
 			REPO_TYPE=deb
 			DIST=$DIST
 		EOL
+        # Fill yaml file
+        yaml_report_file=${tmpdir}/${srcpackagename}.yaml
+        echo "Source: ${srcpackagename}" > $yaml_report_file
+        echo "Version: ${fullver}" >> $yaml_report_file
+        echo "Binary:" >> $yaml_report_file
+        for binary in $(find ${tmpdir}/ -name *deb) ; do
+            _binary=${binary##*/}
+            echo "  - ${_binary%%_*}" >> $yaml_report_file
+        done
+        echo "Build_time: $(date '+%F-%H-%M-%S')" >> $yaml_report_file
+        echo "Code_project:" >> $yaml_report_file
+        echo "  ${gitsrcprj}: ${gitsrcsha}" >> $yaml_report_file
     fi
     echo "Packages: $PACKAGENAME"
 
