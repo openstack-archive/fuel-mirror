@@ -37,8 +37,6 @@ main () {
     local specfile=`find $_specpath -name *.spec`
     local version=`rpm -q --specfile $specfile --queryformat '%{VERSION}\n' | head -1`
     local release=`rpm -q --specfile $specfile --queryformat '%{RELEASE}\n' | head -1`
-    local srcpackagename=${specfile##*/}
-    srcpackagename=${srcpackagename%.spec}
     ## Add changelog section if it doesn't exist
     [ `cat ${specfile} | grep -c '^%changelog'` -eq 0 ] && echo "%changelog" >> ${specfile}
     local _rev=`git -C $_srcpath rev-list --no-merges origin/${SOURCE_BRANCH} | wc -l`
@@ -144,17 +142,16 @@ main () {
 			DIST=$DIST
 		EOL
         # Fill yaml file
-        yaml_report_file=${tmpdir}/${srcpackagename}.yaml
         local srpmfile=$(find ${tmpdir}/ -name *.src.rpm)
-        local newrelease=`rpm -qp $srpmfile --queryformat %{RELEASE}"\n" | head -1`
+        local srcpackagename=$(rpm -qp $srpmfile --queryformat %{NAME}"\n" | head -1)
+        local newrelease=$(rpm -qp $srpmfile --queryformat %{RELEASE}"\n" | head -1)
+        local yaml_report_file=${tmpdir}/${srcpackagename}.yaml
         echo "Source: ${srcpackagename}" > $yaml_report_file
         echo "Version: ${version}-${newrelease}" >> $yaml_report_file
         echo "Binary:" >> $yaml_report_file
         for binary in $(find ${tmpdir}/ -name *.rpm | egrep -v '\.src\.rpm$') ; do
-            _binary=${binary##*/}
-            _binary=${_binary%-*}
-            _binary=${_binary%-*}
-            echo "  - ${_binary}" >> $yaml_report_file
+            local binary_name=$(rpm -qp $binary --queryformat %{NAME}"\n" | head -1)
+            echo "  - ${binary_name}" >> $yaml_report_file
         done
         echo "Build_time: $(date '+%F-%H-%M-%S')" >> $yaml_report_file
         echo "Code_project:" >> $yaml_report_file
