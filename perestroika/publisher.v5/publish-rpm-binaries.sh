@@ -243,8 +243,8 @@ EOL
               retry -c4 -s1 _sigul "$KEY_PASSPHRASE" -u "$SIGUL_USER" sign-data --armor -o "${LOCAL_REPO_PATH}/${TYPE}/repodata/repomd.asc" "${SIGKEYID}" "${LOCAL_REPO_PATH}/${TYPE}/repodata/repomd.xml"
           done
       else
-          gpg --armor --local-user ${SIGKEYID} --detach-sign ${LOCAL_REPO_PATH}/x86_64/repodata/repomd.xml
-          gpg --armor --local-user ${SIGKEYID} --detach-sign ${LOCAL_REPO_PATH}/Source/repodata/repomd.xml
+          gpg --armor --digest-algo SHA512 --local-user ${SIGKEYID} --detach-sign ${LOCAL_REPO_PATH}/x86_64/repodata/repomd.xml
+          gpg --armor --digest-algo SHA512 --local-user ${SIGKEYID} --detach-sign ${LOCAL_REPO_PATH}/Source/repodata/repomd.xml
       fi
       [ -f "RPM-GPG-KEY" ] && cp RPM-GPG-KEY ${LOCAL_REPO_PATH}/RPM-GPG-KEY-${PROJECT_NAME}${PROJECT_VERSION}
   fi
