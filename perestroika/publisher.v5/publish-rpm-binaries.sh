@@ -224,8 +224,8 @@ EOL
   if [ -n "${SIGKEYID}" ] ; then
       rm -f ${LOCAL_REPO_PATH}/x86_64/repodata/repomd.xml.asc
       rm -f ${LOCAL_REPO_PATH}/Source/repodata/repomd.xml.asc
-      gpg --armor --local-user ${SIGKEYID} --detach-sign ${LOCAL_REPO_PATH}/x86_64/repodata/repomd.xml
-      gpg --armor --local-user ${SIGKEYID} --detach-sign ${LOCAL_REPO_PATH}/Source/repodata/repomd.xml
+      gpg --armor --digest-algo SHA512 --local-user ${SIGKEYID} --detach-sign ${LOCAL_REPO_PATH}/x86_64/repodata/repomd.xml
+      gpg --armor --digest-algo SHA512 --local-user ${SIGKEYID} --detach-sign ${LOCAL_REPO_PATH}/Source/repodata/repomd.xml
       [ -f "RPM-GPG-KEY" ] && cp RPM-GPG-KEY ${LOCAL_REPO_PATH}/RPM-GPG-KEY-${PROJECT_NAME}${PROJECT_VERSION}
   fi
 
