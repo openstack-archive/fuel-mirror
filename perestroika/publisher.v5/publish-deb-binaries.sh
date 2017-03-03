@@ -95,7 +95,7 @@ main() {
           rm -f ${release_file}.gpg
           # ReSign Release file
           [ -n "${SIGN_STRING}" ] \
-              && gpg --sign --local-user ${SIGKEYID} -ba \
+              && gpg --sign --digest-algo SHA512 --local-user ${SIGKEYID} -ba \
               -o ${release_file}.gpg ${release_file}
       done
       job_lock ${CONFIGDIR}.lock unset
@@ -188,8 +188,8 @@ main() {
                   retry -c4 -s1 _sigul "$KEY_PASSPHRASE" -u "$SIGUL_USER" sign-data --armor -o "${_release_file}.gpg" "$SIGKEYID" "$_release_file"
                   retry -c4 -s1 _sigul "$KEY_PASSPHRASE" -u "$SIGUL_USER" sign-text -o "$_inrelease_file" "$SIGKEYID" "$_release_file"
               else
-                  gpg --sign --local-user "$SIGKEYID" -ba -o "${_release_file}.gpg" "$_release_file"
-                  gpg --sign --local-user "$SIGKEYID" --clearsign -o "$_inrelease_file" "$_release_file"
+                  gpg --sign --digest-algo SHA512 --local-user "$SIGKEYID" -ba -o "${_release_file}.gpg" "$_release_file"
+                  gpg --sign --digest-algo SHA512 --local-user "$SIGKEYID" --clearsign -o "$_inrelease_file" "$_release_file"
               fi
           fi
       done
@@ -215,8 +215,8 @@ main() {
            retry -c4 -s1 _sigul "$KEY_PASSPHRASE" -u "$SIGUL_USER" sign-text -o "$inrelease_file" "$SIGKEYID" "$release_file"
            retry -c4 -s1 _sigul "$KEY_PASSPHRASE" -u "$SIGUL_ADMIN" get-public-key "${SIGKEYID}" > "${pub_key_file}.tmp"
       else
-          gpg --sign --local-user "$SIGKEYID" -ba -o "${release_file}.gpg" "$release_file"
-          gpg --sign --local-user "$SIGKEYID" --clearsign -o "$inrelease_file" "$release_file"
+          gpg --sign --digest-algo SHA512 --local-user "$SIGKEYID" -ba -o "${release_file}.gpg" "$release_file"
+          gpg --sign --digest-algo SHA512 --local-user "$SIGKEYID" --clearsign -o "$inrelease_file" "$release_file"
           gpg -o "${pub_key_file}.tmp" --armor --export "$SIGKEYID"
       fi
       if diff -q ${pub_key_file} ${pub_key_file}.tmp &>/dev/null ; then
