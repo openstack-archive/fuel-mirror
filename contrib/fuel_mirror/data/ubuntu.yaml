@@ -41,7 +41,7 @@ repos:
         suite: "mos$mos_version"
         section: "main restricted"
         type: "deb"
-        priority: 1000
+        priority: 1050
 
     -   &mos_updates
         name: "mos-updates"
@@ -49,7 +49,7 @@ repos:
         suite: "mos$mos_version-updates"
         section: "main restricted"
         type: "deb"
-        priority: 1000
+        priority: 1050
 
     -   &mos_security
         name: "mos-security"
@@ -57,7 +57,7 @@ repos:
         suite: "mos$mos_version-security"
         section: "main restricted"
         type: "deb"
-        priority: 1000
+        priority: 1050
 
     -   &mos_holdback
         name: "mos-holdback"
@@ -65,7 +65,7 @@ repos:
         suite: "mos$mos_version-holdback"
         section: "main restricted"
         type: "deb"
-        priority: 1000
+        priority: 1100
 
 # Packages are required to build bootstrap images for a system.
 # The mirror should contiain such packages in addition to local mirror.
