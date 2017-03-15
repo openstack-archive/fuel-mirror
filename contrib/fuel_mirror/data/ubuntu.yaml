@@ -1,6 +1,7 @@
 # GLOBAL variables
 ubuntu_baseurl: &ubuntu_baseurl http://archive.ubuntu.com/ubuntu
 mos_baseurl: &mos_baseurl http://mirror.fuel-infra.org/mos-repos/ubuntu/$mos_version
+mos92_baseurl: &mos92_baseurl http://mirror.fuel-infra.org/mos-repos/ubuntu/9.2
 
 fuel_release_match:
    version: $openstack_version
@@ -62,6 +63,30 @@ repos:
     -   &mos_holdback
         name: "mos-holdback"
         uri: *mos_baseurl
+        suite: "mos$mos_version-holdback"
+        section: "main restricted"
+        type: "deb"
+        priority: 1100
+
+    -   &mos92_updates
+        name: "mos9.2-updates"
+        uri: *mos92_baseurl
+        suite: "mos$mos_version-updates"
+        section: "main restricted"
+        type: "deb"
+        priority: 1050
+
+    -   &mos92_security
+        name: "mos9.2-security"
+        uri: *mos92_baseurl
+        suite: "mos$mos_version-security"
+        section: "main restricted"
+        type: "deb"
+        priority: 1050
+
+    -   &mos92_holdback
+        name: "mos9.2-holdback"
+        uri: *mos92_baseurl
         suite: "mos$mos_version-holdback"
         section: "main restricted"
         type: "deb"
@@ -147,6 +172,9 @@ groups:
         - *mos_updates
         - *mos_security
         - *mos_holdback
+        - *mos92_updates
+        - *mos92_security
+        - *mos92_holdback
 
     ubuntu:
         - *ubuntu
