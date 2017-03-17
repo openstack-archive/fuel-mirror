@@ -60,14 +60,6 @@ repos:
         type: "deb"
         priority: 1050
 
-    -   &mos_holdback
-        name: "mos-holdback"
-        uri: *mos_baseurl
-        suite: "mos$mos_version-holdback"
-        section: "main restricted"
-        type: "deb"
-        priority: 1100
-
     -   &mos92_updates
         name: "mos9.2-updates"
         uri: *mos92_baseurl
@@ -171,7 +163,6 @@ groups:
         - *mos
         - *mos_updates
         - *mos_security
-        - *mos_holdback
         - *mos92_updates
         - *mos92_security
         - *mos92_holdback
