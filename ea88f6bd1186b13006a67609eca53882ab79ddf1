@@ -1,0 +1,8 @@
+Code-Review+2: Vladimir Kozhukalov <vkozhukalov@mirantis.com>
+Workflow+1: Denis V. Meltsaykin <dmeltsaykin@mirantis.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Tue, 21 Mar 2017 14:27:04 +0000
+Reviewed-on: https://review.openstack.org/446963
+Project: openstack/fuel-mirror
+Branch: refs/heads/stable/mitaka
