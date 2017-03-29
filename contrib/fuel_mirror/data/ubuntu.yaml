@@ -62,7 +62,7 @@ repos:
     -   &mos_holdback
         name: "mos-holdback"
         uri: *mos_baseurl
-        suite: "mos$mos_version"
+        suite: "mos$mos_version-holdback"
         section: "main restricted"
         type: "deb"
         priority: 1000
