@@ -39,7 +39,7 @@ This package provides the %{-n*} kernel modules
   [ "`cat ${specfile} | grep -c '^%changelog'`" -eq 0 ] && echo "%changelog" >> ${specfile}
   if [ "$IS_OPENSTACK" == "true" ] ; then
       # Get version number from the latest git tag for openstack packages
-      local release_tag=$(git -C $_srcpath describe --abbrev=0 --candidates=1)
+      local release_tag=$(git -C $_srcpath describe --abbrev=0 --candidates=1 --match "*[0-9]*")
       # Deal with PyPi versions like 2015.1.0rc1
       # It breaks version comparison
       # Change it to 2015.1.0~rc1
