@@ -44,7 +44,7 @@ This package provides the %{-n*} kernel modules
       local gitspecsha=$(git -C ${_specpath} log -n 1 --pretty=format:%H)
       local gitspecprj=$(git -C ${_specpath} remote -v | head -n 1 | awk '{print $2}' | awk -F '/' '{print $NF}' | sed 's|.git$||' )
       # Get version number from the latest git tag for openstack packages
-      local release_tag=$(git -C $_srcpath describe --abbrev=0 --candidates=1 | sed -r 's|^[^0-9]+||')
+      local release_tag=$(git -C $_srcpath describe --abbrev=0 --candidates=1 --match "*[0-9]*" | sed -r 's|^[^0-9]+||')
       # Deal with PyPi versions like 2015.1.0rc1
       # It breaks version comparison
       # Change it to 2015.1.0~rc1
