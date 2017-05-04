@@ -175,6 +175,12 @@ docker_build_sbuild() {
     unset SET_APT_PREFS_CMD
     [ -n "${PIN_CONTENT_BASE64}" ] \
         && local SET_APT_PREFS_CMD="--chroot-setup-commands=\"set-apt-prefs ${PIN_CONTENT_BASE64}\""
+    ## Process hooks
+    local debian_dir=${SOURCE_PATH}/${SOURCE_TARGET}/debian
+    if [ -d "${debian_dir}/hooks.d" ] ; then
+        HOOKS_CMD="--chroot-setup-commands=\"run-parts /hooks.d/\""
+    fi
+
     ##
     local SBUILD_OPTS="--nolog --source --force-orig-source"
     if [ "$KEEP_CHROOT" = "true" ] ; then
@@ -200,11 +206,16 @@ docker_build_sbuild() {
             rm -rf /etc/schroot/chroot.d
             ln -s /srv/images/chroot.d /etc/schroot/chroot.d
             ulimit -n 10000
+            if [ x$HOOKS_CMD != x ] ; then
+                echo '/srv/source/${SOURCE_TARGET}/debian/hooks.d /hooks.d    none ro,bind 0 0' \
+                    >> /etc/schroot/sbuild/fstab
+            fi
             ( sed -i /usr/bin/sbuild -e '/debian\/rules/d'
               DEB_BUILD_OPTIONS=nocheck /usr/bin/sbuild -d ${DIST} \
                   ${SBUILD_OPTS} \
                   ${ADD_REPO_CMD} \
                   ${SET_APT_PREFS_CMD} \
+                  ${HOOKS_CMD} \
                   --chroot-setup-commands=\"apt-get update\" \
                   --chroot-setup-commands=\"apt-get upgrade -f -y --force-yes\" \
                   /srv/source/${SOURCE_TARGET} 2>&1
