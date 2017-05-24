@@ -90,7 +90,7 @@ main() {
           rm -f ${release_file}.gpg
           # ReSign Release file
           [ -n "${SIGN_STRING}" ] \
-              && gpg --sign --local-user ${SIGKEYID} -ba \
+              && gpg --sign --digest-algo SHA512 --local-user ${SIGKEYID} -ba \
               -o ${release_file}.gpg ${release_file}
       done
       job_lock ${CONFIGDIR}.lock unset
@@ -178,7 +178,7 @@ main() {
           local _release_file=${DISTDIR}/${dist_name}/Release
           if ! gpg --verify "${_release_file}.gpg" "$_release_file" &>/dev/null ; then
               sed "s|^Codename:.*$|Codename: ${DEB_BASE_DIST_NAME}|" -i "$_release_file"
-              gpg --sign --local-user "$SIGKEYID" -ba -o "${_release_file}.gpg" "$_release_file"
+              gpg --sign --digest-algo SHA512 --local-user "$SIGKEYID" -ba -o "${_release_file}.gpg" "$_release_file"
           fi
       done
       reprepro ${REPREPRO_COMP_OPTS} includedsc ${DEB_DIST_NAME} ${BINSRCLIST} \
