@@ -33,4 +33,4 @@ docker run ${DNSPARAM} --privileged --rm -v ${CACHEPATH}/cache:/var/cache/mock $
            | base64 -d > /etc/mock/centos-${DIST_VERSION}-x86_64.cfg
        echo 'Current config file:'
        cat /etc/mock/centos-${DIST_VERSION}-x86_64.cfg
-       su - abuild -c 'mock -r centos-${DIST_VERSION}-x86_64 -v --update'"
+       su - abuild -c 'mock -r centos-${DIST_VERSION}-x86_64 -v --update --old-chroot'"

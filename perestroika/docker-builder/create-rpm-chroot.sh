@@ -40,4 +40,4 @@ docker run ${DNSPARAM} --privileged --rm -v ${CACHEPATH}/cache:/var/cache/mock $
              cat /etc/mock/centos-${DIST_VERSION}-x86_64.cfg
              chown -R abuild:mock /var/cache/mock
              chmod g+s /var/cache/mock
-             su - abuild -c 'mock -r centos-${DIST_VERSION}-x86_64 -v --init'"
+             su - abuild -c 'mock -r centos-${DIST_VERSION}-x86_64 -v --init --old-chroot'"
