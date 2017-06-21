@@ -1,0 +1,8 @@
+Code-Review+2: Dmitry Burmistrov <dburmistrov@mirantis.com>
+Workflow+1: Dmitry Burmistrov <dburmistrov@mirantis.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Wed, 21 Jun 2017 13:12:37 +0000
+Reviewed-on: https://review.openstack.org/476128
+Project: openstack/fuel-mirror
+Branch: refs/heads/stable/ocata
