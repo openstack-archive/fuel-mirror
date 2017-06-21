@@ -33,15 +33,15 @@ docker run ${DNSPARAM} --privileged --rm -v ${CACHEPATH}:/srv/mock:ro \
         $EXTRACMD
         echo 'Current config file:'
         cat /etc/mock/centos-${DIST_VERSION}-x86_64.cfg
-        su - abuild -c 'mock -r centos-${DIST_VERSION}-x86_64 --verbose --update'
+        su - abuild -c 'mock -r centos-${DIST_VERSION}-x86_64 --verbose --update --old-chroot'
         chown -R abuild.mock /home/abuild
         [[ \$(ls /home/abuild/rpmbuild/*.src.rpm | wc -l) -eq 0 ]] \
             && su - abuild -c 'mock -r centos-${DIST_VERSION}-x86_64 --no-clean --no-cleanup-after --buildsrpm --verbose \
                --sources=/home/abuild/rpmbuild --resultdir=/home/abuild/rpmbuild --buildsrpm \
-               --spec=\$(ls /home/abuild/rpmbuild/*.spec)'
+               --spec=\$(ls /home/abuild/rpmbuild/*.spec) --old-chroot'
         rm -rf /home/abuild/rpmbuild/build
         su - abuild -c 'mock -r centos-${DIST_VERSION}-x86_64 --no-clean --no-cleanup-after --verbose \
-             --resultdir=/home/abuild/rpmbuild/build \$(ls /home/abuild/rpmbuild/*.src.rpm)'
+             --resultdir=/home/abuild/rpmbuild/build \$(ls /home/abuild/rpmbuild/*.src.rpm) --old-chroot'
         echo \$? > /home/abuild/rpmbuild/build/exitstatus.mock
         umount -f /var/cache/mock /srv/tmpfs/cache
         rm -rf /srv/tmpfs
