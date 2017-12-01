@@ -1,0 +1,8 @@
+Code-Review+2: Dmitry Burmistrov <burmistrovda@gmail.com>
+Workflow+1: Denis V. Meltsaykin <dmeltsaykin@mirantis.com>
+Verified+2: Zuul
+Submitted-by: Zuul
+Submitted-at: Fri, 01 Dec 2017 09:47:21 +0000
+Reviewed-on: https://review.openstack.org/524226
+Project: openstack/fuel-mirror
+Branch: refs/heads/stable/8.0
